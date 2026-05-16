@@ -649,6 +649,9 @@
 
     <!-- IDENTITY -->
     <div class="tab-panel" id="tab-identity">
+      <div style="background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--accent)">
+        🔒 <strong>Privacy note:</strong> This tab collects sensitive personal information. It's saved only to your local machine and never transmitted anywhere. Be mindful about sharing your <code>user-identity.md</code> memory file.
+      </div>
       <div class="card">
         <h2><span class="icon">🗳️</span> Politics <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
         <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Political Identity <span style="font-weight:400;opacity:0.6">how you identify yourself</span></label>
@@ -1083,7 +1086,7 @@ function addChild() {
   row.innerHTML = `
     <div class="fields">
       <div class="field"><label>Name</label><input type="text" name="family.children[${idx}].name" placeholder="Emma" /></div>
-      <div class="field"><label>Birthday (month/year)</label><input type="month" name="family.children[${idx}].birthday" /></div>
+      <div class="field"><label>Birthday (month/year)</label><input type="month" name="family.children[${idx}].birthday" min="1900-01" max="2099-12" /></div>
       <div class="field"><label>Status</label>
         <select name="family.children[${idx}].status" onchange="togglePassedDate(this,'child-passed-${idx}')">
           <option value="">Select…</option>
@@ -1091,7 +1094,7 @@ function addChild() {
           <option value="Passed away">Passed away</option>
         </select>
       </div>
-      <div class="field" id="child-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="family.children[${idx}].date_passed" /></div>
+      <div class="field" id="child-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="family.children[${idx}].date_passed" min="1900-01" max="2099-12" /></div>
     </div>
     <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
   group.appendChild(row);
@@ -1135,7 +1138,7 @@ function addPet() {
         </select>
       </div>
       <div class="field"><label>Breed <span style="font-size:11px;opacity:0.6" id="breed-hint-${idx}"></span></label><input type="text" name="pets[${idx}].breed" placeholder="Breed" id="breed-input-${idx}" list="breed-list-${idx}" autocomplete="off" /><datalist id="breed-list-${idx}"></datalist></div>
-      <div class="field"><label>Birthday (month/year)</label><input type="month" name="pets[${idx}].birthday" /></div>
+      <div class="field"><label>Birthday (month/year)</label><input type="month" name="pets[${idx}].birthday" min="1900-01" max="2099-12" /></div>
       <div class="field"><label>Status</label>
         <select name="pets[${idx}].status" onchange="togglePassedDate(this,'pet-passed-${idx}')">
           <option value="">Select…</option>
@@ -1143,7 +1146,7 @@ function addPet() {
           <option value="Passed away">Passed away</option>
         </select>
       </div>
-      <div class="field" id="pet-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="pets[${idx}].date_passed" /></div>
+      <div class="field" id="pet-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="pets[${idx}].date_passed" min="1900-01" max="2099-12" /></div>
     </div>
     <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
   group.appendChild(row);
