@@ -220,15 +220,30 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
 .add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 
 /* Chips */
+.chip-search {
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.chip-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,71,255,0.08); }
+
 .chip-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
   padding: 14px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
+  max-height: 360px;
+  overflow-y: auto;
 }
 .chip-group-label {
   width: 100%;

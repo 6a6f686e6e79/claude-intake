@@ -162,45 +162,267 @@
 
         <div class="field" style="margin-bottom:18px">
           <label>Health conditions <span style="font-weight:400;opacity:0.6">(select all that apply)</span></label>
+          <input type="text" id="chip-search" class="chip-search" placeholder="Filter conditions…" oninput="filterChips()" />
           <div class="chip-grid" id="conditions-grid">
-            <!-- Mental health -->
-            <span class="chip-group-label">Mental Health</span>
+
+            <span class="chip-group-label" data-group="mental">Mental Health</span>
             <div class="chip" onclick="toggleChip(this)">ADHD</div>
-            <div class="chip" onclick="toggleChip(this)">Anxiety</div>
+            <div class="chip" onclick="toggleChip(this)">Anxiety (general)</div>
             <div class="chip" onclick="toggleChip(this)">Bipolar I</div>
             <div class="chip" onclick="toggleChip(this)">Bipolar II</div>
+            <div class="chip" onclick="toggleChip(this)">Cyclothymia</div>
             <div class="chip" onclick="toggleChip(this)">Depression</div>
+            <div class="chip" onclick="toggleChip(this)">Dysthymia</div>
+            <div class="chip" onclick="toggleChip(this)">Seasonal affective disorder (SAD)</div>
             <div class="chip" onclick="toggleChip(this)">OCD</div>
             <div class="chip" onclick="toggleChip(this)">PTSD</div>
+            <div class="chip" onclick="toggleChip(this)">Complex PTSD (C-PTSD)</div>
             <div class="chip" onclick="toggleChip(this)">Autism / ASD</div>
             <div class="chip" onclick="toggleChip(this)">BPD</div>
             <div class="chip" onclick="toggleChip(this)">Schizophrenia</div>
-            <div class="chip" onclick="toggleChip(this)">Eating disorder</div>
-            <!-- Physical -->
-            <span class="chip-group-label" style="margin-top:10px">Physical Health</span>
+            <div class="chip" onclick="toggleChip(this)">Schizoaffective disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Panic disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Social anxiety disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Agoraphobia</div>
+            <div class="chip" onclick="toggleChip(this)">Specific phobia</div>
+            <div class="chip" onclick="toggleChip(this)">Health anxiety</div>
+            <div class="chip" onclick="toggleChip(this)">Eating disorder (anorexia)</div>
+            <div class="chip" onclick="toggleChip(this)">Eating disorder (bulimia)</div>
+            <div class="chip" onclick="toggleChip(this)">Eating disorder (binge/BED)</div>
+            <div class="chip" onclick="toggleChip(this)">Body dysmorphic disorder (BDD)</div>
+            <div class="chip" onclick="toggleChip(this)">Dissociative identity disorder (DID)</div>
+            <div class="chip" onclick="toggleChip(this)">Depersonalization disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Tourette syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Trichotillomania</div>
+            <div class="chip" onclick="toggleChip(this)">Hoarding disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Adjustment disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Reactive attachment disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Somatic symptom disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Premenstrual dysphoric disorder (PMDD)</div>
+            <div class="chip" onclick="toggleChip(this)">Narcissistic personality disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Antisocial personality disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Avoidant personality disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Paranoid personality disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Intermittent explosive disorder</div>
+
+            <span class="chip-group-label" data-group="substance">Substance Use & Behavioral</span>
+            <div class="chip" onclick="toggleChip(this)">Alcohol use disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Substance use disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Opioid use disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Nicotine dependence</div>
+            <div class="chip" onclick="toggleChip(this)">Gambling disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Gaming / internet addiction</div>
+
+            <span class="chip-group-label" data-group="neuro">Neurological</span>
+            <div class="chip" onclick="toggleChip(this)">Epilepsy</div>
+            <div class="chip" onclick="toggleChip(this)">Migraine</div>
+            <div class="chip" onclick="toggleChip(this)">Parkinson's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Alzheimer's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Dementia (other)</div>
+            <div class="chip" onclick="toggleChip(this)">Traumatic brain injury (TBI)</div>
+            <div class="chip" onclick="toggleChip(this)">Stroke (history of)</div>
+            <div class="chip" onclick="toggleChip(this)">Transient ischemic attack (TIA)</div>
+            <div class="chip" onclick="toggleChip(this)">Peripheral neuropathy</div>
+            <div class="chip" onclick="toggleChip(this)">Multiple sclerosis</div>
+            <div class="chip" onclick="toggleChip(this)">ALS (Lou Gehrig's disease)</div>
+            <div class="chip" onclick="toggleChip(this)">Huntington's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Myasthenia gravis</div>
+            <div class="chip" onclick="toggleChip(this)">Guillain-Barré syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Cerebral palsy</div>
+            <div class="chip" onclick="toggleChip(this)">Dystonia</div>
+            <div class="chip" onclick="toggleChip(this)">Essential tremor</div>
+            <div class="chip" onclick="toggleChip(this)">Narcolepsy</div>
+            <div class="chip" onclick="toggleChip(this)">Restless leg syndrome (RLS)</div>
+            <div class="chip" onclick="toggleChip(this)">Vertigo / Ménière's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Tinnitus</div>
+            <div class="chip" onclick="toggleChip(this)">Trigeminal neuralgia</div>
+            <div class="chip" onclick="toggleChip(this)">Bell's palsy</div>
+            <div class="chip" onclick="toggleChip(this)">Chiari malformation</div>
+            <div class="chip" onclick="toggleChip(this)">Hydrocephalus</div>
+
+            <span class="chip-group-label" data-group="cardio">Cardiovascular</span>
+            <div class="chip" onclick="toggleChip(this)">Hypertension</div>
+            <div class="chip" onclick="toggleChip(this)">High cholesterol / Hyperlipidemia</div>
+            <div class="chip" onclick="toggleChip(this)">Coronary artery disease</div>
+            <div class="chip" onclick="toggleChip(this)">Heart failure</div>
+            <div class="chip" onclick="toggleChip(this)">Atrial fibrillation (AFib)</div>
+            <div class="chip" onclick="toggleChip(this)">Cardiomyopathy</div>
+            <div class="chip" onclick="toggleChip(this)">Heart valve disease</div>
+            <div class="chip" onclick="toggleChip(this)">Aortic aneurysm</div>
+            <div class="chip" onclick="toggleChip(this)">Peripheral artery disease</div>
+            <div class="chip" onclick="toggleChip(this)">Deep vein thrombosis (DVT)</div>
+            <div class="chip" onclick="toggleChip(this)">Pulmonary embolism</div>
+            <div class="chip" onclick="toggleChip(this)">POTS</div>
+            <div class="chip" onclick="toggleChip(this)">Dysautonomia</div>
+            <div class="chip" onclick="toggleChip(this)">Raynaud's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Vasculitis</div>
+            <div class="chip" onclick="toggleChip(this)">Marfan syndrome</div>
+
+            <span class="chip-group-label" data-group="respiratory">Respiratory</span>
+            <div class="chip" onclick="toggleChip(this)">Asthma</div>
+            <div class="chip" onclick="toggleChip(this)">COPD</div>
+            <div class="chip" onclick="toggleChip(this)">Sleep apnea</div>
+            <div class="chip" onclick="toggleChip(this)">Pulmonary fibrosis</div>
+            <div class="chip" onclick="toggleChip(this)">Pulmonary hypertension</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic bronchitis</div>
+            <div class="chip" onclick="toggleChip(this)">Cystic fibrosis</div>
+            <div class="chip" onclick="toggleChip(this)">Bronchiectasis</div>
+            <div class="chip" onclick="toggleChip(this)">Sarcoidosis</div>
+            <div class="chip" onclick="toggleChip(this)">Alpha-1 antitrypsin deficiency</div>
+
+            <span class="chip-group-label" data-group="gi">Gastrointestinal</span>
+            <div class="chip" onclick="toggleChip(this)">GERD / Acid reflux</div>
+            <div class="chip" onclick="toggleChip(this)">IBS</div>
+            <div class="chip" onclick="toggleChip(this)">Crohn's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Ulcerative colitis</div>
+            <div class="chip" onclick="toggleChip(this)">Celiac disease</div>
+            <div class="chip" onclick="toggleChip(this)">Diverticulitis</div>
+            <div class="chip" onclick="toggleChip(this)">Fatty liver / NAFLD</div>
+            <div class="chip" onclick="toggleChip(this)">Gallbladder disease</div>
+            <div class="chip" onclick="toggleChip(this)">Hepatitis B</div>
+            <div class="chip" onclick="toggleChip(this)">Hepatitis C</div>
+            <div class="chip" onclick="toggleChip(this)">Cirrhosis</div>
+            <div class="chip" onclick="toggleChip(this)">Pancreatitis</div>
+            <div class="chip" onclick="toggleChip(this)">Gastroparesis</div>
+            <div class="chip" onclick="toggleChip(this)">Eosinophilic esophagitis</div>
+            <div class="chip" onclick="toggleChip(this)">Peptic ulcer disease</div>
+            <div class="chip" onclick="toggleChip(this)">Barrett's esophagus</div>
+
+            <span class="chip-group-label" data-group="endo">Endocrine & Metabolic</span>
             <div class="chip" onclick="toggleChip(this)">Diabetes (Type 1)</div>
             <div class="chip" onclick="toggleChip(this)">Diabetes (Type 2)</div>
-            <div class="chip" onclick="toggleChip(this)">Hypertension</div>
-            <div class="chip" onclick="toggleChip(this)">Asthma</div>
+            <div class="chip" onclick="toggleChip(this)">Prediabetes</div>
+            <div class="chip" onclick="toggleChip(this)">Metabolic syndrome</div>
             <div class="chip" onclick="toggleChip(this)">Hypothyroidism</div>
             <div class="chip" onclick="toggleChip(this)">Hyperthyroidism</div>
-            <div class="chip" onclick="toggleChip(this)">Arthritis</div>
-            <div class="chip" onclick="toggleChip(this)">Celiac disease</div>
-            <div class="chip" onclick="toggleChip(this)">Crohn's / IBD</div>
-            <div class="chip" onclick="toggleChip(this)">IBS</div>
-            <div class="chip" onclick="toggleChip(this)">Migraine</div>
-            <div class="chip" onclick="toggleChip(this)">Sleep apnea</div>
-            <div class="chip" onclick="toggleChip(this)">Epilepsy</div>
-            <div class="chip" onclick="toggleChip(this)">Heart disease</div>
+            <div class="chip" onclick="toggleChip(this)">Hashimoto's thyroiditis</div>
+            <div class="chip" onclick="toggleChip(this)">Graves' disease</div>
+            <div class="chip" onclick="toggleChip(this)">Addison's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Cushing's syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Hypoglycemia</div>
+            <div class="chip" onclick="toggleChip(this)">Hyperparathyroidism</div>
+            <div class="chip" onclick="toggleChip(this)">Insulin resistance</div>
+            <div class="chip" onclick="toggleChip(this)">Testosterone deficiency</div>
+            <div class="chip" onclick="toggleChip(this)">Estrogen deficiency</div>
+            <div class="chip" onclick="toggleChip(this)">Growth hormone deficiency</div>
+
+            <span class="chip-group-label" data-group="msk">Musculoskeletal</span>
+            <div class="chip" onclick="toggleChip(this)">Osteoarthritis</div>
+            <div class="chip" onclick="toggleChip(this)">Rheumatoid arthritis</div>
+            <div class="chip" onclick="toggleChip(this)">Psoriatic arthritis</div>
+            <div class="chip" onclick="toggleChip(this)">Ankylosing spondylitis</div>
+            <div class="chip" onclick="toggleChip(this)">Gout</div>
             <div class="chip" onclick="toggleChip(this)">Fibromyalgia</div>
+            <div class="chip" onclick="toggleChip(this)">Osteoporosis</div>
+            <div class="chip" onclick="toggleChip(this)">Osteopenia</div>
+            <div class="chip" onclick="toggleChip(this)">Scoliosis</div>
+            <div class="chip" onclick="toggleChip(this)">Herniated disc</div>
+            <div class="chip" onclick="toggleChip(this)">Spinal stenosis</div>
+            <div class="chip" onclick="toggleChip(this)">Ehlers-Danlos syndrome (EDS)</div>
+            <div class="chip" onclick="toggleChip(this)">Bursitis</div>
+            <div class="chip" onclick="toggleChip(this)">Tendinitis</div>
+            <div class="chip" onclick="toggleChip(this)">Carpal tunnel syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Plantar fasciitis</div>
+            <div class="chip" onclick="toggleChip(this)">TMJ disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Muscular dystrophy</div>
+            <div class="chip" onclick="toggleChip(this)">Polymyalgia rheumatica</div>
+            <div class="chip" onclick="toggleChip(this)">Myositis</div>
+
+            <span class="chip-group-label" data-group="autoimmune">Autoimmune & Inflammatory</span>
             <div class="chip" onclick="toggleChip(this)">Lupus</div>
-            <div class="chip" onclick="toggleChip(this)">Multiple sclerosis</div>
-            <div class="chip" onclick="toggleChip(this)">Cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Sjögren's syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Antiphospholipid syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Behçet's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Giant cell arteritis</div>
+            <div class="chip" onclick="toggleChip(this)">Mixed connective tissue disease</div>
+            <div class="chip" onclick="toggleChip(this)">Scleroderma / Systemic sclerosis</div>
+            <div class="chip" onclick="toggleChip(this)">Polymyositis / Dermatomyositis</div>
+
+            <span class="chip-group-label" data-group="derm">Dermatological</span>
+            <div class="chip" onclick="toggleChip(this)">Psoriasis</div>
+            <div class="chip" onclick="toggleChip(this)">Eczema / Atopic dermatitis</div>
+            <div class="chip" onclick="toggleChip(this)">Rosacea</div>
+            <div class="chip" onclick="toggleChip(this)">Vitiligo</div>
+            <div class="chip" onclick="toggleChip(this)">Alopecia areata</div>
+            <div class="chip" onclick="toggleChip(this)">Hidradenitis suppurativa</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic urticaria (hives)</div>
+            <div class="chip" onclick="toggleChip(this)">Pemphigus / Pemphigoid</div>
+            <div class="chip" onclick="toggleChip(this)">Acne (severe / chronic)</div>
+
+            <span class="chip-group-label" data-group="repro">Reproductive & Hormonal</span>
+            <div class="chip" onclick="toggleChip(this)">PCOS</div>
+            <div class="chip" onclick="toggleChip(this)">Endometriosis</div>
+            <div class="chip" onclick="toggleChip(this)">Uterine fibroids</div>
+            <div class="chip" onclick="toggleChip(this)">Premature ovarian insufficiency</div>
+            <div class="chip" onclick="toggleChip(this)">Pelvic floor dysfunction</div>
+            <div class="chip" onclick="toggleChip(this)">Infertility</div>
+
+            <span class="chip-group-label" data-group="renal">Renal & Urological</span>
+            <div class="chip" onclick="toggleChip(this)">Chronic kidney disease (CKD)</div>
+            <div class="chip" onclick="toggleChip(this)">Kidney stones (recurrent)</div>
+            <div class="chip" onclick="toggleChip(this)">Polycystic kidney disease</div>
+            <div class="chip" onclick="toggleChip(this)">Overactive bladder</div>
+            <div class="chip" onclick="toggleChip(this)">Interstitial cystitis</div>
+            <div class="chip" onclick="toggleChip(this)">Urinary incontinence</div>
+            <div class="chip" onclick="toggleChip(this)">Benign prostatic hyperplasia (BPH)</div>
+
+            <span class="chip-group-label" data-group="blood">Blood & Hematological</span>
+            <div class="chip" onclick="toggleChip(this)">Anemia (iron deficiency)</div>
+            <div class="chip" onclick="toggleChip(this)">Anemia (B12 / pernicious)</div>
+            <div class="chip" onclick="toggleChip(this)">Sickle cell disease</div>
+            <div class="chip" onclick="toggleChip(this)">Thalassemia</div>
+            <div class="chip" onclick="toggleChip(this)">Hemophilia</div>
+            <div class="chip" onclick="toggleChip(this)">Von Willebrand disease</div>
+            <div class="chip" onclick="toggleChip(this)">Thrombocytopenia</div>
+            <div class="chip" onclick="toggleChip(this)">Polycythemia vera</div>
+
+            <span class="chip-group-label" data-group="cancer">Cancer (history or active)</span>
+            <div class="chip" onclick="toggleChip(this)">Breast cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Prostate cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Colorectal cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Lung cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Skin cancer / Melanoma</div>
+            <div class="chip" onclick="toggleChip(this)">Thyroid cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Cervical cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Ovarian cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Bladder cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Pancreatic cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Leukemia</div>
+            <div class="chip" onclick="toggleChip(this)">Lymphoma</div>
+            <div class="chip" onclick="toggleChip(this)">Multiple myeloma</div>
+            <div class="chip" onclick="toggleChip(this)">Brain tumor</div>
+            <div class="chip" onclick="toggleChip(this)">Kidney cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Uterine / Endometrial cancer</div>
+
+            <span class="chip-group-label" data-group="sensory">Sensory</span>
+            <div class="chip" onclick="toggleChip(this)">Hearing loss</div>
+            <div class="chip" onclick="toggleChip(this)">Glaucoma</div>
+            <div class="chip" onclick="toggleChip(this)">Macular degeneration</div>
+            <div class="chip" onclick="toggleChip(this)">Cataracts</div>
+            <div class="chip" onclick="toggleChip(this)">Retinitis pigmentosa</div>
+            <div class="chip" onclick="toggleChip(this)">Legal blindness / Low vision</div>
+            <div class="chip" onclick="toggleChip(this)">Color blindness</div>
+
+            <span class="chip-group-label" data-group="infectious">Infectious & Immune</span>
+            <div class="chip" onclick="toggleChip(this)">HIV / AIDS</div>
+            <div class="chip" onclick="toggleChip(this)">Long COVID</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic Lyme disease</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic EBV / Mono</div>
+            <div class="chip" onclick="toggleChip(this)">Primary immunodeficiency</div>
+
+            <span class="chip-group-label" data-group="other">Other / Systemic</span>
+            <div class="chip" onclick="toggleChip(this)">Chronic fatigue syndrome (ME/CFS)</div>
+            <div class="chip" onclick="toggleChip(this)">Mast cell activation syndrome (MCAS)</div>
             <div class="chip" onclick="toggleChip(this)">Chronic pain</div>
-            <div class="chip" onclick="toggleChip(this)">Kidney disease</div>
+            <div class="chip" onclick="toggleChip(this)">Hypermobility syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Obesity / Metabolic obesity</div>
+            <div class="chip" onclick="toggleChip(this)">Lymphedema</div>
+            <div class="chip" onclick="toggleChip(this)">Amyloidosis</div>
+            <div class="chip" onclick="toggleChip(this)">Rare / undiagnosed condition</div>
+
           </div>
           <div class="chip-add-row">
-            <input type="text" id="custom-condition-input" placeholder="Add another condition…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomChip()}" />
+            <input type="text" id="custom-condition-input" placeholder="Add a condition not listed…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomChip()}" />
             <button type="button" class="btn-sm" onclick="addCustomChip()">Add</button>
           </div>
           <input type="hidden" name="health.conditions" id="conditions-value" />
@@ -456,6 +678,28 @@ function addPet() {
 function togglePassedDate(select, fieldId) {
   const el = document.getElementById(fieldId);
   if (el) el.style.display = select.value === 'Passed away' ? 'flex' : 'none';
+}
+
+// ── Chip filter ────────────────────────────────────────────────
+function filterChips() {
+  const q = document.getElementById('chip-search').value.toLowerCase();
+  const grid = document.getElementById('conditions-grid');
+  const labels = grid.querySelectorAll('.chip-group-label');
+  const chips = grid.querySelectorAll('.chip');
+
+  chips.forEach(chip => {
+    chip.style.display = (!q || chip.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+
+  labels.forEach(label => {
+    let next = label.nextElementSibling;
+    let visible = false;
+    while (next && !next.classList.contains('chip-group-label')) {
+      if (next.classList.contains('chip') && next.style.display !== 'none') visible = true;
+      next = next.nextElementSibling;
+    }
+    label.style.display = visible ? '' : 'none';
+  });
 }
 
 // ── Health condition chips ──────────────────────────────────────
