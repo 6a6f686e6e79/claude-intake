@@ -159,9 +159,56 @@
       </div>
       <div class="card">
         <h2><span class="icon">💪</span> Wellness</h2>
-        <div class="grid-2">
-          <div class="field"><label>Health conditions (optional)</label><input type="text" name="health.conditions" placeholder="Diabetes, hypertension…" /></div>
-          <div class="field"><label>Exercise habits</label><input type="text" name="health.exercise" placeholder="Run 3x/week, yoga…" /></div>
+
+        <div class="field" style="margin-bottom:18px">
+          <label>Health conditions <span style="font-weight:400;opacity:0.6">(select all that apply)</span></label>
+          <div class="chip-grid" id="conditions-grid">
+            <!-- Mental health -->
+            <span class="chip-group-label">Mental Health</span>
+            <div class="chip" onclick="toggleChip(this)">ADHD</div>
+            <div class="chip" onclick="toggleChip(this)">Anxiety</div>
+            <div class="chip" onclick="toggleChip(this)">Bipolar I</div>
+            <div class="chip" onclick="toggleChip(this)">Bipolar II</div>
+            <div class="chip" onclick="toggleChip(this)">Depression</div>
+            <div class="chip" onclick="toggleChip(this)">OCD</div>
+            <div class="chip" onclick="toggleChip(this)">PTSD</div>
+            <div class="chip" onclick="toggleChip(this)">Autism / ASD</div>
+            <div class="chip" onclick="toggleChip(this)">BPD</div>
+            <div class="chip" onclick="toggleChip(this)">Schizophrenia</div>
+            <div class="chip" onclick="toggleChip(this)">Eating disorder</div>
+            <!-- Physical -->
+            <span class="chip-group-label" style="margin-top:10px">Physical Health</span>
+            <div class="chip" onclick="toggleChip(this)">Diabetes (Type 1)</div>
+            <div class="chip" onclick="toggleChip(this)">Diabetes (Type 2)</div>
+            <div class="chip" onclick="toggleChip(this)">Hypertension</div>
+            <div class="chip" onclick="toggleChip(this)">Asthma</div>
+            <div class="chip" onclick="toggleChip(this)">Hypothyroidism</div>
+            <div class="chip" onclick="toggleChip(this)">Hyperthyroidism</div>
+            <div class="chip" onclick="toggleChip(this)">Arthritis</div>
+            <div class="chip" onclick="toggleChip(this)">Celiac disease</div>
+            <div class="chip" onclick="toggleChip(this)">Crohn's / IBD</div>
+            <div class="chip" onclick="toggleChip(this)">IBS</div>
+            <div class="chip" onclick="toggleChip(this)">Migraine</div>
+            <div class="chip" onclick="toggleChip(this)">Sleep apnea</div>
+            <div class="chip" onclick="toggleChip(this)">Epilepsy</div>
+            <div class="chip" onclick="toggleChip(this)">Heart disease</div>
+            <div class="chip" onclick="toggleChip(this)">Fibromyalgia</div>
+            <div class="chip" onclick="toggleChip(this)">Lupus</div>
+            <div class="chip" onclick="toggleChip(this)">Multiple sclerosis</div>
+            <div class="chip" onclick="toggleChip(this)">Cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic pain</div>
+            <div class="chip" onclick="toggleChip(this)">Kidney disease</div>
+          </div>
+          <div class="chip-add-row">
+            <input type="text" id="custom-condition-input" placeholder="Add another condition…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomChip()}" />
+            <button type="button" class="btn-sm" onclick="addCustomChip()">Add</button>
+          </div>
+          <input type="hidden" name="health.conditions" id="conditions-value" />
+        </div>
+
+        <div class="field">
+          <label>Exercise habits</label>
+          <input type="text" name="health.exercise" placeholder="Run 3x/week, yoga…" />
         </div>
         <div class="field" style="margin-top:14px"><label>Health notes</label><textarea name="health.notes" placeholder="Anything else Claude should know about your health…"></textarea></div>
       </div>
@@ -409,6 +456,32 @@ function addPet() {
 function togglePassedDate(select, fieldId) {
   const el = document.getElementById(fieldId);
   if (el) el.style.display = select.value === 'Passed away' ? 'flex' : 'none';
+}
+
+// ── Health condition chips ──────────────────────────────────────
+function toggleChip(chip) {
+  chip.classList.toggle('selected');
+  syncConditionsValue();
+}
+
+function addCustomChip() {
+  const input = document.getElementById('custom-condition-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const grid = document.getElementById('conditions-grid');
+  const chip = document.createElement('div');
+  chip.className = 'chip selected';
+  chip.textContent = val;
+  chip.onclick = () => { toggleChip(chip); };
+  grid.appendChild(chip);
+  input.value = '';
+  syncConditionsValue();
+}
+
+function syncConditionsValue() {
+  const selected = [...document.querySelectorAll('#conditions-grid .chip.selected')]
+    .map(c => c.textContent.trim());
+  document.getElementById('conditions-value').value = selected.join(', ');
 }
 
 // ── Collect form data ───────────────────────────────────────────

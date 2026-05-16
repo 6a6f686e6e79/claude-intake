@@ -219,6 +219,60 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
 }
 .add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 
+/* Chips */
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.chip-group-label {
+  width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: -2px;
+}
+.chip {
+  padding: 5px 13px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text);
+  user-select: none;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.chip-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.chip-add-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.chip-add-row input:focus { outline: none; border-color: var(--accent); }
+
 /* Freeform */
 .freeform-area {
   width: 100%;
