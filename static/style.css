@@ -12,6 +12,19 @@
   --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
 }
 
+html[data-theme="dark"] {
+  --bg: #0f0f11;
+  --surface: #1a1a1f;
+  --border: #2c2c35;
+  --accent: #8b6fff;
+  --accent-light: #1e1833;
+  --text: #edecf0;
+  --muted: #8a8899;
+  --success: #4ade80;
+  --success-bg: #0d2318;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -35,7 +48,9 @@ header {
 .logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.3px; }
 .logo span { color: var(--text); font-weight: 400; }
 
-.settings-toggle {
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+.settings-toggle, .theme-toggle {
   background: none;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -45,7 +60,8 @@ header {
   color: var(--muted);
   transition: all 0.15s;
 }
-.settings-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.settings-toggle:hover, .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.theme-toggle { padding: 6px 10px; font-size: 16px; }
 
 .settings-panel {
   background: #faf9ff;

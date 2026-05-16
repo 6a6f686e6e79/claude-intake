@@ -10,7 +10,10 @@
 
 <header>
   <div class="logo">claude<span>intake</span></div>
-  <button class="settings-toggle" onclick="toggleSettings()">⚙ Settings</button>
+  <div class="header-actions">
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <button class="settings-toggle" onclick="toggleSettings()">⚙ Settings</button>
+  </div>
 </header>
 
 <div class="settings-panel" id="settings-panel">
@@ -34,6 +37,7 @@
     <button class="tab-btn" onclick="showTab('health', this)">Health</button>
     <button class="tab-btn" onclick="showTab('hobbies', this)">Hobbies</button>
     <button class="tab-btn" onclick="showTab('goals', this)">Goals</button>
+    <button class="tab-btn" onclick="showTab('comms', this)">Comms</button>
     <button class="tab-btn" onclick="showTab('freeform', this)">Free-form</button>
   </div>
 
@@ -190,6 +194,97 @@
       </div>
     </div>
 
+    <!-- COMMUNICATION PREFERENCES -->
+    <div class="tab-panel" id="tab-comms">
+      <div class="card">
+        <h2><span class="icon">💬</span> Response Style</h2>
+        <div class="grid-2">
+          <div class="field"><label>Tone preference</label>
+            <select name="comms.tone">
+              <option value="">Select…</option>
+              <option>Direct and blunt</option>
+              <option>Direct but warm</option>
+              <option>Conversational and casual</option>
+              <option>Formal and professional</option>
+              <option>Adapt to context</option>
+            </select>
+          </div>
+          <div class="field"><label>Response length</label>
+            <select name="comms.length">
+              <option value="">Select…</option>
+              <option>As concise as possible</option>
+              <option>Short unless depth is needed</option>
+              <option>Thorough by default</option>
+              <option>Match the complexity of the question</option>
+            </select>
+          </div>
+          <div class="field"><label>Formatting preference</label>
+            <select name="comms.formatting">
+              <option value="">Select…</option>
+              <option>Prose over bullet points</option>
+              <option>Bullet points and headers</option>
+              <option>No strong preference</option>
+              <option>Minimal formatting, plain text</option>
+            </select>
+          </div>
+          <div class="field"><label>Feedback style</label>
+            <select name="comms.feedback">
+              <option value="">Select…</option>
+              <option>Tell me when I'm wrong, directly</option>
+              <option>Diplomatic but honest</option>
+              <option>Validate first, then critique</option>
+              <option>Just give me the facts</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🚫</span> Things Claude Should Never Do</h2>
+        <div class="field">
+          <label>Behaviors you dislike (e.g. "don't placate me", "skip the preamble", "no excessive caveats")</label>
+          <textarea name="comms.never_do" placeholder="Don't start responses with 'Great question!', don't add unnecessary disclaimers, don't repeat what I just said back to me…"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">✅</span> Things Claude Should Always Do</h2>
+        <div class="field">
+          <label>Behaviors you want consistently (e.g. "always give me options", "push back if you disagree", "ask before assuming")</label>
+          <textarea name="comms.always_do" placeholder="Always tell me if you think I'm approaching something the wrong way. Always ask clarifying questions before diving in on big tasks…"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🧠</span> How You Think & Work</h2>
+        <div class="grid-2">
+          <div class="field"><label>Your working style</label>
+            <select name="comms.working_style">
+              <option value="">Select…</option>
+              <option>I think out loud — help me structure</option>
+              <option>I come in with a clear plan</option>
+              <option>I like to explore before deciding</option>
+              <option>I work in short focused bursts</option>
+              <option>I prefer async / written over verbal</option>
+            </select>
+          </div>
+          <div class="field"><label>When you're stuck, you want Claude to…</label>
+            <select name="comms.when_stuck">
+              <option value="">Select…</option>
+              <option>Just solve it</option>
+              <option>Walk me through it step by step</option>
+              <option>Ask what I've already tried</option>
+              <option>Give me options and let me choose</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Anything else about how you like to collaborate</label>
+          <textarea name="comms.other" placeholder="I get frustrated when… I work best when… The thing that helps me most is…"></textarea>
+        </div>
+      </div>
+    </div>
+
     <!-- FREE-FORM -->
     <div class="tab-panel" id="tab-freeform">
       <div class="card">
@@ -220,6 +315,26 @@
 <div id="toast"></div>
 
 <script>
+// ── Dark mode ───────────────────────────────────────────────────
+(function () {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.addEventListener('DOMContentLoaded', () => syncThemeIcon(saved));
+})();
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  syncThemeIcon(next);
+}
+
+function syncThemeIcon(theme) {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
 // ── Tab navigation ──────────────────────────────────────────────
 function showTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -279,7 +394,7 @@ function addPet() {
 function collectData() {
   const form = document.getElementById('intake-form');
   const elements = form.querySelectorAll('input, select, textarea');
-  const data = { personal: {}, family: { children: [] }, work: {}, pets: [], health: {}, hobbies: {}, goals: {}, freeform: '' };
+  const data = { personal: {}, family: { children: [] }, work: {}, pets: [], health: {}, hobbies: {}, goals: {}, comms: {}, freeform: '' };
 
   elements.forEach(el => {
     const name = el.name;

@@ -187,6 +187,30 @@ def build_memories(data):
             "content": "\n".join(lines),
         })
 
+    # --- Communication Preferences ---
+    c = data.get("comms", {})
+    lines = []
+    for label, key in [
+        ("Tone preference", "tone"), ("Response length", "length"),
+        ("Formatting preference", "formatting"), ("Feedback style", "feedback"),
+        ("Working style", "working_style"), ("When stuck, wants Claude to", "when_stuck"),
+    ]:
+        if c.get(key):
+            lines.append(f"{label}: {c[key]}")
+    if c.get("never_do"):
+        lines.append(f"\nNever do:\n{c['never_do']}")
+    if c.get("always_do"):
+        lines.append(f"\nAlways do:\n{c['always_do']}")
+    if c.get("other"):
+        lines.append(f"\nCollaboration notes:\n{c['other']}")
+    if lines:
+        memories.append({
+            "slug": "user-communication",
+            "description": "How the user wants Claude to communicate: tone, format, dos and don'ts",
+            "type": "feedback",
+            "content": "\n".join(lines),
+        })
+
     # --- Free-form ---
     freeform = data.get("freeform", "").strip()
     if freeform:
