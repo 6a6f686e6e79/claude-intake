@@ -224,15 +224,9 @@ def build_memories(data):
     ho = data.get("hobbies", {})
     lines = []
     if ho.get("interests"):
-        lines.append(f"Interests: {ho['interests']}")
-    if ho.get("sports"):
-        lines.append(f"Sports/fitness: {ho['sports']}")
-    if ho.get("creative"):
-        lines.append(f"Creative pursuits: {ho['creative']}")
-    if ho.get("tech"):
-        lines.append(f"Tech/gaming: {ho['tech']}")
+        lines.append(f"Interests & hobbies: {ho['interests']}")
     if ho.get("other"):
-        lines.append(f"Other hobbies: {ho['other']}")
+        lines.append(f"Additional notes: {ho['other']}")
     if lines:
         memories.append({
             "slug": "user-hobbies",

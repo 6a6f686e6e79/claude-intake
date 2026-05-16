@@ -439,13 +439,209 @@
     <!-- HOBBIES -->
     <div class="tab-panel" id="tab-hobbies">
       <div class="card">
-        <h2><span class="icon">🎯</span> Interests & Hobbies</h2>
-        <div class="grid-2">
-          <div class="field"><label>General interests (comma-separated)</label><input type="text" name="hobbies.interests" placeholder="Cooking, travel, history, sci-fi…" /></div>
-          <div class="field"><label>Sports / fitness</label><input type="text" name="hobbies.sports" placeholder="Golf, cycling, hiking…" /></div>
-          <div class="field"><label>Creative pursuits</label><input type="text" name="hobbies.creative" placeholder="Photography, guitar, writing…" /></div>
-          <div class="field"><label>Tech / gaming</label><input type="text" name="hobbies.tech" placeholder="PC gaming, home lab, ham radio…" /></div>
-          <div class="field" style="grid-column: 1/-1"><label>Other hobbies / passions</label><textarea name="hobbies.other" placeholder="Anything else you're into…"></textarea></div>
+        <h2><span class="icon">🎯</span> Interests & Hobbies <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <input type="text" id="hobbies-search" class="chip-search" placeholder="Filter hobbies…" oninput="filterChipGrid('hobbies-grid','hobbies-search')" />
+        <div class="chip-grid" id="hobbies-grid">
+
+          <span class="chip-group-label">Sports & Fitness</span>
+          <div class="chip" onclick="toggleHobby(this)">Running</div>
+          <div class="chip" onclick="toggleHobby(this)">Cycling</div>
+          <div class="chip" onclick="toggleHobby(this)">Swimming</div>
+          <div class="chip" onclick="toggleHobby(this)">Yoga</div>
+          <div class="chip" onclick="toggleHobby(this)">Weightlifting</div>
+          <div class="chip" onclick="toggleHobby(this)">CrossFit</div>
+          <div class="chip" onclick="toggleHobby(this)">Hiking</div>
+          <div class="chip" onclick="toggleHobby(this)">Rock climbing</div>
+          <div class="chip" onclick="toggleHobby(this)">Tennis</div>
+          <div class="chip" onclick="toggleHobby(this)">Pickleball</div>
+          <div class="chip" onclick="toggleHobby(this)">Golf</div>
+          <div class="chip" onclick="toggleHobby(this)">Basketball</div>
+          <div class="chip" onclick="toggleHobby(this)">Soccer</div>
+          <div class="chip" onclick="toggleHobby(this)">Baseball / Softball</div>
+          <div class="chip" onclick="toggleHobby(this)">Football</div>
+          <div class="chip" onclick="toggleHobby(this)">Volleyball</div>
+          <div class="chip" onclick="toggleHobby(this)">Martial arts</div>
+          <div class="chip" onclick="toggleHobby(this)">Boxing / Kickboxing</div>
+          <div class="chip" onclick="toggleHobby(this)">Dance</div>
+          <div class="chip" onclick="toggleHobby(this)">Pilates</div>
+          <div class="chip" onclick="toggleHobby(this)">Skiing / Snowboarding</div>
+          <div class="chip" onclick="toggleHobby(this)">Surfing</div>
+          <div class="chip" onclick="toggleHobby(this)">Skateboarding</div>
+          <div class="chip" onclick="toggleHobby(this)">Kayaking / Canoeing</div>
+          <div class="chip" onclick="toggleHobby(this)">Rowing</div>
+          <div class="chip" onclick="toggleHobby(this)">Triathlon</div>
+          <div class="chip" onclick="toggleHobby(this)">Ice skating / Hockey</div>
+          <div class="chip" onclick="toggleHobby(this)">Archery</div>
+          <div class="chip" onclick="toggleHobby(this)">Bowling</div>
+          <div class="chip" onclick="toggleHobby(this)">Gymnastics</div>
+          <div class="chip" onclick="toggleHobby(this)">Racquetball / Squash</div>
+          <div class="chip" onclick="toggleHobby(this)">Parkour</div>
+          <div class="chip" onclick="toggleHobby(this)">Mountain biking</div>
+          <div class="chip" onclick="toggleHobby(this)">Horseback riding</div>
+          <div class="chip" onclick="toggleHobby(this)">Shooting / Range</div>
+          <div class="chip" onclick="toggleHobby(this)">Fencing</div>
+          <div class="chip" onclick="toggleHobby(this)">Wrestling / BJJ</div>
+
+          <span class="chip-group-label">Outdoors & Nature</span>
+          <div class="chip" onclick="toggleHobby(this)">Camping</div>
+          <div class="chip" onclick="toggleHobby(this)">Backpacking</div>
+          <div class="chip" onclick="toggleHobby(this)">Fishing</div>
+          <div class="chip" onclick="toggleHobby(this)">Hunting</div>
+          <div class="chip" onclick="toggleHobby(this)">Birdwatching</div>
+          <div class="chip" onclick="toggleHobby(this)">Gardening</div>
+          <div class="chip" onclick="toggleHobby(this)">Stargazing / Astronomy</div>
+          <div class="chip" onclick="toggleHobby(this)">Mushroom foraging</div>
+          <div class="chip" onclick="toggleHobby(this)">Rock / mineral collecting</div>
+          <div class="chip" onclick="toggleHobby(this)">Wildlife photography</div>
+          <div class="chip" onclick="toggleHobby(this)">Beekeeping</div>
+          <div class="chip" onclick="toggleHobby(this)">Off-roading / 4x4</div>
+          <div class="chip" onclick="toggleHobby(this)">National park visits</div>
+          <div class="chip" onclick="toggleHobby(this)">Scuba diving / Snorkeling</div>
+
+          <span class="chip-group-label">Creative Arts</span>
+          <div class="chip" onclick="toggleHobby(this)">Painting</div>
+          <div class="chip" onclick="toggleHobby(this)">Drawing / Sketching</div>
+          <div class="chip" onclick="toggleHobby(this)">Sculpture / Ceramics</div>
+          <div class="chip" onclick="toggleHobby(this)">Photography</div>
+          <div class="chip" onclick="toggleHobby(this)">Videography / Filmmaking</div>
+          <div class="chip" onclick="toggleHobby(this)">Graphic design</div>
+          <div class="chip" onclick="toggleHobby(this)">Illustration</div>
+          <div class="chip" onclick="toggleHobby(this)">Woodworking</div>
+          <div class="chip" onclick="toggleHobby(this)">Metalworking / Welding</div>
+          <div class="chip" onclick="toggleHobby(this)">Jewelry making</div>
+          <div class="chip" onclick="toggleHobby(this)">Knitting / Crocheting</div>
+          <div class="chip" onclick="toggleHobby(this)">Sewing / Quilting</div>
+          <div class="chip" onclick="toggleHobby(this)">Calligraphy / Lettering</div>
+          <div class="chip" onclick="toggleHobby(this)">Origami</div>
+          <div class="chip" onclick="toggleHobby(this)">Scrapbooking</div>
+          <div class="chip" onclick="toggleHobby(this)">DIY / Home projects</div>
+          <div class="chip" onclick="toggleHobby(this)">Candle / Soap making</div>
+          <div class="chip" onclick="toggleHobby(this)">3D modeling / Rendering</div>
+          <div class="chip" onclick="toggleHobby(this)">Cosplay</div>
+          <div class="chip" onclick="toggleHobby(this)">Animation</div>
+          <div class="chip" onclick="toggleHobby(this)">Interior design</div>
+
+          <span class="chip-group-label">Music</span>
+          <div class="chip" onclick="toggleHobby(this)">Guitar</div>
+          <div class="chip" onclick="toggleHobby(this)">Piano / Keyboard</div>
+          <div class="chip" onclick="toggleHobby(this)">Drums / Percussion</div>
+          <div class="chip" onclick="toggleHobby(this)">Bass guitar</div>
+          <div class="chip" onclick="toggleHobby(this)">Violin / Strings</div>
+          <div class="chip" onclick="toggleHobby(this)">Cello</div>
+          <div class="chip" onclick="toggleHobby(this)">Trumpet / Brass</div>
+          <div class="chip" onclick="toggleHobby(this)">Saxophone / Woodwinds</div>
+          <div class="chip" onclick="toggleHobby(this)">Flute</div>
+          <div class="chip" onclick="toggleHobby(this)">Ukulele</div>
+          <div class="chip" onclick="toggleHobby(this)">Banjo / Mandolin</div>
+          <div class="chip" onclick="toggleHobby(this)">Singing / Vocals</div>
+          <div class="chip" onclick="toggleHobby(this)">Choir / Chorus</div>
+          <div class="chip" onclick="toggleHobby(this)">DJing</div>
+          <div class="chip" onclick="toggleHobby(this)">Music production / Beatmaking</div>
+          <div class="chip" onclick="toggleHobby(this)">Songwriting</div>
+          <div class="chip" onclick="toggleHobby(this)">Concert / Live music going</div>
+          <div class="chip" onclick="toggleHobby(this)">Vinyl record collecting</div>
+
+          <span class="chip-group-label">Tech & Gaming</span>
+          <div class="chip" onclick="toggleHobby(this)">PC gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">Console gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">Mobile gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">Retro gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">VR gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">Tabletop / Board games</div>
+          <div class="chip" onclick="toggleHobby(this)">Dungeons & Dragons / TTRPGs</div>
+          <div class="chip" onclick="toggleHobby(this)">Chess</div>
+          <div class="chip" onclick="toggleHobby(this)">Puzzles</div>
+          <div class="chip" onclick="toggleHobby(this)">Programming / Coding</div>
+          <div class="chip" onclick="toggleHobby(this)">Home lab / Self-hosting</div>
+          <div class="chip" onclick="toggleHobby(this)">Home automation / Smart home</div>
+          <div class="chip" onclick="toggleHobby(this)">3D printing</div>
+          <div class="chip" onclick="toggleHobby(this)">Electronics / Arduino</div>
+          <div class="chip" onclick="toggleHobby(this)">Robotics</div>
+          <div class="chip" onclick="toggleHobby(this)">Amateur radio (Ham)</div>
+          <div class="chip" onclick="toggleHobby(this)">Streaming / Content creation</div>
+          <div class="chip" onclick="toggleHobby(this)">Podcasting</div>
+          <div class="chip" onclick="toggleHobby(this)">Drone flying / FPV</div>
+          <div class="chip" onclick="toggleHobby(this)">Sim racing</div>
+
+          <span class="chip-group-label">Food & Drink</span>
+          <div class="chip" onclick="toggleHobby(this)">Cooking</div>
+          <div class="chip" onclick="toggleHobby(this)">Baking</div>
+          <div class="chip" onclick="toggleHobby(this)">Grilling / BBQ / Smoking</div>
+          <div class="chip" onclick="toggleHobby(this)">Wine tasting</div>
+          <div class="chip" onclick="toggleHobby(this)">Craft beer / Brewing</div>
+          <div class="chip" onclick="toggleHobby(this)">Cocktails / Mixology</div>
+          <div class="chip" onclick="toggleHobby(this)">Coffee / Espresso</div>
+          <div class="chip" onclick="toggleHobby(this)">Tea</div>
+          <div class="chip" onclick="toggleHobby(this)">Sourdough / Bread baking</div>
+          <div class="chip" onclick="toggleHobby(this)">Fermentation / Kombucha</div>
+          <div class="chip" onclick="toggleHobby(this)">Restaurant / Food exploring</div>
+          <div class="chip" onclick="toggleHobby(this)">Food photography</div>
+          <div class="chip" onclick="toggleHobby(this)">Meal prepping</div>
+          <div class="chip" onclick="toggleHobby(this)">Foraging</div>
+          <div class="chip" onclick="toggleHobby(this)">Cheesemaking</div>
+
+          <span class="chip-group-label">Reading & Learning</span>
+          <div class="chip" onclick="toggleHobby(this)">Fiction reading</div>
+          <div class="chip" onclick="toggleHobby(this)">Non-fiction reading</div>
+          <div class="chip" onclick="toggleHobby(this)">Audiobooks</div>
+          <div class="chip" onclick="toggleHobby(this)">History</div>
+          <div class="chip" onclick="toggleHobby(this)">Philosophy</div>
+          <div class="chip" onclick="toggleHobby(this)">Science</div>
+          <div class="chip" onclick="toggleHobby(this)">True crime</div>
+          <div class="chip" onclick="toggleHobby(this)">Biographies / Memoirs</div>
+          <div class="chip" onclick="toggleHobby(this)">Comic books / Manga</div>
+          <div class="chip" onclick="toggleHobby(this)">Language learning</div>
+          <div class="chip" onclick="toggleHobby(this)">Online courses / MOOCs</div>
+          <div class="chip" onclick="toggleHobby(this)">Writing / Journaling</div>
+          <div class="chip" onclick="toggleHobby(this)">Poetry</div>
+          <div class="chip" onclick="toggleHobby(this)">Screenwriting</div>
+
+          <span class="chip-group-label">Travel & Culture</span>
+          <div class="chip" onclick="toggleHobby(this)">Travel</div>
+          <div class="chip" onclick="toggleHobby(this)">Road trips</div>
+          <div class="chip" onclick="toggleHobby(this)">Backpacking travel</div>
+          <div class="chip" onclick="toggleHobby(this)">Museum visits</div>
+          <div class="chip" onclick="toggleHobby(this)">Theater / Opera</div>
+          <div class="chip" onclick="toggleHobby(this)">Film / Cinema</div>
+          <div class="chip" onclick="toggleHobby(this)">Antiquing</div>
+          <div class="chip" onclick="toggleHobby(this)">Cultural events / Festivals</div>
+
+          <span class="chip-group-label">Collecting</span>
+          <div class="chip" onclick="toggleHobby(this)">Vinyl records</div>
+          <div class="chip" onclick="toggleHobby(this)">Books</div>
+          <div class="chip" onclick="toggleHobby(this)">Comics / Graphic novels</div>
+          <div class="chip" onclick="toggleHobby(this)">Trading cards</div>
+          <div class="chip" onclick="toggleHobby(this)">Coins / Stamps</div>
+          <div class="chip" onclick="toggleHobby(this)">Sports memorabilia</div>
+          <div class="chip" onclick="toggleHobby(this)">Sneakers</div>
+          <div class="chip" onclick="toggleHobby(this)">Watches</div>
+          <div class="chip" onclick="toggleHobby(this)">Art</div>
+          <div class="chip" onclick="toggleHobby(this)">Antiques / Vintage</div>
+          <div class="chip" onclick="toggleHobby(this)">Action figures / Funko</div>
+          <div class="chip" onclick="toggleHobby(this)">Wine</div>
+          <div class="chip" onclick="toggleHobby(this)">Whiskey / Spirits</div>
+
+          <span class="chip-group-label">Social & Community</span>
+          <div class="chip" onclick="toggleHobby(this)">Volunteering</div>
+          <div class="chip" onclick="toggleHobby(this)">Mentoring</div>
+          <div class="chip" onclick="toggleHobby(this)">Community organizing</div>
+          <div class="chip" onclick="toggleHobby(this)">Religious / Spiritual practice</div>
+          <div class="chip" onclick="toggleHobby(this)">Book clubs</div>
+          <div class="chip" onclick="toggleHobby(this)">Game nights</div>
+          <div class="chip" onclick="toggleHobby(this)">Trivia nights</div>
+          <div class="chip" onclick="toggleHobby(this)">Hosting / Entertaining</div>
+          <div class="chip" onclick="toggleHobby(this)">Improv / Stand-up comedy</div>
+          <div class="chip" onclick="toggleHobby(this)">Meditation / Mindfulness</div>
+
+        </div>
+        <div class="chip-add-row">
+          <input type="text" id="custom-hobby-input" placeholder="Add a hobby not listed…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomHobby()}" />
+          <button type="button" class="btn-sm" onclick="addCustomHobby()">Add</button>
+        </div>
+        <input type="hidden" name="hobbies.interests" id="hobbies-value" />
+        <div class="field" style="margin-top:16px">
+          <label>Anything else <span style="font-weight:400;opacity:0.6">(passions, niche interests, context)</span></label>
+          <textarea name="hobbies.other" placeholder="I'm really into competitive BBQ, I've been restoring a '68 Mustang for 3 years…"></textarea>
         </div>
       </div>
     </div>
@@ -659,8 +855,36 @@ function addPet() {
   row.innerHTML = `
     <div class="fields">
       <div class="field"><label>Name</label><input type="text" name="pets[${idx}].name" placeholder="Toby" /></div>
-      <div class="field"><label>Species</label><input type="text" name="pets[${idx}].species" placeholder="Dog, Cat…" /></div>
-      <div class="field"><label>Breed</label><input type="text" name="pets[${idx}].breed" placeholder="Miniature Schnauzer" /></div>
+      <div class="field"><label>Species</label>
+        <select name="pets[${idx}].species" onchange="updateBreedHints(this,${idx})">
+          <option value="">Select…</option>
+          <optgroup label="Common">
+            <option>Dog</option><option>Cat</option><option>Bird</option><option>Fish</option>
+            <option>Rabbit</option><option>Guinea pig</option><option>Hamster</option>
+            <option>Gerbil</option><option>Rat</option><option>Mouse</option>
+          </optgroup>
+          <optgroup label="Reptiles & Amphibians">
+            <option>Turtle / Tortoise</option><option>Snake</option><option>Lizard</option>
+            <option>Gecko</option><option>Bearded dragon</option><option>Chameleon</option>
+            <option>Frog / Toad</option><option>Axolotl</option>
+          </optgroup>
+          <optgroup label="Birds (specific)">
+            <option>Parrot</option><option>Cockatiel</option><option>Parakeet / Budgie</option>
+            <option>Canary</option><option>Finch</option><option>Macaw</option>
+            <option>Cockatoo</option><option>Conure</option>
+          </optgroup>
+          <optgroup label="Larger Animals">
+            <option>Horse</option><option>Pony</option><option>Donkey</option>
+            <option>Goat</option><option>Sheep</option><option>Pig / Potbelly pig</option>
+            <option>Chicken</option><option>Duck</option><option>Alpaca / Llama</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option>Ferret</option><option>Hedgehog</option><option>Sugar glider</option>
+            <option>Chinchilla</option><option>Degu</option><option>Other</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field"><label>Breed <span style="font-size:11px;opacity:0.6" id="breed-hint-${idx}"></span></label><input type="text" name="pets[${idx}].breed" placeholder="e.g. Miniature Schnauzer" id="breed-input-${idx}" /></div>
       <div class="field"><label>Birthday (month/year)</label><input type="month" name="pets[${idx}].birthday" /></div>
       <div class="field"><label>Status</label>
         <select name="pets[${idx}].status" onchange="togglePassedDate(this,'pet-passed-${idx}')">
@@ -675,23 +899,39 @@ function addPet() {
   group.appendChild(row);
 }
 
+const BREED_HINTS = {
+  'Dog': 'e.g. Labrador, Poodle, Schnauzer…',
+  'Cat': 'e.g. Tabby, Siamese, Maine Coon…',
+  'Bird': 'e.g. Budgie, Cockatiel…',
+  'Parrot': 'e.g. African Grey, Amazon…',
+  'Rabbit': 'e.g. Holland Lop, Rex…',
+  'Horse': 'e.g. Quarter Horse, Thoroughbred…',
+  'Snake': 'e.g. Ball Python, Corn Snake…',
+  'Lizard': 'e.g. Bearded Dragon, Leopard Gecko…',
+};
+function updateBreedHints(select, idx) {
+  const hint = document.getElementById(`breed-hint-${idx}`);
+  const input = document.getElementById(`breed-input-${idx}`);
+  if (hint && input) {
+    const h = BREED_HINTS[select.value] || '';
+    hint.textContent = h ? `(${h})` : '';
+    input.placeholder = h || 'Breed';
+  }
+}
+
 function togglePassedDate(select, fieldId) {
   const el = document.getElementById(fieldId);
   if (el) el.style.display = select.value === 'Passed away' ? 'flex' : 'none';
 }
 
-// ── Chip filter ────────────────────────────────────────────────
-function filterChips() {
-  const q = document.getElementById('chip-search').value.toLowerCase();
-  const grid = document.getElementById('conditions-grid');
-  const labels = grid.querySelectorAll('.chip-group-label');
-  const chips = grid.querySelectorAll('.chip');
-
-  chips.forEach(chip => {
+// ── Chip filter (generic) ───────────────────────────────────────
+function filterChipGrid(gridId, searchId) {
+  const q = document.getElementById(searchId).value.toLowerCase();
+  const grid = document.getElementById(gridId);
+  grid.querySelectorAll('.chip').forEach(chip => {
     chip.style.display = (!q || chip.textContent.toLowerCase().includes(q)) ? '' : 'none';
   });
-
-  labels.forEach(label => {
+  grid.querySelectorAll('.chip-group-label').forEach(label => {
     let next = label.nextElementSibling;
     let visible = false;
     while (next && !next.classList.contains('chip-group-label')) {
@@ -701,6 +941,8 @@ function filterChips() {
     label.style.display = visible ? '' : 'none';
   });
 }
+// Legacy alias for health conditions grid
+function filterChips() { filterChipGrid('conditions-grid', 'chip-search'); }
 
 // ── Health condition chips ──────────────────────────────────────
 function toggleChip(chip) {
@@ -726,6 +968,32 @@ function syncConditionsValue() {
   const selected = [...document.querySelectorAll('#conditions-grid .chip.selected')]
     .map(c => c.textContent.trim());
   document.getElementById('conditions-value').value = selected.join(', ');
+}
+
+// ── Hobby chips ─────────────────────────────────────────────────
+function toggleHobby(chip) {
+  chip.classList.toggle('selected');
+  syncHobbiesValue();
+}
+
+function addCustomHobby() {
+  const input = document.getElementById('custom-hobby-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const grid = document.getElementById('hobbies-grid');
+  const chip = document.createElement('div');
+  chip.className = 'chip selected';
+  chip.textContent = val;
+  chip.onclick = () => { toggleHobby(chip); };
+  grid.appendChild(chip);
+  input.value = '';
+  syncHobbiesValue();
+}
+
+function syncHobbiesValue() {
+  const selected = [...document.querySelectorAll('#hobbies-grid .chip.selected')]
+    .map(c => c.textContent.trim());
+  document.getElementById('hobbies-value').value = selected.join(', ');
 }
 
 // ── Collect form data ───────────────────────────────────────────
