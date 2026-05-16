@@ -190,8 +190,8 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
   border-radius: 8px;
   padding: 12px;
 }
-.repeat-row .fields { display: flex; flex: 1; gap: 10px; flex-wrap: wrap; }
-.repeat-row .fields .field { flex: 1; min-width: 120px; }
+.repeat-row .fields { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+.repeat-row .fields .field { min-width: 0; }
 .remove-btn {
   background: none;
   border: 1px solid var(--border);

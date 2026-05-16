@@ -36,6 +36,7 @@
     <button class="tab-btn" onclick="showTab('pets', this)">Pets</button>
     <button class="tab-btn" onclick="showTab('health', this)">Health</button>
     <button class="tab-btn" onclick="showTab('hobbies', this)">Hobbies</button>
+    <button class="tab-btn" onclick="showTab('identity', this)">Identity</button>
     <button class="tab-btn" onclick="showTab('goals', this)">Goals</button>
     <button class="tab-btn" onclick="showTab('comms', this)">Comms</button>
     <button class="tab-btn" onclick="showTab('freeform', this)">Free-form</button>
@@ -646,6 +647,255 @@
       </div>
     </div>
 
+    <!-- IDENTITY -->
+    <div class="tab-panel" id="tab-identity">
+      <div class="card">
+        <h2><span class="icon">🗳️</span> Politics <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Political Identity <span style="font-weight:400;opacity:0.6">how you identify yourself</span></label>
+        <div class="chip-grid" id="ideology-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Liberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Conservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Progressive</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Libertarian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Socialist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Democratic Socialist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Social Democrat</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Classical Liberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Neoliberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Neoconservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Fiscal Conservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Socially Liberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Populist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nationalist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Centrist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anarchist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Apolitical</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.ideology" id="ideology-value" />
+        <label style="display:block;margin:16px 0 8px;font-size:13px;font-weight:500">Party / Affiliation</label>
+        <div class="chip-grid" id="political-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Democrat</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Republican</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Independent</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Libertarian Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Green Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Working Families Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Constitution Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Reform Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-partisan</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.political" id="political-value" />
+        <label style="display:block;margin:16px 0 8px;font-size:13px;font-weight:500">Leaning <span style="font-weight:400;opacity:0.6">(select one)</span></label>
+        <div class="chip-grid" id="leaning-grid" data-single-select="true">
+          <div class="chip" onclick="toggleChipInGrid(this)">Far left</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Left</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Center-left</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Centrist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Center-right</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Right</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Far right</div>
+        </div>
+        <input type="hidden" name="identity.leaning" id="leaning-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🏳️‍🌈</span> Sexuality &amp; Orientation <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="sexuality-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Straight / Heterosexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gay</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Lesbian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Bisexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pansexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Asexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Demisexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Queer</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Fluid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Aromantic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Questioning</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.sexuality" id="sexuality-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">⚧️</span> Gender Identity <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="gender-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Man</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Woman</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-binary</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Genderfluid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Genderqueer</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Transgender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Agender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Bigender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Two-spirit</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Intersex</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.gender" id="gender-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🕊️</span> Religion &amp; Spirituality <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="religion-grid">
+          <span class="chip-group-label">Christian</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Catholic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Protestant</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Evangelical / Born-again</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Baptist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Methodist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Lutheran</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Episcopal / Anglican</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pentecostal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Eastern Orthodox</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Latter-day Saint (LDS)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jehovah's Witness</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-denominational Christian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Christian (general)</div>
+
+          <span class="chip-group-label">Jewish</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Reform)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Conservative)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Orthodox)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Reconstructionist)</div>
+
+          <span class="chip-group-label">Muslim</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Sunni)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Shia)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Sufi)</div>
+
+          <span class="chip-group-label">Eastern</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Hindu</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Theravada)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Mahayana)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Zen)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Sikh</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jain</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Baha'i</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Zoroastrian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Taoist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Shinto</div>
+
+          <span class="chip-group-label">Pagan &amp; Alternative</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pagan</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Wiccan</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Druid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Norse / Heathen</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">New Age / Spiritual</div>
+
+          <span class="chip-group-label">Non-religious</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Spiritual but not religious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Agnostic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Atheist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Secular Humanist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-religious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.religion" id="religion-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">✊</span> Causes &amp; Issues <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <input type="text" id="causes-search" class="chip-search" placeholder="Filter causes…" oninput="filterChipGrid('causes-grid','causes-search')" />
+        <div class="chip-grid" id="causes-grid">
+
+          <span class="chip-group-label">Social Justice</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Racial justice</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gender equality</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">LGBTQ+ rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Disability rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Indigenous rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Criminal justice reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Immigration reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Voting rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Affordable housing</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-racism</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Police reform</div>
+
+          <span class="chip-group-label">Environment &amp; Animals</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Climate change action</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Renewable energy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Environmental conservation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Animal rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Animal welfare</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Veganism / plant-based living</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Ocean conservation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Wildlife protection</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-factory farming</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Plastic pollution reduction</div>
+
+          <span class="chip-group-label">Health &amp; Social Welfare</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Universal healthcare</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Affordable healthcare</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Mental health advocacy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Reproductive rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Abortion access</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Drug policy reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Harm reduction</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">End homelessness</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Food security / Hunger</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Maternal &amp; child health</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Elder care</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Children's welfare</div>
+
+          <span class="chip-group-label">Economic</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Wealth inequality</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Living wage</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Labor rights / Unions</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Universal basic income</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Student debt relief</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Affordable education</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Small business support</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-corporate power</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Free market / Deregulation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Tax reform</div>
+
+          <span class="chip-group-label">Civil Liberties &amp; Governance</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Campaign finance reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Government transparency</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Free speech</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Privacy / Anti-surveillance</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gun control</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gun rights / 2nd Amendment</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Civil liberties</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-corruption</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Term limits</div>
+
+          <span class="chip-group-label">Global &amp; Humanitarian</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Human rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Refugee &amp; asylum support</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Foreign aid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Global health</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Peace / Anti-war</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nuclear disarmament</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">International development</div>
+
+          <span class="chip-group-label">Technology &amp; Future</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">AI ethics / Safety</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Digital privacy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Net neutrality</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Tech regulation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Open source / Open internet</div>
+
+        </div>
+        <div class="chip-add-row">
+          <input type="text" id="custom-cause-input" placeholder="Add a cause not listed…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomChipToGrid('custom-cause-input','causes-grid','causes-value')}" />
+          <button type="button" class="btn-sm" onclick="addCustomChipToGrid('custom-cause-input','causes-grid','causes-value')">Add</button>
+        </div>
+        <input type="hidden" name="identity.causes" id="causes-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📝</span> Identity Notes</h2>
+        <div class="field">
+          <label>Anything else about your identity, values, or worldview</label>
+          <textarea name="identity.notes" placeholder="My faith is very important to me but I keep it private. I'm politically active but moderate on most issues…"></textarea>
+        </div>
+      </div>
+    </div>
+
     <!-- GOALS -->
     <div class="tab-panel" id="tab-goals">
       <div class="card">
@@ -884,7 +1134,7 @@ function addPet() {
           </optgroup>
         </select>
       </div>
-      <div class="field"><label>Breed <span style="font-size:11px;opacity:0.6" id="breed-hint-${idx}"></span></label><input type="text" name="pets[${idx}].breed" placeholder="e.g. Miniature Schnauzer" id="breed-input-${idx}" /></div>
+      <div class="field"><label>Breed <span style="font-size:11px;opacity:0.6" id="breed-hint-${idx}"></span></label><input type="text" name="pets[${idx}].breed" placeholder="Breed" id="breed-input-${idx}" list="breed-list-${idx}" autocomplete="off" /><datalist id="breed-list-${idx}"></datalist></div>
       <div class="field"><label>Birthday (month/year)</label><input type="month" name="pets[${idx}].birthday" /></div>
       <div class="field"><label>Status</label>
         <select name="pets[${idx}].status" onchange="togglePassedDate(this,'pet-passed-${idx}')">
@@ -899,6 +1149,31 @@ function addPet() {
   group.appendChild(row);
 }
 
+const BREED_OPTIONS = {
+  'Dog': ['Akita','Alaskan Malamute','Australian Shepherd','Basset Hound','Beagle','Bernese Mountain Dog','Bichon Frise','Bloodhound','Border Collie','Boston Terrier','Boxer','Bull Terrier','Bulldog','Cardigan Welsh Corgi','Cavalier King Charles Spaniel','Chihuahua','Chow Chow','Cocker Spaniel','Dachshund','Dalmatian','Doberman Pinscher','English Springer Spaniel','French Bulldog','German Shepherd','Golden Retriever','Great Dane','Greyhound','Irish Setter','Jack Russell Terrier','Labrador Retriever','Maltese','Miniature Schnauzer','Pembroke Welsh Corgi','Pit Bull','Pomeranian','Poodle','Rottweiler','Samoyed','Scottish Terrier','Shetland Sheepdog','Shih Tzu','Siberian Husky','Staffordshire Bull Terrier','Vizsla','Weimaraner','West Highland White Terrier','Whippet','Yorkshire Terrier','Mixed / Mutt'],
+  'Cat': ['Abyssinian','American Shorthair','Bengal','Birman','British Shorthair','Burmese','Cornish Rex','Devon Rex','Domestic Longhair','Domestic Shorthair','Exotic Shorthair','Himalayan','Maine Coon','Manx','Munchkin','Norwegian Forest Cat','Oriental Shorthair','Persian','Ragdoll','Russian Blue','Savannah','Scottish Fold','Siamese','Sphynx','Tabby','Tonkinese','Turkish Angora','Mixed'],
+  'Rabbit': ['American','Californian','Dutch','English Angora','Flemish Giant','Himalayan','Holland Lop','Lionhead','Mini Lop','Mini Rex','Netherland Dwarf','New Zealand','Polish','Rex','Mixed'],
+  'Guinea pig': ['Abyssinian','American','Baldwin','Crested','Peruvian','Rex','Silkie / Sheltie','Skinny pig','Teddy','Texel','Mixed'],
+  'Hamster': ['Chinese','Dwarf Campbell','Dwarf Winter White','Roborovski','Syrian','Mixed'],
+  'Rat': ['Dumbo','Hairless','Rex','Standard','Mixed'],
+  'Gerbil': ['Fat-tailed','Mongolian','Mixed'],
+  'Horse': ['Andalusian','Appaloosa','Arabian','Clydesdale','Friesian','Lipizzaner','Morgan','Mustang','Paint Horse','Percheron','Quarter Horse','Shetland Pony','Tennessee Walking Horse','Thoroughbred','Warmblood','Mixed'],
+  'Pony': ['Connemara','Dartmoor','Haflinger','New Forest','Shetland','Welsh','Mixed'],
+  'Bird': ['Budgie / Parakeet','Canary','Cockatiel','Finch','Lovebird','Mixed'],
+  'Parakeet / Budgie': ['American Budgie','English Budgie'],
+  'Parrot': ['African Grey','Amazon (Blue-fronted)','Amazon (Yellow-naped)','Caique','Eclectus','Green Cheek Conure','Jenday Conure','Lorikeet','Nanday Conure','Pionus','Senegal','Sun Conure','Mixed'],
+  'Cockatiel': ['Cinnamon','Lutino','Normal Grey','Pearl','Pied','Whiteface','Mixed'],
+  'Macaw': ['Blue-and-Gold','Green-winged','Hyacinth','Military','Scarlet','Mixed'],
+  'Cockatoo': ["Goffin's","Moluccan","Rose-breasted / Galah","Sulphur-crested","Umbrella","Mixed"],
+  'Conure': ['Dusky','Green Cheek','Jenday','Nanday','Patagonian','Sun','Mixed'],
+  'Snake': ['Ball Python','Blood Python','Boa Constrictor','Carpet Python','Corn Snake','Garter Snake','King Snake','Milk Snake','Western Hognose Snake','Mixed'],
+  'Lizard': ['Bearded Dragon','Blue-tongued Skink','Crested Gecko','Green Iguana','Leopard Gecko','Monitor Lizard','Tegu','Uromastyx','Mixed'],
+  'Gecko': ['Crested Gecko','Day Gecko','Fat-tailed Gecko','Gargoyle Gecko','Leopard Gecko','Tokay Gecko','Mixed'],
+  'Bearded dragon': ['Citrus','German Giant','Inland / Central','Leatherback','Silkback','Mixed'],
+  'Chameleon': ["Jackson's",'Panther','Veiled','Mixed'],
+  'Turtle / Tortoise': ['Aquatic Turtle','Box Turtle','Greek Tortoise',"Hermann's Tortoise",'Map Turtle','Painted Turtle','Red-eared Slider','Russian Tortoise','Sulcata / African Spurred','Mixed'],
+  'Fish': ['Angelfish','Betta','Cichlid','Clownfish','Corydora','Discus','Goldfish','Guppy','Koi','Molly','Platy','Pleco','Swordtail','Tang','Tetra','Mixed'],
+};
 const BREED_HINTS = {
   'Dog': 'e.g. Labrador, Poodle, Schnauzer…',
   'Cat': 'e.g. Tabby, Siamese, Maine Coon…',
@@ -912,11 +1187,12 @@ const BREED_HINTS = {
 function updateBreedHints(select, idx) {
   const hint = document.getElementById(`breed-hint-${idx}`);
   const input = document.getElementById(`breed-input-${idx}`);
-  if (hint && input) {
-    const h = BREED_HINTS[select.value] || '';
-    hint.textContent = h ? `(${h})` : '';
-    input.placeholder = h || 'Breed';
-  }
+  const datalist = document.getElementById(`breed-list-${idx}`);
+  const breeds = BREED_OPTIONS[select.value] || [];
+  const h = BREED_HINTS[select.value] || '';
+  if (hint) hint.textContent = h ? `(${h})` : '';
+  if (input) input.placeholder = breeds.length ? 'Type or choose a breed…' : 'Breed';
+  if (datalist) datalist.innerHTML = breeds.map(b => `<option value="${b}"></option>`).join('');
 }
 
 function togglePassedDate(select, fieldId) {
@@ -1000,7 +1276,7 @@ function syncHobbiesValue() {
 function collectData() {
   const form = document.getElementById('intake-form');
   const elements = form.querySelectorAll('input, select, textarea');
-  const data = { personal: {}, family: { children: [] }, work: {}, pets: [], health: {}, hobbies: {}, goals: {}, comms: {}, freeform: '' };
+  const data = { personal: {}, family: { children: [] }, work: {}, pets: [], health: {}, hobbies: {}, identity: {}, goals: {}, comms: {}, freeform: '' };
 
   elements.forEach(el => {
     const name = el.name;
@@ -1103,6 +1379,44 @@ function showToast(msg) {
 
 function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Identity / generic chip grid ────────────────────────────────
+function toggleChipInGrid(chip) {
+  const grid = chip.closest('.chip-grid');
+  const singleSelect = grid.dataset.singleSelect === 'true';
+  if (singleSelect) {
+    if (chip.classList.contains('selected')) {
+      chip.classList.remove('selected');
+    } else {
+      grid.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+    }
+  } else {
+    chip.classList.toggle('selected');
+  }
+  const valueId = grid.id.replace('-grid', '-value');
+  const hiddenEl = document.getElementById(valueId);
+  if (hiddenEl) {
+    hiddenEl.value = [...grid.querySelectorAll('.chip.selected')].map(c => c.textContent.trim()).join(', ');
+  }
+}
+
+function addCustomChipToGrid(inputId, gridId, valueId) {
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  if (!val) return;
+  const grid = document.getElementById(gridId);
+  const chip = document.createElement('div');
+  chip.className = 'chip selected';
+  chip.textContent = val;
+  chip.onclick = () => toggleChipInGrid(chip);
+  grid.appendChild(chip);
+  input.value = '';
+  const hiddenEl = document.getElementById(valueId);
+  if (hiddenEl) {
+    hiddenEl.value = [...grid.querySelectorAll('.chip.selected')].map(c => c.textContent.trim()).join(', ');
+  }
 }
 </script>
 </body>

@@ -235,6 +235,33 @@ def build_memories(data):
             "content": "\n".join(lines),
         })
 
+    # --- Identity ---
+    ident = data.get("identity", {})
+    lines = []
+    if ident.get("ideology"):
+        lines.append(f"Political identity: {ident['ideology']}")
+    if ident.get("political"):
+        lines.append(f"Party / affiliation: {ident['political']}")
+    if ident.get("leaning"):
+        lines.append(f"Political leaning: {ident['leaning']}")
+    if ident.get("sexuality"):
+        lines.append(f"Sexuality / orientation: {ident['sexuality']}")
+    if ident.get("gender"):
+        lines.append(f"Gender identity: {ident['gender']}")
+    if ident.get("religion"):
+        lines.append(f"Religion / spirituality: {ident['religion']}")
+    if ident.get("causes"):
+        lines.append(f"Causes & issues: {ident['causes']}")
+    if ident.get("notes"):
+        lines.append(f"Identity notes: {ident['notes']}")
+    if lines:
+        memories.append({
+            "slug": "user-identity",
+            "description": "User's political views, sexuality, gender identity, religion, and causes",
+            "type": "user",
+            "content": "\n".join(lines),
+        })
+
     # --- Goals ---
     g = data.get("goals", {})
     lines = []
