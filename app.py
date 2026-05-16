@@ -55,45 +55,30 @@ def update_memory_index(memory_path, slug, description, filename):
 
 
 def merge_content(existing_body, new_body):
-    """Append only fields from new_body that don't already exist in existing_body."""
-    existing_lower = existing_body.lower()
-    new_lines = new_body.strip().splitlines()
-    additions = []
-    skip_continuation = False
-    i = 0
-    while i < len(new_lines):
-        line = new_lines[i]
-        stripped = line.strip()
-        if not stripped:
-            i += 1
+    """Update existing key:value lines with new values; append keys not yet present."""
+    if not new_body.strip():
+        return existing_body.strip()
+
+    result_lines = existing_body.strip().splitlines()
+
+    for line in new_body.strip().splitlines():
+        if not line.strip():
             continue
         if ": " in line:
             key = line.split(": ")[0].strip().lower()
-            if f"{key}:" not in existing_lower:
-                additions.append(line)
-                skip_continuation = False
-            else:
-                skip_continuation = True
-        elif stripped.endswith(":"):
-            key = stripped.rstrip(":").lower()
-            if f"{key}:" not in existing_lower:
-                additions.append("")
-                additions.append(line)
-                skip_continuation = False
-            else:
-                skip_continuation = True
+            updated = False
+            for j, rl in enumerate(result_lines):
+                if rl.strip().lower().startswith(key + ":"):
+                    result_lines[j] = line
+                    updated = True
+                    break
+            if not updated:
+                result_lines.append(line)
         else:
-            if not skip_continuation:
-                additions.append(line)
-        i += 1
+            if line.strip() not in [rl.strip() for rl in result_lines]:
+                result_lines.append(line)
 
-    # Strip leading blank lines from additions
-    while additions and not additions[0].strip():
-        additions.pop(0)
-
-    if not additions:
-        return existing_body.strip()
-    return existing_body.strip() + "\n" + "\n".join(additions)
+    return "\n".join(result_lines)
 
 
 def write_memory_file(memory_path, slug, description, mem_type, content):
