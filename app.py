@@ -37,11 +37,63 @@ def update_memory_index(memory_path, slug, description, filename):
         memory_md.write_text(entry + "\n", encoding="utf-8")
 
 
+def merge_content(existing_body, new_body):
+    """Append only fields from new_body that don't already exist in existing_body."""
+    existing_lower = existing_body.lower()
+    new_lines = new_body.strip().splitlines()
+    additions = []
+    skip_continuation = False
+    i = 0
+    while i < len(new_lines):
+        line = new_lines[i]
+        stripped = line.strip()
+        if not stripped:
+            i += 1
+            continue
+        if ": " in line:
+            key = line.split(": ")[0].strip().lower()
+            if f"{key}:" not in existing_lower:
+                additions.append(line)
+                skip_continuation = False
+            else:
+                skip_continuation = True
+        elif stripped.endswith(":"):
+            key = stripped.rstrip(":").lower()
+            if f"{key}:" not in existing_lower:
+                additions.append("")
+                additions.append(line)
+                skip_continuation = False
+            else:
+                skip_continuation = True
+        else:
+            if not skip_continuation:
+                additions.append(line)
+        i += 1
+
+    # Strip leading blank lines from additions
+    while additions and not additions[0].strip():
+        additions.pop(0)
+
+    if not additions:
+        return existing_body.strip()
+    return existing_body.strip() + "\n" + "\n".join(additions)
+
+
 def write_memory_file(memory_path, slug, description, mem_type, content):
     memory_path.mkdir(parents=True, exist_ok=True)
     filename = f"{slug}.md"
     filepath = memory_path / filename
-    body = f"---\nname: {slug}\ndescription: {description}\nmetadata:\n  type: {mem_type}\n---\n\n{content}\n"
+
+    if filepath.exists():
+        raw = filepath.read_text(encoding="utf-8")
+        # Split off frontmatter (--- ... ---)
+        parts = raw.split("---", 2)
+        existing_body = parts[2].strip() if len(parts) == 3 else raw.strip()
+        merged_body = merge_content(existing_body, content)
+        body = f"---\nname: {slug}\ndescription: {description}\nmetadata:\n  type: {mem_type}\n---\n\n{merged_body}\n"
+    else:
+        body = f"---\nname: {slug}\ndescription: {description}\nmetadata:\n  type: {mem_type}\n---\n\n{content}\n"
+
     filepath.write_text(body, encoding="utf-8")
     update_memory_index(memory_path, slug, description, filename)
     return str(filepath)
