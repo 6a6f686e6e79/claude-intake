@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Intake</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<header>
+  <div class="logo">claude<span>intake</span></div>
+  <button class="settings-toggle" onclick="toggleSettings()">⚙ Settings</button>
+</header>
+
+<div class="settings-panel" id="settings-panel">
+  <label>Memory output path (where files will be saved)</label>
+  <div class="settings-row">
+    <input type="text" id="memory-path-input" value="{{ memory_path }}" />
+    <button class="btn-sm" onclick="saveConfig()">Save path</button>
+  </div>
+</div>
+
+<div class="container">
+  <h1>Your Claude Memory Intake</h1>
+  <p class="subtitle">Fill in as much or as little as you like. Everything is saved locally as Claude memory files.</p>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('personal', this)">Personal</button>
+    <button class="tab-btn" onclick="showTab('family', this)">Family</button>
+    <button class="tab-btn" onclick="showTab('work', this)">Work</button>
+    <button class="tab-btn" onclick="showTab('pets', this)">Pets</button>
+    <button class="tab-btn" onclick="showTab('health', this)">Health</button>
+    <button class="tab-btn" onclick="showTab('hobbies', this)">Hobbies</button>
+    <button class="tab-btn" onclick="showTab('goals', this)">Goals</button>
+    <button class="tab-btn" onclick="showTab('freeform', this)">Free-form</button>
+  </div>
+
+  <form id="intake-form">
+
+    <!-- PERSONAL -->
+    <div class="tab-panel active" id="tab-personal">
+      <div class="card">
+        <h2><span class="icon">👤</span> Personal Info</h2>
+        <div class="grid-2">
+          <div class="field"><label>Full name</label><input type="text" name="personal.name" placeholder="Jane Doe" /></div>
+          <div class="field"><label>Birthday</label><input type="date" name="personal.birthday" /></div>
+          <div class="field"><label>City</label><input type="text" name="personal.city" placeholder="Austin" /></div>
+          <div class="field"><label>State / Province</label><input type="text" name="personal.state" placeholder="TX" /></div>
+          <div class="field"><label>Country</label><input type="text" name="personal.country" placeholder="USA" /></div>
+          <div class="field"><label>Timezone</label>
+            <select name="personal.timezone">
+              <option value="">Select…</option>
+              <option>Eastern (ET)</option>
+              <option>Central (CT)</option>
+              <option>Mountain (MT)</option>
+              <option>Pacific (PT)</option>
+              <option>Alaska (AKT)</option>
+              <option>Hawaii (HST)</option>
+              <option>GMT / UTC</option>
+              <option>CET (Central European)</option>
+              <option>IST (India)</option>
+              <option>JST (Japan)</option>
+              <option>AEST (Australia East)</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAMILY -->
+    <div class="tab-panel" id="tab-family">
+      <div class="card">
+        <h2><span class="icon">🏠</span> Relationship & Partner</h2>
+        <div class="grid-2">
+          <div class="field"><label>Relationship status</label>
+            <select name="family.relationship_status">
+              <option value="">Select…</option>
+              <option>Single</option>
+              <option>In a relationship</option>
+              <option>Married</option>
+              <option>Engaged</option>
+              <option>Domestic partnership</option>
+              <option>Separated</option>
+              <option>Divorced</option>
+              <option>Widowed</option>
+              <option>It's complicated</option>
+            </select>
+          </div>
+          <div class="field"><label>Partner's name</label><input type="text" name="family.partner_name" placeholder="Alex" /></div>
+          <div class="field"><label>Partner's birthday</label><input type="date" name="family.partner_birthday" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">👶</span> Children</h2>
+        <div class="repeat-group" id="children-group"></div>
+        <button type="button" class="add-btn" onclick="addChild()">+ Add a child</button>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">👨‍👩‍👧</span> Extended Family</h2>
+        <div class="grid-2">
+          <div class="field"><label>Siblings (names / ages)</label><input type="text" name="family.siblings" placeholder="Brother Tom (34), Sister Ava (29)" /></div>
+          <div class="field"><label>Parents (names / location)</label><input type="text" name="family.parents" placeholder="Mom in Dallas, Dad in Austin" /></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Other family notes</label><textarea name="family.other" placeholder="Anything else worth remembering about your family…"></textarea></div>
+      </div>
+    </div>
+
+    <!-- WORK -->
+    <div class="tab-panel" id="tab-work">
+      <div class="card">
+        <h2><span class="icon">💼</span> Professional Background</h2>
+        <div class="grid-2">
+          <div class="field"><label>Job title</label><input type="text" name="work.title" placeholder="Senior Product Manager" /></div>
+          <div class="field"><label>Company</label><input type="text" name="work.company" placeholder="Acme Inc." /></div>
+          <div class="field"><label>Industry</label><input type="text" name="work.industry" placeholder="SaaS / Fintech / Healthcare…" /></div>
+          <div class="field"><label>Years of experience</label><input type="number" name="work.years_exp" min="0" max="60" placeholder="8" /></div>
+          <div class="field"><label>Work style</label>
+            <select name="work.work_style">
+              <option value="">Select…</option>
+              <option>Remote</option>
+              <option>Hybrid</option>
+              <option>In-office</option>
+              <option>Freelance / Self-employed</option>
+              <option>Student</option>
+              <option>Retired</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Work notes (projects, side gigs, anything relevant)</label><textarea name="work.notes" placeholder="Currently building a side project, transitioning to…"></textarea></div>
+      </div>
+    </div>
+
+    <!-- PETS -->
+    <div class="tab-panel" id="tab-pets">
+      <div class="card">
+        <h2><span class="icon">🐾</span> Pets</h2>
+        <div class="repeat-group" id="pets-group"></div>
+        <button type="button" class="add-btn" onclick="addPet()">+ Add a pet</button>
+      </div>
+    </div>
+
+    <!-- HEALTH -->
+    <div class="tab-panel" id="tab-health">
+      <div class="card">
+        <h2><span class="icon">🥗</span> Diet & Allergies</h2>
+        <div class="grid-2">
+          <div class="field"><label>Dietary restrictions / preferences</label><input type="text" name="health.dietary" placeholder="Vegetarian, gluten-free, no dairy…" /></div>
+          <div class="field"><label>Allergies</label><input type="text" name="health.allergies" placeholder="Peanuts, shellfish…" /></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">💪</span> Wellness</h2>
+        <div class="grid-2">
+          <div class="field"><label>Health conditions (optional)</label><input type="text" name="health.conditions" placeholder="Diabetes, hypertension…" /></div>
+          <div class="field"><label>Exercise habits</label><input type="text" name="health.exercise" placeholder="Run 3x/week, yoga…" /></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Health notes</label><textarea name="health.notes" placeholder="Anything else Claude should know about your health…"></textarea></div>
+      </div>
+    </div>
+
+    <!-- HOBBIES -->
+    <div class="tab-panel" id="tab-hobbies">
+      <div class="card">
+        <h2><span class="icon">🎯</span> Interests & Hobbies</h2>
+        <div class="grid-2">
+          <div class="field"><label>General interests (comma-separated)</label><input type="text" name="hobbies.interests" placeholder="Cooking, travel, history, sci-fi…" /></div>
+          <div class="field"><label>Sports / fitness</label><input type="text" name="hobbies.sports" placeholder="Golf, cycling, hiking…" /></div>
+          <div class="field"><label>Creative pursuits</label><input type="text" name="hobbies.creative" placeholder="Photography, guitar, writing…" /></div>
+          <div class="field"><label>Tech / gaming</label><input type="text" name="hobbies.tech" placeholder="PC gaming, home lab, ham radio…" /></div>
+          <div class="field" style="grid-column: 1/-1"><label>Other hobbies / passions</label><textarea name="hobbies.other" placeholder="Anything else you're into…"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="tab-panel" id="tab-goals">
+      <div class="card">
+        <h2><span class="icon">🚀</span> Goals & Projects</h2>
+        <div class="field"><label>Current projects</label><textarea name="goals.current_projects" placeholder="What are you actively working on right now?"></textarea></div>
+        <div class="grid-2" style="margin-top:14px">
+          <div class="field"><label>Short-term goals (next 3–6 months)</label><textarea name="goals.short_term" placeholder="Launch MVP, get promoted, learn Spanish…"></textarea></div>
+          <div class="field"><label>Long-term goals (1–5 years)</label><textarea name="goals.long_term" placeholder="Start a company, buy a house, travel to Japan…"></textarea></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Currently learning</label><input type="text" name="goals.learning" placeholder="Python, piano, woodworking…" /></div>
+      </div>
+    </div>
+
+    <!-- FREE-FORM -->
+    <div class="tab-panel" id="tab-freeform">
+      <div class="card">
+        <h2><span class="icon">📝</span> Free-form Dump</h2>
+        <p style="font-size:14px; color: var(--muted); margin-bottom:14px;">Paste or type anything here — stream of consciousness, bullet points, whatever. Claude will save it as a memory note.</p>
+        <textarea class="freeform-area" name="freeform" placeholder="I grew up in Ohio, moved to Austin in 2018. I have two rescue cats named Miso and Tofu. My dad passed away in 2022. I'm allergic to bees. Currently learning to play the cello…"></textarea>
+        <div class="freeform-hint">💡 Tip: Don't worry about formatting — just write what you'd want Claude to know about you.</div>
+      </div>
+    </div>
+
+  </form><!-- /form -->
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="btn btn-outline" onclick="previewMemories()">Preview</button>
+    <button class="btn btn-primary" onclick="submitForm()">Save to Memory</button>
+  </div>
+
+  <!-- Preview section -->
+  <div id="preview-section">
+    <div class="preview-header">📋 Preview — what will be saved</div>
+    <div id="preview-list"></div>
+    <div id="memory-path-display"></div>
+  </div>
+
+</div><!-- /container -->
+
+<div id="toast"></div>
+
+<script>
+// ── Tab navigation ──────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Settings ────────────────────────────────────────────────────
+function toggleSettings() {
+  document.getElementById('settings-panel').classList.toggle('open');
+}
+
+async function saveConfig() {
+  const path = document.getElementById('memory-path-input').value.trim();
+  const res = await fetch('/save-config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ memory_path: path }),
+  });
+  const data = await res.json();
+  if (data.success) showToast('Memory path saved!');
+}
+
+// ── Repeatable rows ─────────────────────────────────────────────
+function addChild() {
+  const group = document.getElementById('children-group');
+  const idx = group.children.length;
+  const row = document.createElement('div');
+  row.className = 'repeat-row';
+  row.innerHTML = `
+    <div class="fields">
+      <div class="field"><label>Name</label><input type="text" name="family.children[${idx}].name" placeholder="Emma" /></div>
+      <div class="field"><label>Birthday</label><input type="date" name="family.children[${idx}].birthday" /></div>
+    </div>
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+  group.appendChild(row);
+}
+
+function addPet() {
+  const group = document.getElementById('pets-group');
+  const idx = group.children.length;
+  const row = document.createElement('div');
+  row.className = 'repeat-row';
+  row.innerHTML = `
+    <div class="fields">
+      <div class="field"><label>Name</label><input type="text" name="pets[${idx}].name" placeholder="Miso" /></div>
+      <div class="field"><label>Species</label><input type="text" name="pets[${idx}].species" placeholder="Cat, Dog…" /></div>
+      <div class="field"><label>Breed</label><input type="text" name="pets[${idx}].breed" placeholder="Tabby" /></div>
+      <div class="field"><label>Age</label><input type="text" name="pets[${idx}].age" placeholder="3 years" /></div>
+    </div>
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+  group.appendChild(row);
+}
+
+// ── Collect form data ───────────────────────────────────────────
+function collectData() {
+  const form = document.getElementById('intake-form');
+  const elements = form.querySelectorAll('input, select, textarea');
+  const data = { personal: {}, family: { children: [] }, work: {}, pets: [], health: {}, hobbies: {}, goals: {}, freeform: '' };
+
+  elements.forEach(el => {
+    const name = el.name;
+    const value = el.value.trim();
+    if (!name || !value) return;
+
+    if (name === 'freeform') { data.freeform = value; return; }
+
+    // pets[0].name
+    const petMatch = name.match(/^pets\[(\d+)\]\.(\w+)$/);
+    if (petMatch) {
+      const [, i, key] = petMatch;
+      if (!data.pets[+i]) data.pets[+i] = {};
+      data.pets[+i][key] = value;
+      return;
+    }
+
+    // family.children[0].name
+    const childMatch = name.match(/^family\.children\[(\d+)\]\.(\w+)$/);
+    if (childMatch) {
+      const [, i, key] = childMatch;
+      if (!data.family.children[+i]) data.family.children[+i] = {};
+      data.family.children[+i][key] = value;
+      return;
+    }
+
+    // section.key
+    const dotMatch = name.match(/^(\w+)\.(\w+)$/);
+    if (dotMatch) {
+      const [, section, key] = dotMatch;
+      if (data[section] !== undefined) data[section][key] = value;
+    }
+  });
+
+  // Clean up sparse arrays
+  data.pets = data.pets.filter(Boolean);
+  data.family.children = data.family.children.filter(Boolean);
+  return data;
+}
+
+// ── Preview ─────────────────────────────────────────────────────
+async function previewMemories() {
+  const data = collectData();
+  const res = await fetch('/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const result = await res.json();
+  renderPreview(result.memories);
+}
+
+function renderPreview(memories) {
+  const section = document.getElementById('preview-section');
+  const list = document.getElementById('preview-list');
+  const pathEl = document.getElementById('memory-path-display');
+
+  if (!memories.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:14px">Nothing to preview yet — fill in some fields first.</p>';
+  } else {
+    list.innerHTML = memories.map(m => `
+      <div class="preview-item">
+        <div class="preview-item-header">
+          <span>${m.slug}.md</span>
+          <span style="font-weight:400;opacity:0.7">${m.description}</span>
+        </div>
+        <div class="preview-item-body">${escapeHtml(m.content)}</div>
+      </div>`).join('');
+  }
+
+  const memPath = document.getElementById('memory-path-input').value;
+  pathEl.innerHTML = `<div style="margin-top:12px;font-size:13px;color:var(--muted)">Files will be saved to: <span class="path-display">${escapeHtml(memPath)}</span></div>`;
+  section.classList.add('visible');
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Submit ──────────────────────────────────────────────────────
+async function submitForm() {
+  const data = collectData();
+  const res = await fetch('/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const result = await res.json();
+  if (result.success) {
+    showToast(`✓ Saved ${result.saved.length} memory file${result.saved.length !== 1 ? 's' : ''}!`);
+    // Also update the preview
+    previewMemories();
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
