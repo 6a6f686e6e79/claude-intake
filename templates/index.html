@@ -368,7 +368,15 @@ function addChild() {
   row.innerHTML = `
     <div class="fields">
       <div class="field"><label>Name</label><input type="text" name="family.children[${idx}].name" placeholder="Emma" /></div>
-      <div class="field"><label>Birthday</label><input type="date" name="family.children[${idx}].birthday" /></div>
+      <div class="field"><label>Birthday (month/year)</label><input type="month" name="family.children[${idx}].birthday" /></div>
+      <div class="field"><label>Status</label>
+        <select name="family.children[${idx}].status" onchange="togglePassedDate(this,'child-passed-${idx}')">
+          <option value="">Select…</option>
+          <option value="Living">Living</option>
+          <option value="Passed away">Passed away</option>
+        </select>
+      </div>
+      <div class="field" id="child-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="family.children[${idx}].date_passed" /></div>
     </div>
     <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
   group.appendChild(row);
@@ -381,13 +389,26 @@ function addPet() {
   row.className = 'repeat-row';
   row.innerHTML = `
     <div class="fields">
-      <div class="field"><label>Name</label><input type="text" name="pets[${idx}].name" placeholder="Miso" /></div>
-      <div class="field"><label>Species</label><input type="text" name="pets[${idx}].species" placeholder="Cat, Dog…" /></div>
-      <div class="field"><label>Breed</label><input type="text" name="pets[${idx}].breed" placeholder="Tabby" /></div>
-      <div class="field"><label>Age</label><input type="text" name="pets[${idx}].age" placeholder="3 years" /></div>
+      <div class="field"><label>Name</label><input type="text" name="pets[${idx}].name" placeholder="Toby" /></div>
+      <div class="field"><label>Species</label><input type="text" name="pets[${idx}].species" placeholder="Dog, Cat…" /></div>
+      <div class="field"><label>Breed</label><input type="text" name="pets[${idx}].breed" placeholder="Miniature Schnauzer" /></div>
+      <div class="field"><label>Birthday (month/year)</label><input type="month" name="pets[${idx}].birthday" /></div>
+      <div class="field"><label>Status</label>
+        <select name="pets[${idx}].status" onchange="togglePassedDate(this,'pet-passed-${idx}')">
+          <option value="">Select…</option>
+          <option value="Still with us">Still with us</option>
+          <option value="Passed away">Passed away</option>
+        </select>
+      </div>
+      <div class="field" id="pet-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="pets[${idx}].date_passed" /></div>
     </div>
     <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
   group.appendChild(row);
+}
+
+function togglePassedDate(select, fieldId) {
+  const el = document.getElementById(fieldId);
+  if (el) el.style.display = select.value === 'Passed away' ? 'flex' : 'none';
 }
 
 // ── Collect form data ───────────────────────────────────────────

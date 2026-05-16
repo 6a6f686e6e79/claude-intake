@@ -3,6 +3,15 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+def fmt_month(value):
+    """Convert '2024-02' to 'February 2024'."""
+    if not value:
+        return ""
+    try:
+        return datetime.strptime(value, "%Y-%m").strftime("%B %Y")
+    except ValueError:
+        return value
+
 app = Flask(__name__)
 
 CONFIG_FILE = Path("config.json")
@@ -129,7 +138,13 @@ def build_memories(data):
     if f.get("partner_birthday"):
         lines.append(f"Partner birthday: {f['partner_birthday']}")
     for i, child in enumerate(f.get("children", []), 1):
-        parts = [x for x in [child.get("name"), child.get("birthday")] if x]
+        parts = [x for x in [child.get("name")] if x]
+        if child.get("birthday"):
+            parts.append(f"born {fmt_month(child['birthday'])}")
+        if child.get("status"):
+            parts.append(child["status"])
+        if child.get("date_passed"):
+            parts.append(f"passed away {fmt_month(child['date_passed'])}")
         if parts:
             lines.append(f"Child {i}: {', '.join(parts)}")
     if f.get("siblings"):
@@ -169,7 +184,13 @@ def build_memories(data):
     pets = data.get("pets", [])
     lines = []
     for i, pet in enumerate(pets, 1):
-        parts = [x for x in [pet.get("name"), pet.get("species"), pet.get("breed"), pet.get("age")] if x]
+        parts = [x for x in [pet.get("name"), pet.get("species"), pet.get("breed")] if x]
+        if pet.get("birthday"):
+            parts.append(f"born {fmt_month(pet['birthday'])}")
+        if pet.get("status"):
+            parts.append(pet["status"])
+        if pet.get("date_passed"):
+            parts.append(f"passed away {fmt_month(pet['date_passed'])}")
         if parts:
             lines.append(f"Pet {i}: {', '.join(parts)}")
     if lines:
