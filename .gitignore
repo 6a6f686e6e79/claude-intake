@@ -21,6 +21,5 @@ Thumbs.db
 # Session recaps (local only)
 SESSION_*.md
 
-# Generated screenshots
-screenshots/
+# Screenshot script (run locally to regenerate)
 take_screenshots.py
