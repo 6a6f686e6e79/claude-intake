@@ -39,7 +39,7 @@
     <button class="tab-btn" onclick="showTab('identity', this)">Identity</button>
     <button class="tab-btn" onclick="showTab('goals', this)">Goals</button>
     <button class="tab-btn" onclick="showTab('comms', this)">Comms</button>
-    <button class="tab-btn" onclick="showTab('freeform', this)">Free-form</button>
+
   </div>
 
   <form id="intake-form">
@@ -72,6 +72,12 @@
             </select>
           </div>
         </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">📝</span> Anything else Claude should know about you</h2>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Stream of consciousness, bullet points, whatever — don't worry about formatting.</p>
+        <textarea class="freeform-area" name="freeform" placeholder="I grew up in Ohio, moved to St. Louis in 2018. My dad passed away in 2022. I'm allergic to bees. Currently learning to play the cello…"></textarea>
+        <div class="freeform-hint">💡 Tip: Just write what you'd want Claude to know about you.</div>
       </div>
     </div>
 
@@ -1003,15 +1009,6 @@
       </div>
     </div>
 
-    <!-- FREE-FORM -->
-    <div class="tab-panel" id="tab-freeform">
-      <div class="card">
-        <h2><span class="icon">📝</span> Free-form Dump</h2>
-        <p style="font-size:14px; color: var(--muted); margin-bottom:14px;">Paste or type anything here — stream of consciousness, bullet points, whatever. Claude will save it as a memory note.</p>
-        <textarea class="freeform-area" name="freeform" placeholder="I grew up in Ohio, moved to Austin in 2018. I have two rescue cats named Miso and Tofu. My dad passed away in 2022. I'm allergic to bees. Currently learning to play the cello…"></textarea>
-        <div class="freeform-hint">💡 Tip: Don't worry about formatting — just write what you'd want Claude to know about you.</div>
-      </div>
-    </div>
 
   </form><!-- /form -->
 
