@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import json
+import os
 from pathlib import Path
 from datetime import datetime
 
@@ -320,8 +321,15 @@ def index():
 @app.route("/save-config", methods=["POST"])
 def save_config():
     data = request.get_json()
-    CONFIG_FILE.write_text(json.dumps({"memory_path": data["memory_path"]}, indent=2))
-    return jsonify({"success": True, "memory_path": data["memory_path"]})
+    requested = data["memory_path"]
+    resolved = Path(requested).expanduser().resolve()
+    if not resolved.is_relative_to(Path.home()):
+        return jsonify({
+            "success": False,
+            "error": f"Memory path must be inside your home directory ({Path.home()}). Got: {resolved}",
+        }), 400
+    CONFIG_FILE.write_text(json.dumps({"memory_path": str(resolved)}, indent=2))
+    return jsonify({"success": True, "memory_path": str(resolved)})
 
 
 @app.route("/preview", methods=["POST"])
@@ -346,4 +354,4 @@ def submit():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=os.getenv("FLASK_DEBUG") == "1", host="127.0.0.1", port=5001)
