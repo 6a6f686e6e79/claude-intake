@@ -161,12 +161,20 @@ BOOTSTRAP_HEADER_TEMPLATE = """# Claude.ai Memory Bootstrap
 
 Generated: {timestamp}
 
-Before adding any entries, run `memory_user_edits view` to see existing memories. For each numbered entry below:
-- If no existing memory covers the same topic, use `add`
-- If an existing memory covers the same ground, use `replace` with the matching line number
-- If an existing memory partially overlaps, merge the content and use `replace`
+## Instructions — follow in order
 
-Stay under the 30-entry total limit. Flag any entries you skip or merge so the user knows what changed.
+**Step 1 — REQUIRED before touching anything else:**
+Run `memory_user_edits view` to see all existing memories. You MUST do this first to avoid creating duplicates. Do not add or replace any entry until you have seen the current memory state.
+
+**Step 2 — Process each numbered entry below:**
+- If no existing memory covers the same topic → `add`
+- If an existing memory covers the same ground → `replace` with the matching line number
+- If an existing memory partially overlaps → merge the content and `replace`
+
+**Priority note:** Entries are ordered by importance — personal identity and communication preferences first, details last. If you are approaching the 30-entry limit, skip from the bottom of the list, not the top.
+
+**Step 3 — When all entries are processed:**
+Summarize for the user: how many entries were added, how many replaced, how many skipped, and flag anything that was dropped or merged so they know what changed.
 
 ---
 
@@ -239,9 +247,29 @@ def _memory_to_entries(memory):
     return [f"{topic} ({i + 1}/{total}): {c}" for i, c in enumerate(chunks)]
 
 
+BOOTSTRAP_PRIORITY = [
+    "user-communication",
+    "user-personal",
+    "user-identity",
+    "user-work",
+    "user-family",
+    "user-health",
+    "user-hobbies",
+    "user-goals",
+    "user-pets",
+]
+
 def build_bootstrap(memories):
+    mem_by_slug = {m["slug"]: m for m in memories}
+    ordered = []
+    for slug in BOOTSTRAP_PRIORITY:
+        if slug in mem_by_slug:
+            ordered.append(mem_by_slug.pop(slug))
+    # Append anything not in the priority list (e.g. user-notes-*)
+    ordered.extend(mem_by_slug.values())
+
     entries = []
-    for mem in memories:
+    for mem in ordered:
         for entry in _memory_to_entries(mem):
             if len(entries) >= BOOTSTRAP_MAX_ENTRIES:
                 break
