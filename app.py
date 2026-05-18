@@ -109,7 +109,8 @@ def build_memories(data):
     p = data.get("personal", {})
     lines = []
     for label, key in [
-        ("Name", "name"), ("Birthday", "birthday"), ("City", "city"),
+        ("Name", "name"), ("Preferred name", "preferred_name"),
+        ("Birthday", "birthday"), ("City", "city"),
         ("State/Province", "state"), ("Country", "country"), ("Timezone", "timezone"),
     ]:
         if p.get(key):
@@ -323,7 +324,9 @@ def save_config():
     data = request.get_json()
     requested = data["memory_path"]
     resolved = Path(requested).expanduser().resolve()
-    if not resolved.is_relative_to(Path.home()):
+    try:
+        resolved.relative_to(Path.home())
+    except ValueError:
         return jsonify({
             "success": False,
             "error": f"Memory path must be inside your home directory ({Path.home()}). Got: {resolved}",
