@@ -104,6 +104,7 @@
           <div class="field"><label>Partner's name</label><input type="text" name="family.partner_name" placeholder="Alex" /></div>
           <div class="field"><label>Partner's birthday</label><input type="date" name="family.partner_birthday" /></div>
         </div>
+        <div class="field" style="margin-top:14px"><label>Former partner / co-parent <span style="font-weight:400;opacity:0.6">(optional — e.g., ex-spouse, co-parent of your kids)</span></label><input type="text" name="family.former_partner" placeholder="Sam (co-parent of our kids)" /></div>
       </div>
 
       <div class="card">
@@ -144,6 +145,24 @@
           </div>
         </div>
         <div class="field" style="margin-top:14px"><label>Work notes (projects, side gigs, anything relevant)</label><textarea name="work.notes" placeholder="Currently building a side project, transitioning to…"></textarea></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🗂️</span> Prior Employers <span style="font-size:13px;font-weight:400;color:var(--muted)">(optional)</span></h2>
+        <div class="repeat-group" id="prior-employers-group"></div>
+        <button type="button" class="add-btn" onclick="addPriorEmployer()">+ Add a prior employer</button>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🎖️</span> Military Service <span style="font-size:13px;font-weight:400;color:var(--muted)">(optional)</span></h2>
+        <div class="grid-2">
+          <div class="field"><label>Branch</label><input type="text" name="work.military_branch" placeholder="Army, Navy, Royal Marines, IDF…" /></div>
+          <div class="field"><label>Country</label><input type="text" name="work.military_country" placeholder="USA, Canada, UK…" /></div>
+          <div class="field"><label>Years served</label><input type="text" name="work.military_years" placeholder="2003–2008 or 5 years" /></div>
+          <div class="field"><label>Field / specialty</label><input type="text" name="work.military_field" placeholder="Infantry, Engineer, Signal, Aviation, Medical…" /></div>
+          <div class="field"><label>Rank <span style="font-weight:400;opacity:0.6">(at separation)</span></label><input type="text" name="work.military_rank" placeholder="E-5, Captain, Sergeant…" /></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Highlights <span style="font-weight:400;opacity:0.6">(deployments, awards, anything worth remembering)</span></label><textarea name="work.military_highlights" placeholder="Two deployments to…, awarded…"></textarea></div>
       </div>
     </div>
 
@@ -1088,6 +1107,22 @@ async function saveConfig() {
 }
 
 // ── Repeatable rows ─────────────────────────────────────────────
+function addPriorEmployer() {
+  const group = document.getElementById('prior-employers-group');
+  const idx = group.children.length;
+  const row = document.createElement('div');
+  row.className = 'repeat-row';
+  row.innerHTML = `
+    <div class="fields">
+      <div class="field"><label>Company</label><input type="text" name="work.prior_employers[${idx}].company" placeholder="Acme Inc." /></div>
+      <div class="field"><label>Title / role</label><input type="text" name="work.prior_employers[${idx}].title" placeholder="Senior Engineer" /></div>
+      <div class="field"><label>Years</label><input type="text" name="work.prior_employers[${idx}].years" placeholder="2015–2020 or 5 years" /></div>
+      <div class="field"><label>Notes <span style="font-weight:400;opacity:0.6">(optional)</span></label><input type="text" name="work.prior_employers[${idx}].notes" placeholder="What you built, why you left…" /></div>
+    </div>
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+  group.appendChild(row);
+}
+
 function addChild() {
   const group = document.getElementById('children-group');
   const idx = group.children.length;
@@ -1289,7 +1324,7 @@ function syncHobbiesValue() {
 function collectData() {
   const form = document.getElementById('intake-form');
   const elements = form.querySelectorAll('input, select, textarea');
-  const data = { personal: {}, family: { children: [] }, work: {}, pets: [], health: {}, hobbies: {}, identity: {}, goals: {}, comms: {}, freeform: '' };
+  const data = { personal: {}, family: { children: [] }, work: { prior_employers: [] }, pets: [], health: {}, hobbies: {}, identity: {}, goals: {}, comms: {}, freeform: '' };
 
   elements.forEach(el => {
     const name = el.name;
@@ -1307,12 +1342,14 @@ function collectData() {
       return;
     }
 
-    // family.children[0].name
-    const childMatch = name.match(/^family\.children\[(\d+)\]\.(\w+)$/);
-    if (childMatch) {
-      const [, i, key] = childMatch;
-      if (!data.family.children[+i]) data.family.children[+i] = {};
-      data.family.children[+i][key] = value;
+    // section.subarray[0].key  — e.g., family.children[0].name, work.prior_employers[0].company
+    const nestedArrMatch = name.match(/^(\w+)\.(\w+)\[(\d+)\]\.(\w+)$/);
+    if (nestedArrMatch) {
+      const [, section, arr, i, key] = nestedArrMatch;
+      if (!data[section]) data[section] = {};
+      if (!data[section][arr]) data[section][arr] = [];
+      if (!data[section][arr][+i]) data[section][arr][+i] = {};
+      data[section][arr][+i][key] = value;
       return;
     }
 
@@ -1327,6 +1364,7 @@ function collectData() {
   // Clean up sparse arrays
   data.pets = data.pets.filter(Boolean);
   data.family.children = data.family.children.filter(Boolean);
+  data.work.prior_employers = (data.work.prior_employers || []).filter(Boolean);
 
   const targetEl = document.querySelector('input[name="target"]:checked');
   data.target = targetEl ? targetEl.value : 'claude-code';

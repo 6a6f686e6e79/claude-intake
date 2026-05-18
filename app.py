@@ -258,6 +258,8 @@ def build_memories(data):
             parts.append(f"passed away {fmt_month(child['date_passed'])}")
         if parts:
             lines.append(f"Child {i}: {', '.join(parts)}")
+    if f.get("former_partner"):
+        lines.append(f"Former partner / co-parent: {f['former_partner']}")
     if f.get("siblings"):
         lines.append(f"Siblings: {f['siblings']}")
     if f.get("parents"):
@@ -283,10 +285,28 @@ def build_memories(data):
             lines.append(f"{label}: {w[key]}")
     if w.get("notes"):
         lines.append(f"Work notes: {w['notes']}")
+    for i, emp in enumerate(w.get("prior_employers", []), 1):
+        parts = [x for x in [emp.get("company"), emp.get("title"), emp.get("years")] if x]
+        if emp.get("notes"):
+            parts.append(emp["notes"])
+        if parts:
+            lines.append(f"Prior employer {i}: {', '.join(parts)}")
+    mil_parts = []
+    for label, key in [
+        ("branch", "military_branch"), ("country", "military_country"),
+        ("years served", "military_years"), ("field", "military_field"),
+        ("rank", "military_rank"),
+    ]:
+        if w.get(key):
+            mil_parts.append(f"{label} {w[key]}")
+    if mil_parts:
+        lines.append(f"Military service: {', '.join(mil_parts)}")
+    if w.get("military_highlights"):
+        lines.append(f"Military highlights: {w['military_highlights']}")
     if lines:
         memories.append({
             "slug": "user-work",
-            "description": "User's professional background and work style",
+            "description": "User's professional background, prior employers, military service",
             "type": "user",
             "content": "\n".join(lines),
         })
