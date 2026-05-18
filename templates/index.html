@@ -58,17 +58,17 @@
           <div class="field"><label>Timezone</label>
             <select name="personal.timezone">
               <option value="">Select…</option>
-              <option>Eastern (ET)</option>
-              <option>Central (CT)</option>
-              <option>Mountain (MT)</option>
-              <option>Pacific (PT)</option>
+              <option>AEST (Australia East)</option>
               <option>Alaska (AKT)</option>
-              <option>Hawaii (HST)</option>
-              <option>GMT / UTC</option>
               <option>CET (Central European)</option>
+              <option>Central (CT)</option>
+              <option>Eastern (ET)</option>
+              <option>GMT / UTC</option>
+              <option>Hawaii (HST)</option>
               <option>IST (India)</option>
               <option>JST (Japan)</option>
-              <option>AEST (Australia East)</option>
+              <option>Mountain (MT)</option>
+              <option>Pacific (PT)</option>
               <option>Other</option>
             </select>
           </div>
@@ -90,15 +90,15 @@
           <div class="field"><label>Relationship status</label>
             <select name="family.relationship_status">
               <option value="">Select…</option>
-              <option>Single</option>
-              <option>In a relationship</option>
-              <option>Married</option>
-              <option>Engaged</option>
-              <option>Domestic partnership</option>
-              <option>Separated</option>
               <option>Divorced</option>
-              <option>Widowed</option>
+              <option>Domestic partnership</option>
+              <option>Engaged</option>
+              <option>In a relationship</option>
               <option>It's complicated</option>
+              <option>Married</option>
+              <option>Separated</option>
+              <option>Single</option>
+              <option>Widowed</option>
             </select>
           </div>
           <div class="field"><label>Partner's name</label><input type="text" name="family.partner_name" placeholder="Alex" /></div>
@@ -132,51 +132,51 @@
           <div class="field"><label>Company</label><input type="text" name="work.company" placeholder="Acme Inc." /></div>
           <div class="field"><label>Industry</label><input type="text" name="work.industry" list="industry-suggestions" placeholder="Start typing or pick a suggestion…" />
             <datalist id="industry-suggestions">
-              <option value="IT / Software">
-              <option value="SaaS">
-              <option value="Cybersecurity">
-              <option value="Fintech">
-              <option value="Healthcare">
-              <option value="Pharmaceutical / Biotech">
-              <option value="Education">
-              <option value="Higher education">
-              <option value="Government">
-              <option value="Nonprofit">
-              <option value="Manufacturing">
-              <option value="Retail">
-              <option value="E-commerce">
-              <option value="Hospitality">
-              <option value="Construction">
-              <option value="Real estate">
-              <option value="Media / Entertainment">
-              <option value="Gaming">
-              <option value="Telecommunications">
-              <option value="Energy / Utilities">
-              <option value="Oil & Gas">
-              <option value="Agriculture">
-              <option value="Legal">
               <option value="Accounting / Finance">
-              <option value="Banking">
-              <option value="Insurance">
-              <option value="Marketing / Advertising">
-              <option value="Consulting">
-              <option value="Logistics / Transportation">
               <option value="Aerospace / Defense">
-              <option value="Automotive">
+              <option value="Agriculture">
               <option value="Architecture / Design">
+              <option value="Automotive">
+              <option value="Banking">
+              <option value="Construction">
+              <option value="Consulting">
+              <option value="Cybersecurity">
+              <option value="E-commerce">
+              <option value="Education">
+              <option value="Energy / Utilities">
+              <option value="Fintech">
+              <option value="Gaming">
+              <option value="Government">
+              <option value="Healthcare">
+              <option value="Higher education">
+              <option value="Hospitality">
+              <option value="IT / Software">
+              <option value="Insurance">
+              <option value="Legal">
+              <option value="Logistics / Transportation">
+              <option value="Manufacturing">
+              <option value="Marketing / Advertising">
+              <option value="Media / Entertainment">
+              <option value="Nonprofit">
+              <option value="Oil & Gas">
+              <option value="Pharmaceutical / Biotech">
+              <option value="Real estate">
               <option value="Research / Academia">
+              <option value="Retail">
+              <option value="SaaS">
+              <option value="Telecommunications">
             </datalist>
           </div>
           <div class="field"><label>Years of experience</label><input type="number" name="work.years_exp" min="0" max="60" placeholder="8" /></div>
           <div class="field"><label>Work style</label>
             <select name="work.work_style">
               <option value="">Select…</option>
-              <option>Remote</option>
+              <option>Freelance / Self-employed</option>
               <option>Hybrid</option>
               <option>In-office</option>
-              <option>Freelance / Self-employed</option>
-              <option>Student</option>
+              <option>Remote</option>
               <option>Retired</option>
+              <option>Student</option>
             </select>
           </div>
         </div>
@@ -721,37 +721,37 @@
         <h2><span class="icon">🗳️</span> Politics <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
         <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Political Identity <span style="font-weight:400;opacity:0.6">how you identify yourself</span></label>
         <div class="chip-grid" id="ideology-grid">
-          <div class="chip" onclick="toggleChipInGrid(this)">Liberal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Conservative</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Progressive</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Libertarian</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Socialist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Democratic Socialist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Social Democrat</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Classical Liberal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Neoliberal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Neoconservative</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Fiscal Conservative</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Socially Liberal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Populist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Nationalist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Centrist</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Anarchist</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Apolitical</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Centrist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Classical Liberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Conservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Democratic Socialist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Fiscal Conservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Liberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Libertarian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nationalist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Neoconservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Neoliberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Populist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Progressive</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Social Democrat</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Socialist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Socially Liberal</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
         </div>
         <input type="hidden" name="identity.ideology" id="ideology-value" />
         <label style="display:block;margin:16px 0 8px;font-size:13px;font-weight:500">Party / Affiliation</label>
         <div class="chip-grid" id="political-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Constitution Party</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Democrat</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Republican</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Green Party</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Independent</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Libertarian Party</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Green Party</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Working Families Party</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Constitution Party</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Reform Party</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Non-partisan</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Reform Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Republican</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Working Families Party</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
         </div>
         <input type="hidden" name="identity.political" id="political-value" />
@@ -771,17 +771,17 @@
       <div class="card">
         <h2><span class="icon">🏳️‍🌈</span> Sexuality &amp; Orientation <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
         <div class="chip-grid" id="sexuality-grid">
-          <div class="chip" onclick="toggleChipInGrid(this)">Straight / Heterosexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Aromantic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Asexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Bisexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Demisexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Fluid</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Gay</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Lesbian</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Bisexual</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Pansexual</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Asexual</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Demisexual</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Queer</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Fluid</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Aromantic</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Questioning</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Straight / Heterosexual</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
         </div>
         <input type="hidden" name="identity.sexuality" id="sexuality-value" />
@@ -790,17 +790,17 @@
       <div class="card">
         <h2><span class="icon">⚧️</span> Gender Identity <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
         <div class="chip-grid" id="gender-grid">
-          <div class="chip" onclick="toggleChipInGrid(this)">Man</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Woman</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Non-binary</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Genderfluid</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Genderqueer</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Transgender</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Cisgender</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Agender</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Bigender</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Two-spirit</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Cisgender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Genderfluid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Genderqueer</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Intersex</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Man</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-binary</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Transgender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Two-spirit</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Woman</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
         </div>
         <input type="hidden" name="identity.gender" id="gender-value" />
@@ -810,56 +810,56 @@
         <h2><span class="icon">🕊️</span> Religion &amp; Spirituality <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
         <div class="chip-grid" id="religion-grid">
           <span class="chip-group-label">Christian</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Catholic</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Protestant</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Evangelical / Born-again</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Baptist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Methodist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Lutheran</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Episcopal / Anglican</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Pentecostal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Eastern Orthodox</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Latter-day Saint (LDS)</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Jehovah's Witness</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Non-denominational Christian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Catholic</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Christian (general)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Eastern Orthodox</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Episcopal / Anglican</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Evangelical / Born-again</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jehovah's Witness</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Latter-day Saint (LDS)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Lutheran</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Methodist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-denominational Christian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pentecostal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Protestant</div>
 
           <span class="chip-group-label">Jewish</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Reform)</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Conservative)</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Orthodox)</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Reconstructionist)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Reform)</div>
 
           <span class="chip-group-label">Muslim</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Sunni)</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Shia)</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Sufi)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Sunni)</div>
 
           <span class="chip-group-label">Eastern</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Hindu</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Theravada)</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Mahayana)</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Zen)</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Sikh</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Jain</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Baha'i</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Zoroastrian</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Taoist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Mahayana)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Theravada)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Zen)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Hindu</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jain</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Shinto</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Sikh</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Taoist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Zoroastrian</div>
 
           <span class="chip-group-label">Pagan &amp; Alternative</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Druid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">New Age / Spiritual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Norse / Heathen</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Pagan</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Wiccan</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Druid</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Norse / Heathen</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">New Age / Spiritual</div>
 
           <span class="chip-group-label">Non-religious</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Spiritual but not religious</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Agnostic</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Atheist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Secular Humanist</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Non-religious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Secular Humanist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Spiritual but not religious</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
         </div>
         <input type="hidden" name="identity.religion" id="religion-value" />
@@ -871,82 +871,82 @@
         <div class="chip-grid" id="causes-grid">
 
           <span class="chip-group-label">Social Justice</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Racial justice</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Gender equality</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">LGBTQ+ rights</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Disability rights</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Indigenous rights</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Criminal justice reform</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Immigration reform</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Voting rights</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Affordable housing</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Anti-racism</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Criminal justice reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Disability rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gender equality</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Immigration reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Indigenous rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">LGBTQ+ rights</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Police reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Racial justice</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Voting rights</div>
 
           <span class="chip-group-label">Environment &amp; Animals</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Climate change action</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Renewable energy</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Environmental conservation</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Animal rights</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Animal welfare</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Veganism / plant-based living</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Ocean conservation</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Wildlife protection</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Anti-factory farming</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Climate change action</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Environmental conservation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Ocean conservation</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Plastic pollution reduction</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Renewable energy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Veganism / plant-based living</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Wildlife protection</div>
 
           <span class="chip-group-label">Health &amp; Social Welfare</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Universal healthcare</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Affordable healthcare</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Mental health advocacy</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Reproductive rights</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Abortion access</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Affordable healthcare</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Children's welfare</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Drug policy reform</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Harm reduction</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Elder care</div>
           <div class="chip" onclick="toggleChipInGrid(this)">End homelessness</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Food security / Hunger</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Harm reduction</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Maternal &amp; child health</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Elder care</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Children's welfare</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Mental health advocacy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Reproductive rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Universal healthcare</div>
 
           <span class="chip-group-label">Economic</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Wealth inequality</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Living wage</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Labor rights / Unions</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Universal basic income</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Student debt relief</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Affordable education</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Small business support</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Anti-corporate power</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Free market / Deregulation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Labor rights / Unions</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Living wage</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Small business support</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Student debt relief</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Tax reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Universal basic income</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Wealth inequality</div>
 
           <span class="chip-group-label">Civil Liberties &amp; Governance</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-corruption</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Campaign finance reform</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Government transparency</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Civil liberties</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Free speech</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Privacy / Anti-surveillance</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Government transparency</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Gun control</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Gun rights / 2nd Amendment</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Civil liberties</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Anti-corruption</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Privacy / Anti-surveillance</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Term limits</div>
 
           <span class="chip-group-label">Global &amp; Humanitarian</span>
-          <div class="chip" onclick="toggleChipInGrid(this)">Human rights</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Refugee &amp; asylum support</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Foreign aid</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Global health</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Peace / Anti-war</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Nuclear disarmament</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Human rights</div>
           <div class="chip" onclick="toggleChipInGrid(this)">International development</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nuclear disarmament</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Peace / Anti-war</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Refugee &amp; asylum support</div>
 
           <span class="chip-group-label">Technology &amp; Future</span>
           <div class="chip" onclick="toggleChipInGrid(this)">AI ethics / Safety</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Digital privacy</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Net neutrality</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Tech regulation</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Open source / Open internet</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Tech regulation</div>
 
         </div>
         <div class="chip-add-row">
@@ -1005,19 +1005,19 @@
           <div class="field"><label>Formatting preference</label>
             <select name="comms.formatting">
               <option value="">Select…</option>
-              <option>Prose over bullet points</option>
               <option>Bullet points and headers</option>
-              <option>No strong preference</option>
               <option>Minimal formatting, plain text</option>
+              <option>No strong preference</option>
+              <option>Prose over bullet points</option>
             </select>
           </div>
           <div class="field"><label>Feedback style</label>
             <select name="comms.feedback">
               <option value="">Select…</option>
-              <option>Tell me when I'm wrong, directly</option>
               <option>Diplomatic but honest</option>
-              <option>Validate first, then critique</option>
               <option>Just give me the facts</option>
+              <option>Tell me when I'm wrong, directly</option>
+              <option>Validate first, then critique</option>
             </select>
           </div>
         </div>
@@ -1027,29 +1027,29 @@
         <h2><span class="icon">😏</span> Humor & Personality <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
         <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Humor style <span style="font-weight:400;opacity:0.6">how Claude should joke around (or not)</span></label>
         <div class="chip-grid" id="humor-grid">
-          <div class="chip" onclick="toggleChipInGrid(this)">Dry / deadpan</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Sarcastic</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Witty / wordplay</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Playful</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Self-deprecating</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Absurdist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Observational</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Dry / deadpan</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Keep it serious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Observational</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Playful</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Sarcastic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Self-deprecating</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Witty / wordplay</div>
         </div>
         <input type="hidden" name="comms.humor" id="humor-value" />
 
         <label style="display:block;margin:18px 0 8px;font-size:13px;font-weight:500">Personality vibes <span style="font-weight:400;opacity:0.6">adjectives that describe how Claude should feel</span></label>
         <div class="chip-grid" id="vibes-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Confident</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Curious</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Skeptical</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Hedged / nuanced</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nerdy</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Opinionated</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Patient explainer</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Pushback-friendly</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Nerdy</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Plainspoken</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pushback-friendly</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Skeptical</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Storyteller</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Confident</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Hedged / nuanced</div>
         </div>
         <input type="hidden" name="comms.personality_vibes" id="vibes-value" />
       </div>
@@ -1076,20 +1076,20 @@
           <div class="field"><label>Your working style</label>
             <select name="comms.working_style">
               <option value="">Select…</option>
-              <option>I think out loud — help me structure</option>
               <option>I come in with a clear plan</option>
               <option>I like to explore before deciding</option>
-              <option>I work in short focused bursts</option>
               <option>I prefer async / written over verbal</option>
+              <option>I think out loud — help me structure</option>
+              <option>I work in short focused bursts</option>
             </select>
           </div>
           <div class="field"><label>When you're stuck, you want Claude to…</label>
             <select name="comms.when_stuck">
               <option value="">Select…</option>
-              <option>Just solve it</option>
-              <option>Walk me through it step by step</option>
               <option>Ask what I've already tried</option>
               <option>Give me options and let me choose</option>
+              <option>Just solve it</option>
+              <option>Walk me through it step by step</option>
             </select>
           </div>
         </div>
@@ -1226,28 +1226,28 @@ function addPet() {
         <select name="pets[${idx}].species" onchange="updateBreedHints(this,${idx})">
           <option value="">Select…</option>
           <optgroup label="Common">
-            <option>Dog</option><option>Cat</option><option>Bird</option><option>Fish</option>
-            <option>Rabbit</option><option>Guinea pig</option><option>Hamster</option>
-            <option>Gerbil</option><option>Rat</option><option>Mouse</option>
+            <option>Bird</option><option>Cat</option><option>Dog</option><option>Fish</option>
+            <option>Gerbil</option><option>Guinea pig</option><option>Hamster</option>
+            <option>Mouse</option><option>Rabbit</option><option>Rat</option>
           </optgroup>
           <optgroup label="Reptiles & Amphibians">
-            <option>Turtle / Tortoise</option><option>Snake</option><option>Lizard</option>
-            <option>Gecko</option><option>Bearded dragon</option><option>Chameleon</option>
-            <option>Frog / Toad</option><option>Axolotl</option>
+            <option>Axolotl</option><option>Bearded dragon</option><option>Chameleon</option>
+            <option>Frog / Toad</option><option>Gecko</option><option>Lizard</option>
+            <option>Snake</option><option>Turtle / Tortoise</option>
           </optgroup>
           <optgroup label="Birds (specific)">
-            <option>Parrot</option><option>Cockatiel</option><option>Parakeet / Budgie</option>
-            <option>Canary</option><option>Finch</option><option>Macaw</option>
-            <option>Cockatoo</option><option>Conure</option>
+            <option>Canary</option><option>Cockatiel</option><option>Cockatoo</option>
+            <option>Conure</option><option>Finch</option><option>Macaw</option>
+            <option>Parakeet / Budgie</option><option>Parrot</option>
           </optgroup>
           <optgroup label="Larger Animals">
-            <option>Horse</option><option>Pony</option><option>Donkey</option>
-            <option>Goat</option><option>Sheep</option><option>Pig / Potbelly pig</option>
-            <option>Chicken</option><option>Duck</option><option>Alpaca / Llama</option>
+            <option>Alpaca / Llama</option><option>Chicken</option><option>Donkey</option>
+            <option>Duck</option><option>Goat</option><option>Horse</option>
+            <option>Pig / Potbelly pig</option><option>Pony</option><option>Sheep</option>
           </optgroup>
           <optgroup label="Other">
-            <option>Ferret</option><option>Hedgehog</option><option>Sugar glider</option>
-            <option>Chinchilla</option><option>Degu</option><option>Other</option>
+            <option>Chinchilla</option><option>Degu</option><option>Ferret</option>
+            <option>Hedgehog</option><option>Sugar glider</option><option>Other</option>
           </optgroup>
         </select>
       </div>
