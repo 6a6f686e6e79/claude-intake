@@ -102,6 +102,122 @@ def write_memory_file(memory_path, slug, description, mem_type, content):
     return str(filepath)
 
 
+BOOTSTRAP_FILENAME = "claude-ai-bootstrap.md"
+BOOTSTRAP_MAX_ENTRY_LEN = 500
+BOOTSTRAP_MAX_ENTRIES = 25
+BOOTSTRAP_TOPIC_TAGS = {
+    "user-personal": "Personal",
+    "user-family": "Family",
+    "user-work": "Work",
+    "user-pets": "Pets",
+    "user-health": "Health",
+    "user-hobbies": "Hobbies",
+    "user-identity": "Identity",
+    "user-goals": "Goals",
+    "user-communication": "Communication",
+}
+BOOTSTRAP_HEADER = """# Claude.ai Memory Bootstrap
+
+Before adding any entries, run `memory_user_edits view` to see existing memories. For each numbered entry below:
+- If no existing memory covers the same topic, use `add`
+- If an existing memory covers the same ground, use `replace` with the matching line number
+- If an existing memory partially overlaps, merge the content and use `replace`
+
+Stay under the 30-entry total limit. Flag any entries you skip or merge so the user knows what changed.
+
+---
+
+"""
+
+
+def _topic_for(slug):
+    if slug.startswith("user-notes-"):
+        return "Notes"
+    return BOOTSTRAP_TOPIC_TAGS.get(slug, slug.replace("user-", "").replace("-", " ").title())
+
+
+def _split_body_into_chunks(body, budget):
+    """Greedy split of body on '; ' boundaries, falling back to word splits.
+
+    Each returned chunk is guaranteed ≤ budget chars. Splits prefer the
+    higher-level semicolon boundary so related facts stay together when they
+    can.
+    """
+    if len(body) <= budget:
+        return [body]
+
+    chunks = []
+    current, current_len = [], 0
+    for piece in body.split("; "):
+        sep_len = 2 if current else 0
+        if current and current_len + sep_len + len(piece) > budget:
+            chunks.append("; ".join(current))
+            current, current_len = [piece], len(piece)
+        else:
+            current.append(piece)
+            current_len += sep_len + len(piece)
+    if current:
+        chunks.append("; ".join(current))
+
+    final = []
+    for chunk in chunks:
+        if len(chunk) <= budget:
+            final.append(chunk)
+            continue
+        sub, sub_len = [], 0
+        for word in chunk.split():
+            sep_len = 1 if sub else 0
+            if sub and sub_len + sep_len + len(word) > budget:
+                final.append(" ".join(sub))
+                sub, sub_len = [word], len(word)
+            else:
+                sub.append(word)
+                sub_len += sep_len + len(word)
+        if sub:
+            final.append(" ".join(sub))
+    return final
+
+
+def _memory_to_entries(memory):
+    topic = _topic_for(memory["slug"])
+    parts = [line.strip() for line in memory["content"].strip().splitlines() if line.strip()]
+    body = "; ".join(parts)
+
+    # Reserve worst-case prefix overhead "Topic (NN/NN): "
+    budget = BOOTSTRAP_MAX_ENTRY_LEN - len(topic) - len(" (99/99): ")
+    chunks = _split_body_into_chunks(body, budget)
+
+    if len(chunks) == 1:
+        # No numbering needed; re-check against tighter budget without suffix.
+        single = f"{topic}: {chunks[0]}"
+        if len(single) <= BOOTSTRAP_MAX_ENTRY_LEN:
+            return [single]
+    total = len(chunks)
+    return [f"{topic} ({i + 1}/{total}): {c}" for i, c in enumerate(chunks)]
+
+
+def build_bootstrap(memories):
+    entries = []
+    for mem in memories:
+        for entry in _memory_to_entries(mem):
+            if len(entries) >= BOOTSTRAP_MAX_ENTRIES:
+                break
+            entries.append(entry)
+        if len(entries) >= BOOTSTRAP_MAX_ENTRIES:
+            break
+    if not entries:
+        return ""
+    numbered = "\n\n".join(f"{i + 1}. {e}" for i, e in enumerate(entries))
+    return BOOTSTRAP_HEADER + numbered + "\n"
+
+
+def write_bootstrap(memory_path, content):
+    memory_path.mkdir(parents=True, exist_ok=True)
+    filepath = memory_path / BOOTSTRAP_FILENAME
+    filepath.write_text(content, encoding="utf-8")
+    return str(filepath)
+
+
 def build_memories(data):
     memories = []
 
@@ -335,11 +451,20 @@ def save_config():
     return jsonify({"success": True, "memory_path": str(resolved)})
 
 
+def _resolve_target(data):
+    target = (data.get("target") or "claude-code").lower()
+    if target not in ("claude-code", "claude-ai", "both"):
+        target = "claude-code"
+    return target
+
+
 @app.route("/preview", methods=["POST"])
 def preview():
     data = request.get_json()
     memories = build_memories(data)
-    return jsonify({"memories": memories})
+    target = _resolve_target(data)
+    bootstrap = build_bootstrap(memories) if target in ("claude-ai", "both") else None
+    return jsonify({"memories": memories, "bootstrap": bootstrap, "target": target})
 
 
 @app.route("/submit", methods=["POST"])
@@ -347,13 +472,20 @@ def submit():
     data = request.get_json()
     memories = build_memories(data)
     memory_path = get_memory_path()
+    target = _resolve_target(data)
     saved = []
-    for mem in memories:
-        path = write_memory_file(
-            memory_path, mem["slug"], mem["description"], mem["type"], mem["content"]
-        )
-        saved.append({"slug": mem["slug"], "path": path})
-    return jsonify({"success": True, "saved": saved})
+    if target in ("claude-code", "both"):
+        for mem in memories:
+            path = write_memory_file(
+                memory_path, mem["slug"], mem["description"], mem["type"], mem["content"]
+            )
+            saved.append({"slug": mem["slug"], "path": path})
+    if target in ("claude-ai", "both"):
+        bootstrap = build_bootstrap(memories)
+        if bootstrap:
+            path = write_bootstrap(memory_path, bootstrap)
+            saved.append({"slug": "claude-ai-bootstrap", "path": path})
+    return jsonify({"success": True, "saved": saved, "target": target})
 
 
 if __name__ == "__main__":

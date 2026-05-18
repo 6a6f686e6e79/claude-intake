@@ -1017,6 +1017,14 @@
 
   </form><!-- /form -->
 
+  <!-- Output target -->
+  <div class="target-toggle" style="margin-top:24px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px">
+    <label style="font-weight:500;margin-right:14px">Output target:</label>
+    <label style="margin-right:14px;font-weight:400"><input type="radio" name="target" value="claude-code" checked /> Claude Code <span style="color:var(--muted)">(individual memory files)</span></label>
+    <label style="margin-right:14px;font-weight:400"><input type="radio" name="target" value="claude-ai" /> Claude.ai <span style="color:var(--muted)">(single bootstrap file to paste in chat)</span></label>
+    <label style="font-weight:400"><input type="radio" name="target" value="both" /> Both</label>
+  </div>
+
   <!-- Actions -->
   <div class="actions">
     <button class="btn btn-outline" onclick="previewMemories()">Preview</button>
@@ -1319,6 +1327,9 @@ function collectData() {
   // Clean up sparse arrays
   data.pets = data.pets.filter(Boolean);
   data.family.children = data.family.children.filter(Boolean);
+
+  const targetEl = document.querySelector('input[name="target"]:checked');
+  data.target = targetEl ? targetEl.value : 'claude-code';
   return data;
 }
 
@@ -1331,25 +1342,44 @@ async function previewMemories() {
     body: JSON.stringify(data),
   });
   const result = await res.json();
-  renderPreview(result.memories);
+  renderPreview(result.memories, result.bootstrap, result.target || 'claude-code');
 }
 
-function renderPreview(memories) {
+function renderPreview(memories, bootstrap, target) {
   const section = document.getElementById('preview-section');
   const list = document.getElementById('preview-list');
   const pathEl = document.getElementById('memory-path-display');
 
-  if (!memories.length) {
-    list.innerHTML = '<p style="color:var(--muted);font-size:14px">Nothing to preview yet — fill in some fields first.</p>';
-  } else {
-    list.innerHTML = memories.map(m => `
+  const cards = [];
+
+  if (target === 'claude-code' || target === 'both') {
+    if (memories.length) {
+      cards.push(...memories.map(m => `
+        <div class="preview-item">
+          <div class="preview-item-header">
+            <span>${m.slug}.md</span>
+            <span style="font-weight:400;opacity:0.7">${m.description}</span>
+          </div>
+          <div class="preview-item-body">${escapeHtml(m.content)}</div>
+        </div>`));
+    }
+  }
+
+  if ((target === 'claude-ai' || target === 'both') && bootstrap) {
+    cards.push(`
       <div class="preview-item">
         <div class="preview-item-header">
-          <span>${m.slug}.md</span>
-          <span style="font-weight:400;opacity:0.7">${m.description}</span>
+          <span>claude-ai-bootstrap.md</span>
+          <span style="font-weight:400;opacity:0.7">Paste into a claude.ai conversation</span>
         </div>
-        <div class="preview-item-body">${escapeHtml(m.content)}</div>
-      </div>`).join('');
+        <div class="preview-item-body">${escapeHtml(bootstrap)}</div>
+      </div>`);
+  }
+
+  if (!cards.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:14px">Nothing to preview yet — fill in some fields first.</p>';
+  } else {
+    list.innerHTML = cards.join('');
   }
 
   const memPath = document.getElementById('memory-path-input').value;
