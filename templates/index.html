@@ -130,7 +130,43 @@
         <div class="grid-2">
           <div class="field"><label>Job title</label><input type="text" name="work.title" placeholder="Senior Product Manager" /></div>
           <div class="field"><label>Company</label><input type="text" name="work.company" placeholder="Acme Inc." /></div>
-          <div class="field"><label>Industry</label><input type="text" name="work.industry" placeholder="SaaS / Fintech / Healthcare…" /></div>
+          <div class="field"><label>Industry</label><input type="text" name="work.industry" list="industry-suggestions" placeholder="Start typing or pick a suggestion…" />
+            <datalist id="industry-suggestions">
+              <option value="IT / Software">
+              <option value="SaaS">
+              <option value="Cybersecurity">
+              <option value="Fintech">
+              <option value="Healthcare">
+              <option value="Pharmaceutical / Biotech">
+              <option value="Education">
+              <option value="Higher education">
+              <option value="Government">
+              <option value="Nonprofit">
+              <option value="Manufacturing">
+              <option value="Retail">
+              <option value="E-commerce">
+              <option value="Hospitality">
+              <option value="Construction">
+              <option value="Real estate">
+              <option value="Media / Entertainment">
+              <option value="Gaming">
+              <option value="Telecommunications">
+              <option value="Energy / Utilities">
+              <option value="Oil & Gas">
+              <option value="Agriculture">
+              <option value="Legal">
+              <option value="Accounting / Finance">
+              <option value="Banking">
+              <option value="Insurance">
+              <option value="Marketing / Advertising">
+              <option value="Consulting">
+              <option value="Logistics / Transportation">
+              <option value="Aerospace / Defense">
+              <option value="Automotive">
+              <option value="Architecture / Design">
+              <option value="Research / Academia">
+            </datalist>
+          </div>
           <div class="field"><label>Years of experience</label><input type="number" name="work.years_exp" min="0" max="60" placeholder="8" /></div>
           <div class="field"><label>Work style</label>
             <select name="work.work_style">
@@ -988,6 +1024,37 @@
       </div>
 
       <div class="card">
+        <h2><span class="icon">😏</span> Humor & Personality <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Humor style <span style="font-weight:400;opacity:0.6">how Claude should joke around (or not)</span></label>
+        <div class="chip-grid" id="humor-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Dry / deadpan</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Sarcastic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Witty / wordplay</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Playful</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Self-deprecating</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Absurdist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Observational</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Keep it serious</div>
+        </div>
+        <input type="hidden" name="comms.humor" id="humor-value" />
+
+        <label style="display:block;margin:18px 0 8px;font-size:13px;font-weight:500">Personality vibes <span style="font-weight:400;opacity:0.6">adjectives that describe how Claude should feel</span></label>
+        <div class="chip-grid" id="vibes-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Curious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Skeptical</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Opinionated</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Patient explainer</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pushback-friendly</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nerdy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Plainspoken</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Storyteller</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Confident</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Hedged / nuanced</div>
+        </div>
+        <input type="hidden" name="comms.personality_vibes" id="vibes-value" />
+      </div>
+
+      <div class="card">
         <h2><span class="icon">🚫</span> Things Claude Should Never Do</h2>
         <div class="field">
           <label>Behaviors you dislike (e.g. "don't placate me", "skip the preamble", "no excessive caveats")</label>
@@ -1527,6 +1594,8 @@ function hydrateFormFromInitial() {
     'gender-grid':     'identity.gender',
     'religion-grid':   'identity.religion',
     'causes-grid':     'identity.causes',
+    'humor-grid':      'comms.humor',
+    'vibes-grid':      'comms.personality_vibes',
   };
   for (const [gridId, hiddenName] of Object.entries(chipGrids)) {
     const [section, key] = hiddenName.split('.');

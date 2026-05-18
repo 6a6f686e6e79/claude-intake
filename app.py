@@ -287,6 +287,7 @@ LABEL_TO_KEY = {
     "user-communication": {
         "Tone preference": "tone", "Response length": "length",
         "Formatting preference": "formatting", "Feedback style": "feedback",
+        "Humor style": "humor", "Personality vibes": "personality_vibes",
         "Working style": "working_style", "When stuck, wants Claude to": "when_stuck",
         "Never do": "never_do", "Always do": "always_do",
         "Collaboration notes": "other",
@@ -456,6 +457,64 @@ def _parse_pets(body):
     return pets
 
 
+def _parse_bootstrap_file(text):
+    """Parse a claude-ai-bootstrap.md back into {slug: body_text}.
+
+    Returns body text in the same format the per-file user-*.md bodies use,
+    so it can be fed through the existing section parsers. Handles chunked
+    entries (Communication (1/4), (2/4), ...) by concatenating their
+    contents in document order with '; ' separators.
+
+    Robust to whitespace-flattened paste: entries are located by matching
+    on the topic-name vocabulary, not by newline boundaries.
+    """
+    topics = list(BOOTSTRAP_TOPIC_TAGS.values())
+    pattern = (
+        r"\b\d+\.\s+(" + "|".join(re.escape(t) for t in topics) +
+        r")(?:\s*\(\d+/\d+\))?\s*:\s*"
+    )
+    matches = list(re.finditer(pattern, text))
+    if not matches:
+        return {}
+
+    by_topic = {}
+    for i, m in enumerate(matches):
+        topic = m.group(1)
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        content = text[start:end].strip()
+        if content:
+            by_topic.setdefault(topic, []).append(content)
+
+    topic_to_slug = {v: k for k, v in BOOTSTRAP_TOPIC_TAGS.items()}
+    result = {}
+    for topic, chunks in by_topic.items():
+        slug = topic_to_slug.get(topic)
+        if not slug:
+            continue
+        joined = "; ".join(chunks)
+        # Reverse the bootstrap chunker's "; "-flatten back into per-line
+        # "Label: value" entries that the section parsers expect.
+        lines = [p.strip() for p in joined.split("; ") if p.strip()]
+        result[slug] = "\n".join(lines)
+    return result
+
+
+def _populate_from_body(data, slug, body):
+    """Apply a parsed section body to the form-state dict in place."""
+    section = SLUG_TO_SECTION.get(slug)
+    if not section or not body:
+        return
+    if slug == "user-family":
+        data["family"] = _parse_family(body)
+    elif slug == "user-work":
+        data["work"] = _parse_work(body)
+    elif slug == "user-pets":
+        data["pets"] = _parse_pets(body)
+    elif slug in LABEL_TO_KEY:
+        data[section] = _parse_kv_lines(body, LABEL_TO_KEY[slug])
+
+
 def load_memories(memory_path):
     """Parse user-*.md files in memory_path back into the form's data shape.
 
@@ -481,28 +540,31 @@ def load_memories(memory_path):
             app.logger.warning("Skipping %s: %s", path, e)
             return None
 
-    # Sections that map to nested dicts of kv pairs
-    for slug in ("user-personal", "user-health", "user-hobbies",
-                 "user-identity", "user-goals", "user-communication"):
+    loaded_from_file = set()
+    for slug in ("user-personal", "user-family", "user-work", "user-pets",
+                 "user-health", "user-hobbies", "user-identity", "user-goals",
+                 "user-communication"):
         body = _read_body(slug)
         if body is None:
             continue
-        data[SLUG_TO_SECTION[slug]] = _parse_kv_lines(body, LABEL_TO_KEY[slug])
+        _populate_from_body(data, slug, body)
+        loaded_from_file.add(slug)
 
-    # Family — kv + children
-    body = _read_body("user-family")
-    if body is not None:
-        data["family"] = _parse_family(body)
-
-    # Work — kv + prior_employers + military
-    body = _read_body("user-work")
-    if body is not None:
-        data["work"] = _parse_work(body)
-
-    # Pets — array only
-    body = _read_body("user-pets")
-    if body is not None:
-        data["pets"] = _parse_pets(body)
+    # Backfill any section that doesn't have a per-file backup from the
+    # claude-ai-bootstrap.md (if present). Per-file backups always win —
+    # they're lossless, the bootstrap flattens multi-line values.
+    bootstrap_path = memory_path / BOOTSTRAP_FILENAME
+    if bootstrap_path.exists():
+        try:
+            text = bootstrap_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            app.logger.warning("Could not read %s: %s", bootstrap_path, e)
+            text = ""
+        if text:
+            for slug, body in _parse_bootstrap_file(text).items():
+                if slug in loaded_from_file:
+                    continue
+                _populate_from_body(data, slug, body)
 
     return data
 
@@ -712,6 +774,7 @@ def build_memories(data):
     for label, key in [
         ("Tone preference", "tone"), ("Response length", "length"),
         ("Formatting preference", "formatting"), ("Feedback style", "feedback"),
+        ("Humor style", "humor"), ("Personality vibes", "personality_vibes"),
         ("Working style", "working_style"), ("When stuck, wants Claude to", "when_stuck"),
     ]:
         v = _nb(c, key)
