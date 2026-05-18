@@ -52,8 +52,8 @@
           <div class="field"><label>Full name</label><input type="text" name="personal.name" placeholder="Jane Doe" /></div>
           <div class="field"><label>Preferred name / nickname <span style="font-weight:400;opacity:0.6">(what Claude should call you)</span></label><input type="text" name="personal.preferred_name" placeholder="Jane, Alex…" /></div>
           <div class="field"><label>Birthday</label><input type="date" name="personal.birthday" /></div>
-          <div class="field"><label>City</label><input type="text" name="personal.city" placeholder="St. Louis" /></div>
-          <div class="field"><label>State / Province</label><input type="text" name="personal.state" placeholder="MO" /></div>
+          <div class="field"><label>City</label><input type="text" name="personal.city" placeholder="Denver" /></div>
+          <div class="field"><label>State / Province</label><input type="text" name="personal.state" placeholder="CO" /></div>
           <div class="field"><label>Country</label><input type="text" name="personal.country" placeholder="USA" /></div>
           <div class="field"><label>Timezone</label>
             <select name="personal.timezone">
@@ -1116,6 +1116,9 @@
     <button class="btn btn-outline" onclick="previewMemories()">Preview</button>
     <button class="btn btn-primary" onclick="submitForm()">Save to Memory</button>
   </div>
+  <p style="text-align:right;font-size:12px;color:var(--muted);margin-top:8px">
+    Saving adds new fields and updates existing ones. To remove a value entirely, edit the memory file directly.
+  </p>
 
   <!-- Preview section -->
   <div id="preview-section">

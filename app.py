@@ -144,8 +144,8 @@ def write_memory_file(memory_path, slug, description, mem_type, content):
 
 
 BOOTSTRAP_FILENAME = "claude-ai-bootstrap.md"
-BOOTSTRAP_MAX_ENTRY_LEN = 500
-BOOTSTRAP_MAX_ENTRIES = 25
+BOOTSTRAP_MAX_ENTRY_LEN = 500   # well under per-entry char caps on all known surfaces
+BOOTSTRAP_MAX_ENTRIES = 25      # leaves headroom under claude.ai's ~30-entry userMemories cap
 BOOTSTRAP_TOPIC_TAGS = {
     "user-personal": "Personal",
     "user-family": "Family",
@@ -163,15 +163,15 @@ Generated: {timestamp}
 
 ## Instructions — follow in order
 
-**Step 1 — REQUIRED before touching anything else:**
-Run `memory_user_edits view` to see all existing memories. You MUST do this first to avoid creating duplicates. Do not add or replace any entry until you have seen the current memory state.
+**Step 1 — Check for existing memories first:**
+If you have a `memory_user_edits` tool, run `memory_user_edits view` before touching anything else — you MUST see the current memory state to avoid duplicates. If you don't have that tool (e.g. you're in Claude Code, the API console, or a session with memory disabled), acknowledge that and proceed directly to Step 2.
 
 **Step 2 — Process each numbered entry below:**
 - If no existing memory covers the same topic → `add`
 - If an existing memory covers the same ground → `replace` with the matching line number
 - If an existing memory partially overlaps → merge the content and `replace`
 
-**Priority note:** Entries are ordered by importance — personal identity and communication preferences first, details last. If you are approaching the 30-entry limit, skip from the bottom of the list, not the top.
+**Priority note:** Entries are ordered by importance — communication preferences and core identity first, details last. If you are approaching the memory limit, skip from the bottom of the list, not the top.
 
 **Step 3 — When all entries are processed:**
 Summarize for the user: how many entries were added, how many replaced, how many skipped, and flag anything that was dropped or merged so they know what changed.
