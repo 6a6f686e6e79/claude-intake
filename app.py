@@ -56,31 +56,71 @@ def update_memory_index(memory_path, slug, description, filename):
         memory_md.write_text(entry + "\n", encoding="utf-8")
 
 
+def _chunk_body(body):
+    """Group a body into chunks. Each chunk is (key_lower_or_None, lines).
+
+    A chunk runs from one 'Label: ...' line through every following line
+    (including blanks) up to (but not including) the next label line. Any
+    lines before the first label form a single key=None orphan chunk.
+    """
+    chunks = []
+    current_key = None
+    current_lines = []
+    for line in body.splitlines():
+        if ": " in line and not line.startswith((" ", "\t")):
+            if current_lines:
+                chunks.append((current_key, current_lines))
+            current_key = line.split(":", 1)[0].strip().lower()
+            current_lines = [line]
+        else:
+            current_lines.append(line)
+    if current_lines:
+        chunks.append((current_key, current_lines))
+    return chunks
+
+
 def merge_content(existing_body, new_body):
-    """Update existing key:value lines with new values; append keys not yet present."""
+    """Merge new form content into existing file content.
+
+    Operates on label chunks (a label line plus its continuation lines)
+    rather than individual lines, so deleting part of a multi-line field
+    in the form propagates: when a label is rewritten by the form, its
+    old continuation lines are dropped along with the old label line.
+
+    Preservation rules:
+    - Orphan lines before the first labeled chunk are kept as-is.
+    - Existing labels that aren't in the new content are kept (covers
+      schema additions and hand-edited extras).
+    - New content's ordering wins.
+    """
     if not new_body.strip():
         return existing_body.strip()
 
-    result_lines = existing_body.strip().splitlines()
+    existing_chunks = _chunk_body(existing_body.strip())
+    new_chunks = _chunk_body(new_body.strip())
+    new_keys = {k for (k, _) in new_chunks if k is not None}
 
-    for line in new_body.strip().splitlines():
-        if not line.strip():
-            continue
-        if ": " in line:
-            key = line.split(": ")[0].strip().lower()
-            updated = False
-            for j, rl in enumerate(result_lines):
-                if rl.strip().lower().startswith(key + ":"):
-                    result_lines[j] = line
-                    updated = True
-                    break
-            if not updated:
-                result_lines.append(line)
+    result = []
+    # Orphan prefix (anything before the first labeled chunk)
+    for (k, lines) in existing_chunks:
+        if k is None:
+            result.append(lines)
         else:
-            if line.strip() not in [rl.strip() for rl in result_lines]:
-                result_lines.append(line)
+            break
 
-    return "\n".join(result_lines)
+    # New content in its order — this is the form's view of the world
+    for (_, lines) in new_chunks:
+        result.append(lines)
+
+    # Existing labels the form doesn't know about — preserve at the tail
+    for (k, lines) in existing_chunks:
+        if k is not None and k not in new_keys:
+            result.append(lines)
+
+    flat = []
+    for chunk_lines in result:
+        flat.extend(chunk_lines)
+    return "\n".join(flat)
 
 
 def write_memory_file(memory_path, slug, description, mem_type, content):
