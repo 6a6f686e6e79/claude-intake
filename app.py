@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import json
 import os
+import re
 from pathlib import Path
 from datetime import datetime
 
@@ -233,6 +234,277 @@ def _nb(d, key):
     if isinstance(val, str):
         return val.strip()
     return str(val) if val else ""
+
+
+SLUG_TO_SECTION = {
+    "user-personal": "personal",
+    "user-family": "family",
+    "user-work": "work",
+    "user-pets": "pets",
+    "user-health": "health",
+    "user-hobbies": "hobbies",
+    "user-identity": "identity",
+    "user-goals": "goals",
+    "user-communication": "comms",
+}
+
+LABEL_TO_KEY = {
+    "user-personal": {
+        "Name": "name", "Preferred name": "preferred_name",
+        "Birthday": "birthday", "City": "city",
+        "State/Province": "state", "Country": "country", "Timezone": "timezone",
+    },
+    "user-family": {
+        "Relationship status": "relationship_status",
+        "Partner name": "partner_name", "Partner birthday": "partner_birthday",
+        "Former partner / co-parent": "former_partner",
+        "Siblings": "siblings", "Parents": "parents",
+        "Other family notes": "other",
+    },
+    "user-work": {
+        "Job title": "title", "Company": "company", "Industry": "industry",
+        "Years of experience": "years_exp", "Work style": "work_style",
+        "Work notes": "notes", "Military highlights": "military_highlights",
+    },
+    "user-health": {
+        "Dietary restrictions": "dietary", "Allergies": "allergies",
+        "Health conditions": "conditions", "Exercise habits": "exercise",
+        "Health notes": "notes",
+    },
+    "user-hobbies": {
+        "Interests & hobbies": "interests", "Additional notes": "other",
+    },
+    "user-identity": {
+        "Political identity": "ideology", "Party / affiliation": "political",
+        "Political leaning": "leaning", "Sexuality / orientation": "sexuality",
+        "Gender identity": "gender", "Religion / spirituality": "religion",
+        "Causes & issues": "causes", "Identity notes": "notes",
+    },
+    "user-goals": {
+        "Current projects": "current_projects", "Short-term goals": "short_term",
+        "Long-term goals": "long_term", "Currently learning": "learning",
+    },
+    "user-communication": {
+        "Tone preference": "tone", "Response length": "length",
+        "Formatting preference": "formatting", "Feedback style": "feedback",
+        "Working style": "working_style", "When stuck, wants Claude to": "when_stuck",
+        "Never do": "never_do", "Always do": "always_do",
+        "Collaboration notes": "other",
+    },
+}
+
+MILITARY_LABEL_TO_KEY = {
+    "branch ": "military_branch", "country ": "military_country",
+    "years served ": "military_years", "field ": "military_field",
+    "rank ": "military_rank",
+}
+
+
+def _strip_frontmatter(text):
+    """Return the body of a memory file, dropping the leading --- ... --- block."""
+    if not text.startswith("---"):
+        return text
+    end = text.find("\n---", 3)
+    if end == -1:
+        return text
+    return text[end + 4:].lstrip("\n")
+
+
+def _parse_month_back(s):
+    """Inverse of fmt_month: 'February 2024' → '2024-02'. Returns input on failure."""
+    try:
+        return datetime.strptime(s.strip(), "%B %Y").strftime("%Y-%m")
+    except ValueError:
+        return s.strip()
+
+
+def _parse_kv_lines(body, label_map):
+    """Parse 'Label: value' lines into {key: value}, supporting multi-line values.
+
+    Lines that don't start with a known label are treated as continuation of the
+    previous label's value (joined with newlines). Lines before any recognized
+    label are discarded.
+    """
+    result = {}
+    current_key = None
+    current_lines = []
+
+    def flush():
+        nonlocal current_key, current_lines
+        if current_key is not None:
+            result[current_key] = "\n".join(current_lines).strip()
+        current_key = None
+        current_lines = []
+
+    for line in body.splitlines():
+        stripped = line.rstrip()
+        if not stripped.strip():
+            if current_key is not None:
+                current_lines.append("")
+            continue
+        matched = False
+        for label, key in label_map.items():
+            prefix = f"{label}: "
+            bare = f"{label}:"
+            if stripped.startswith(prefix) or stripped == bare:
+                flush()
+                current_key = key
+                value = stripped[len(bare):].lstrip()
+                current_lines = [value] if value else []
+                matched = True
+                break
+        if not matched and current_key is not None:
+            current_lines.append(stripped.strip())
+    flush()
+    return result
+
+
+def _parse_child_line(rest):
+    """Parse 'Emma, born February 2024, Living' → dict."""
+    parts = [p.strip() for p in rest.split(",")]
+    out = {}
+    for p in parts:
+        if p.startswith("born "):
+            out["birthday"] = _parse_month_back(p[5:])
+        elif p.startswith("passed away "):
+            out["date_passed"] = _parse_month_back(p[12:])
+        elif p in ("Living", "Passed away"):
+            out["status"] = p
+        elif "name" not in out:
+            out["name"] = p
+    return out
+
+
+def _parse_pet_line(rest):
+    """Parse 'Toby, Dog, Golden Retriever, born March 2020, Living' → dict."""
+    parts = [p.strip() for p in rest.split(",")]
+    out = {}
+    positional = ["name", "species", "breed"]
+    pos_idx = 0
+    for p in parts:
+        if p.startswith("born "):
+            out["birthday"] = _parse_month_back(p[5:])
+        elif p.startswith("passed away "):
+            out["date_passed"] = _parse_month_back(p[12:])
+        elif p in ("Living", "Passed away"):
+            out["status"] = p
+        elif pos_idx < len(positional):
+            out[positional[pos_idx]] = p
+            pos_idx += 1
+    return out
+
+
+def _parse_prior_employer_line(rest):
+    parts = [p.strip() for p in rest.split(",")]
+    keys = ["company", "title", "years", "notes"]
+    return {keys[i]: p for i, p in enumerate(parts) if i < len(keys) and p}
+
+
+def _parse_military_line(rest):
+    out = {}
+    for p in rest.split(","):
+        p = p.strip()
+        for label, key in MILITARY_LABEL_TO_KEY.items():
+            if p.startswith(label):
+                out[key] = p[len(label):].strip()
+                break
+    return out
+
+
+def _parse_family(body):
+    """Family section: kv pairs + 'Child N:' rows."""
+    children = []
+    non_child_lines = []
+    for line in body.splitlines():
+        m = re.match(r"^Child (\d+):\s*(.*)$", line.strip())
+        if m:
+            children.append(_parse_child_line(m.group(2)))
+        else:
+            non_child_lines.append(line)
+    result = _parse_kv_lines("\n".join(non_child_lines), LABEL_TO_KEY["user-family"])
+    result["children"] = children
+    return result
+
+
+def _parse_work(body):
+    """Work section: kv pairs + 'Prior employer N:' + 'Military service:' rows."""
+    employers = []
+    military = {}
+    other_lines = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        m = re.match(r"^Prior employer (\d+):\s*(.*)$", stripped)
+        if m:
+            employers.append(_parse_prior_employer_line(m.group(2)))
+            continue
+        if stripped.startswith("Military service: "):
+            military = _parse_military_line(stripped[len("Military service: "):])
+            continue
+        other_lines.append(line)
+    result = _parse_kv_lines("\n".join(other_lines), LABEL_TO_KEY["user-work"])
+    result.update(military)
+    result["prior_employers"] = employers
+    return result
+
+
+def _parse_pets(body):
+    pets = []
+    for line in body.splitlines():
+        m = re.match(r"^Pet (\d+):\s*(.*)$", line.strip())
+        if m:
+            pets.append(_parse_pet_line(m.group(2)))
+    return pets
+
+
+def load_memories(memory_path):
+    """Parse user-*.md files in memory_path back into the form's data shape.
+
+    Inverse of build_memories. Returns a dict matching the JSON the /submit
+    route consumes, so build_memories(load_memories(path)) round-trips.
+    """
+    data = {
+        "personal": {}, "family": {"children": []},
+        "work": {"prior_employers": []}, "pets": [],
+        "health": {}, "hobbies": {}, "identity": {},
+        "goals": {}, "comms": {}, "freeform": "",
+    }
+    if not memory_path.exists():
+        return data
+
+    def _read_body(slug):
+        path = memory_path / f"{slug}.md"
+        if not path.exists():
+            return None
+        try:
+            return _strip_frontmatter(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError) as e:
+            app.logger.warning("Skipping %s: %s", path, e)
+            return None
+
+    # Sections that map to nested dicts of kv pairs
+    for slug in ("user-personal", "user-health", "user-hobbies",
+                 "user-identity", "user-goals", "user-communication"):
+        body = _read_body(slug)
+        if body is None:
+            continue
+        data[SLUG_TO_SECTION[slug]] = _parse_kv_lines(body, LABEL_TO_KEY[slug])
+
+    # Family — kv + children
+    body = _read_body("user-family")
+    if body is not None:
+        data["family"] = _parse_family(body)
+
+    # Work — kv + prior_employers + military
+    body = _read_body("user-work")
+    if body is not None:
+        data["work"] = _parse_work(body)
+
+    # Pets — array only
+    body = _read_body("user-pets")
+    if body is not None:
+        data["pets"] = _parse_pets(body)
+
+    return data
 
 
 def build_memories(data):
@@ -479,7 +751,13 @@ def build_memories(data):
 
 @app.route("/")
 def index():
-    return render_template("index.html", memory_path=str(get_memory_path()))
+    memory_path = get_memory_path()
+    initial_data = load_memories(memory_path)
+    return render_template(
+        "index.html",
+        memory_path=str(memory_path),
+        initial_data=initial_data,
+    )
 
 
 @app.route("/save-config", methods=["POST"])

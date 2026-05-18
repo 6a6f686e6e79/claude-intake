@@ -1059,6 +1059,8 @@
 
 </div><!-- /container -->
 
+<script id="initial-data" type="application/json">{{ initial_data|tojson }}</script>
+
 <div id="toast"></div>
 
 <script>
@@ -1487,6 +1489,117 @@ function toggleChipInGrid(chip) {
     hiddenEl.value = [...grid.querySelectorAll('.chip.selected')].map(c => c.textContent.trim()).join(', ');
   }
 }
+
+// ── Hydration: populate form from initial_data on page load ─────
+function hydrateFormFromInitial() {
+  const dataEl = document.getElementById('initial-data');
+  if (!dataEl) return;
+  let data;
+  try { data = JSON.parse(dataEl.textContent); } catch (e) { return; }
+  if (!data || typeof data !== 'object') return;
+
+  const setVal = (name, value) => {
+    if (value === undefined || value === null || value === '') return;
+    const el = document.querySelector(`[name="${name}"]`);
+    if (!el) return;
+    el.value = value;
+  };
+
+  // Plain field sections
+  for (const section of ['personal', 'family', 'work', 'health', 'hobbies', 'identity', 'goals', 'comms']) {
+    const obj = data[section];
+    if (!obj || typeof obj !== 'object') continue;
+    for (const [k, v] of Object.entries(obj)) {
+      if (Array.isArray(v) || (v && typeof v === 'object')) continue;
+      setVal(`${section}.${k}`, v);
+    }
+  }
+  if (data.freeform) setVal('freeform', data.freeform);
+
+  // Chip grids
+  const chipGrids = {
+    'conditions-grid': 'health.conditions',
+    'hobbies-grid':    'hobbies.interests',
+    'ideology-grid':   'identity.ideology',
+    'political-grid':  'identity.political',
+    'leaning-grid':    'identity.leaning',
+    'sexuality-grid':  'identity.sexuality',
+    'gender-grid':     'identity.gender',
+    'religion-grid':   'identity.religion',
+    'causes-grid':     'identity.causes',
+  };
+  for (const [gridId, hiddenName] of Object.entries(chipGrids)) {
+    const [section, key] = hiddenName.split('.');
+    const csv = data[section] && data[section][key];
+    if (!csv) continue;
+    const wanted = new Set(csv.split(',').map(s => s.trim()).filter(Boolean));
+    const grid = document.getElementById(gridId);
+    if (!grid) continue;
+    grid.querySelectorAll('.chip').forEach(chip => {
+      const text = chip.textContent.trim();
+      if (wanted.has(text)) {
+        chip.classList.add('selected');
+        wanted.delete(text);
+      }
+    });
+    // Anything left over: user-added custom chips that aren't in the default list
+    wanted.forEach(custom => {
+      const chip = document.createElement('div');
+      chip.className = 'chip selected';
+      chip.textContent = custom;
+      chip.onclick = () => toggleChipInGrid(chip);
+      grid.appendChild(chip);
+    });
+    const hiddenEl = document.getElementById(gridId.replace('-grid', '-value'));
+    if (hiddenEl) {
+      hiddenEl.value = [...grid.querySelectorAll('.chip.selected')]
+        .map(c => c.textContent.trim()).join(', ');
+    }
+  }
+
+  // Children
+  if (data.family && Array.isArray(data.family.children)) {
+    data.family.children.forEach((child, i) => {
+      addChild();
+      setVal(`family.children[${i}].name`, child.name);
+      setVal(`family.children[${i}].birthday`, child.birthday);
+      setVal(`family.children[${i}].status`, child.status);
+      setVal(`family.children[${i}].date_passed`, child.date_passed);
+      const statusEl = document.querySelector(`[name="family.children[${i}].status"]`);
+      if (statusEl && statusEl.value) statusEl.dispatchEvent(new Event('change'));
+    });
+  }
+
+  // Pets
+  if (Array.isArray(data.pets)) {
+    data.pets.forEach((pet, i) => {
+      addPet();
+      setVal(`pets[${i}].name`, pet.name);
+      setVal(`pets[${i}].species`, pet.species);
+      setVal(`pets[${i}].breed`, pet.breed);
+      setVal(`pets[${i}].birthday`, pet.birthday);
+      setVal(`pets[${i}].status`, pet.status);
+      setVal(`pets[${i}].date_passed`, pet.date_passed);
+      const speciesEl = document.querySelector(`[name="pets[${i}].species"]`);
+      if (speciesEl && speciesEl.value) speciesEl.dispatchEvent(new Event('change'));
+      const statusEl = document.querySelector(`[name="pets[${i}].status"]`);
+      if (statusEl && statusEl.value) statusEl.dispatchEvent(new Event('change'));
+    });
+  }
+
+  // Prior employers
+  if (data.work && Array.isArray(data.work.prior_employers)) {
+    data.work.prior_employers.forEach((emp, i) => {
+      addPriorEmployer();
+      setVal(`work.prior_employers[${i}].company`, emp.company);
+      setVal(`work.prior_employers[${i}].title`, emp.title);
+      setVal(`work.prior_employers[${i}].years`, emp.years);
+      setVal(`work.prior_employers[${i}].notes`, emp.notes);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', hydrateFormFromInitial);
 
 function addCustomChipToGrid(inputId, gridId, valueId) {
   const input = document.getElementById(inputId);
