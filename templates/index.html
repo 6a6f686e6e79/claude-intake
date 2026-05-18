@@ -1396,7 +1396,7 @@ function renderPreview(memories, bootstrap, target) {
         <div class="preview-item">
           <div class="preview-item-header">
             <span>${m.slug}.md</span>
-            <span style="font-weight:400;opacity:0.7">${m.description}</span>
+            <span style="display:flex;gap:10px;align-items:center;font-weight:400;opacity:0.7">${m.description}<button type="button" class="btn-sm" onclick="copyCardBody(this)">📋 Copy</button></span>
           </div>
           <div class="preview-item-body">${escapeHtml(m.content)}</div>
         </div>`));
@@ -1408,7 +1408,7 @@ function renderPreview(memories, bootstrap, target) {
       <div class="preview-item">
         <div class="preview-item-header">
           <span>claude-ai-bootstrap.md</span>
-          <span style="font-weight:400;opacity:0.7">Paste into a claude.ai conversation</span>
+          <span style="display:flex;gap:10px;align-items:center;font-weight:400;opacity:0.7">Paste into a claude.ai conversation<button type="button" class="btn-sm" onclick="copyCardBody(this)">📋 Copy all</button></span>
         </div>
         <div class="preview-item-body">${escapeHtml(bootstrap)}</div>
       </div>`);
@@ -1448,6 +1448,19 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+async function copyCardBody(btn) {
+  const card = btn.closest('.preview-item');
+  if (!card) return;
+  const body = card.querySelector('.preview-item-body');
+  if (!body) return;
+  try {
+    await navigator.clipboard.writeText(body.textContent);
+    showToast('✓ Copied to clipboard');
+  } catch (err) {
+    showToast('Copy failed — select and copy manually');
+  }
 }
 
 function escapeHtml(str) {

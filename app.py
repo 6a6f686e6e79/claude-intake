@@ -116,7 +116,9 @@ BOOTSTRAP_TOPIC_TAGS = {
     "user-goals": "Goals",
     "user-communication": "Communication",
 }
-BOOTSTRAP_HEADER = """# Claude.ai Memory Bootstrap
+BOOTSTRAP_HEADER_TEMPLATE = """# Claude.ai Memory Bootstrap
+
+Generated: {timestamp}
 
 Before adding any entries, run `memory_user_edits view` to see existing memories. For each numbered entry below:
 - If no existing memory covers the same topic, use `add`
@@ -207,8 +209,11 @@ def build_bootstrap(memories):
             break
     if not entries:
         return ""
+    header = BOOTSTRAP_HEADER_TEMPLATE.format(
+        timestamp=datetime.now().isoformat(timespec="seconds")
+    )
     numbered = "\n\n".join(f"{i + 1}. {e}" for i, e in enumerate(entries))
-    return BOOTSTRAP_HEADER + numbered + "\n"
+    return header + numbered + "\n"
 
 
 def write_bootstrap(memory_path, content):
@@ -216,6 +221,18 @@ def write_bootstrap(memory_path, content):
     filepath = memory_path / BOOTSTRAP_FILENAME
     filepath.write_text(content, encoding="utf-8")
     return str(filepath)
+
+
+def _nb(d, key):
+    """Non-blank lookup: returns stripped string if non-empty, else ''.
+
+    Treats whitespace-only values as blank so empty-but-truthy textarea
+    fields don't produce dangling labels in the output.
+    """
+    val = d.get(key, "")
+    if isinstance(val, str):
+        return val.strip()
+    return str(val) if val else ""
 
 
 def build_memories(data):
@@ -229,8 +246,9 @@ def build_memories(data):
         ("Birthday", "birthday"), ("City", "city"),
         ("State/Province", "state"), ("Country", "country"), ("Timezone", "timezone"),
     ]:
-        if p.get(key):
-            lines.append(f"{label}: {p[key]}")
+        v = _nb(p, key)
+        if v:
+            lines.append(f"{label}: {v}")
     if lines:
         memories.append({
             "slug": "user-personal",
@@ -242,30 +260,33 @@ def build_memories(data):
     # --- Family ---
     f = data.get("family", {})
     lines = []
-    if f.get("relationship_status"):
-        lines.append(f"Relationship status: {f['relationship_status']}")
-    if f.get("partner_name"):
-        lines.append(f"Partner name: {f['partner_name']}")
-    if f.get("partner_birthday"):
-        lines.append(f"Partner birthday: {f['partner_birthday']}")
+    for label, key in [
+        ("Relationship status", "relationship_status"),
+        ("Partner name", "partner_name"),
+        ("Partner birthday", "partner_birthday"),
+    ]:
+        v = _nb(f, key)
+        if v:
+            lines.append(f"{label}: {v}")
     for i, child in enumerate(f.get("children", []), 1):
-        parts = [x for x in [child.get("name")] if x]
-        if child.get("birthday"):
-            parts.append(f"born {fmt_month(child['birthday'])}")
-        if child.get("status"):
-            parts.append(child["status"])
-        if child.get("date_passed"):
-            parts.append(f"passed away {fmt_month(child['date_passed'])}")
+        parts = [x for x in [_nb(child, "name")] if x]
+        if _nb(child, "birthday"):
+            parts.append(f"born {fmt_month(_nb(child, 'birthday'))}")
+        if _nb(child, "status"):
+            parts.append(_nb(child, "status"))
+        if _nb(child, "date_passed"):
+            parts.append(f"passed away {fmt_month(_nb(child, 'date_passed'))}")
         if parts:
             lines.append(f"Child {i}: {', '.join(parts)}")
-    if f.get("former_partner"):
-        lines.append(f"Former partner / co-parent: {f['former_partner']}")
-    if f.get("siblings"):
-        lines.append(f"Siblings: {f['siblings']}")
-    if f.get("parents"):
-        lines.append(f"Parents: {f['parents']}")
-    if f.get("other"):
-        lines.append(f"Other family notes: {f['other']}")
+    for label, key in [
+        ("Former partner / co-parent", "former_partner"),
+        ("Siblings", "siblings"),
+        ("Parents", "parents"),
+        ("Other family notes", "other"),
+    ]:
+        v = _nb(f, key)
+        if v:
+            lines.append(f"{label}: {v}")
     if lines:
         memories.append({
             "slug": "user-family",
@@ -281,14 +302,15 @@ def build_memories(data):
         ("Job title", "title"), ("Company", "company"), ("Industry", "industry"),
         ("Years of experience", "years_exp"), ("Work style", "work_style"),
     ]:
-        if w.get(key):
-            lines.append(f"{label}: {w[key]}")
-    if w.get("notes"):
-        lines.append(f"Work notes: {w['notes']}")
+        v = _nb(w, key)
+        if v:
+            lines.append(f"{label}: {v}")
+    if _nb(w, "notes"):
+        lines.append(f"Work notes: {_nb(w, 'notes')}")
     for i, emp in enumerate(w.get("prior_employers", []), 1):
-        parts = [x for x in [emp.get("company"), emp.get("title"), emp.get("years")] if x]
-        if emp.get("notes"):
-            parts.append(emp["notes"])
+        parts = [x for x in [_nb(emp, "company"), _nb(emp, "title"), _nb(emp, "years")] if x]
+        if _nb(emp, "notes"):
+            parts.append(_nb(emp, "notes"))
         if parts:
             lines.append(f"Prior employer {i}: {', '.join(parts)}")
     mil_parts = []
@@ -297,12 +319,13 @@ def build_memories(data):
         ("years served", "military_years"), ("field", "military_field"),
         ("rank", "military_rank"),
     ]:
-        if w.get(key):
-            mil_parts.append(f"{label} {w[key]}")
+        v = _nb(w, key)
+        if v:
+            mil_parts.append(f"{label} {v}")
     if mil_parts:
         lines.append(f"Military service: {', '.join(mil_parts)}")
-    if w.get("military_highlights"):
-        lines.append(f"Military highlights: {w['military_highlights']}")
+    if _nb(w, "military_highlights"):
+        lines.append(f"Military highlights: {_nb(w, 'military_highlights')}")
     if lines:
         memories.append({
             "slug": "user-work",
@@ -315,13 +338,13 @@ def build_memories(data):
     pets = data.get("pets", [])
     lines = []
     for i, pet in enumerate(pets, 1):
-        parts = [x for x in [pet.get("name"), pet.get("species"), pet.get("breed")] if x]
-        if pet.get("birthday"):
-            parts.append(f"born {fmt_month(pet['birthday'])}")
-        if pet.get("status"):
-            parts.append(pet["status"])
-        if pet.get("date_passed"):
-            parts.append(f"passed away {fmt_month(pet['date_passed'])}")
+        parts = [x for x in [_nb(pet, "name"), _nb(pet, "species"), _nb(pet, "breed")] if x]
+        if _nb(pet, "birthday"):
+            parts.append(f"born {fmt_month(_nb(pet, 'birthday'))}")
+        if _nb(pet, "status"):
+            parts.append(_nb(pet, "status"))
+        if _nb(pet, "date_passed"):
+            parts.append(f"passed away {fmt_month(_nb(pet, 'date_passed'))}")
         if parts:
             lines.append(f"Pet {i}: {', '.join(parts)}")
     if lines:
@@ -339,10 +362,11 @@ def build_memories(data):
         ("Dietary restrictions", "dietary"), ("Allergies", "allergies"),
         ("Health conditions", "conditions"), ("Exercise habits", "exercise"),
     ]:
-        if h.get(key):
-            lines.append(f"{label}: {h[key]}")
-    if h.get("notes"):
-        lines.append(f"Health notes: {h['notes']}")
+        v = _nb(h, key)
+        if v:
+            lines.append(f"{label}: {v}")
+    if _nb(h, "notes"):
+        lines.append(f"Health notes: {_nb(h, 'notes')}")
     if lines:
         memories.append({
             "slug": "user-health",
@@ -354,10 +378,10 @@ def build_memories(data):
     # --- Hobbies ---
     ho = data.get("hobbies", {})
     lines = []
-    if ho.get("interests"):
-        lines.append(f"Interests & hobbies: {ho['interests']}")
-    if ho.get("other"):
-        lines.append(f"Additional notes: {ho['other']}")
+    if _nb(ho, "interests"):
+        lines.append(f"Interests & hobbies: {_nb(ho, 'interests')}")
+    if _nb(ho, "other"):
+        lines.append(f"Additional notes: {_nb(ho, 'other')}")
     if lines:
         memories.append({
             "slug": "user-hobbies",
@@ -369,22 +393,19 @@ def build_memories(data):
     # --- Identity ---
     ident = data.get("identity", {})
     lines = []
-    if ident.get("ideology"):
-        lines.append(f"Political identity: {ident['ideology']}")
-    if ident.get("political"):
-        lines.append(f"Party / affiliation: {ident['political']}")
-    if ident.get("leaning"):
-        lines.append(f"Political leaning: {ident['leaning']}")
-    if ident.get("sexuality"):
-        lines.append(f"Sexuality / orientation: {ident['sexuality']}")
-    if ident.get("gender"):
-        lines.append(f"Gender identity: {ident['gender']}")
-    if ident.get("religion"):
-        lines.append(f"Religion / spirituality: {ident['religion']}")
-    if ident.get("causes"):
-        lines.append(f"Causes & issues: {ident['causes']}")
-    if ident.get("notes"):
-        lines.append(f"Identity notes: {ident['notes']}")
+    for label, key in [
+        ("Political identity", "ideology"),
+        ("Party / affiliation", "political"),
+        ("Political leaning", "leaning"),
+        ("Sexuality / orientation", "sexuality"),
+        ("Gender identity", "gender"),
+        ("Religion / spirituality", "religion"),
+        ("Causes & issues", "causes"),
+        ("Identity notes", "notes"),
+    ]:
+        v = _nb(ident, key)
+        if v:
+            lines.append(f"{label}: {v}")
     if lines:
         memories.append({
             "slug": "user-identity",
@@ -396,14 +417,15 @@ def build_memories(data):
     # --- Goals ---
     g = data.get("goals", {})
     lines = []
-    if g.get("current_projects"):
-        lines.append(f"Current projects: {g['current_projects']}")
-    if g.get("short_term"):
-        lines.append(f"Short-term goals: {g['short_term']}")
-    if g.get("long_term"):
-        lines.append(f"Long-term goals: {g['long_term']}")
-    if g.get("learning"):
-        lines.append(f"Currently learning: {g['learning']}")
+    for label, key in [
+        ("Current projects", "current_projects"),
+        ("Short-term goals", "short_term"),
+        ("Long-term goals", "long_term"),
+        ("Currently learning", "learning"),
+    ]:
+        v = _nb(g, key)
+        if v:
+            lines.append(f"{label}: {v}")
     if lines:
         memories.append({
             "slug": "user-goals",
@@ -420,14 +442,19 @@ def build_memories(data):
         ("Formatting preference", "formatting"), ("Feedback style", "feedback"),
         ("Working style", "working_style"), ("When stuck, wants Claude to", "when_stuck"),
     ]:
-        if c.get(key):
-            lines.append(f"{label}: {c[key]}")
-    if c.get("never_do"):
-        lines.append(f"\nNever do:\n{c['never_do']}")
-    if c.get("always_do"):
-        lines.append(f"\nAlways do:\n{c['always_do']}")
-    if c.get("other"):
-        lines.append(f"\nCollaboration notes:\n{c['other']}")
+        v = _nb(c, key)
+        if v:
+            lines.append(f"{label}: {v}")
+    # Single-line label+content so the chunker can split on natural ;/newline
+    # boundaries inside the user's text, not between the label and its body.
+    for label, key in [
+        ("Never do", "never_do"),
+        ("Always do", "always_do"),
+        ("Collaboration notes", "other"),
+    ]:
+        v = _nb(c, key)
+        if v:
+            lines.append(f"{label}: {v}")
     if lines:
         memories.append({
             "slug": "user-communication",
