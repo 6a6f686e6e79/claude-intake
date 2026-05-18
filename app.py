@@ -145,7 +145,7 @@ def write_memory_file(memory_path, slug, description, mem_type, content):
 
 BOOTSTRAP_FILENAME = "claude-ai-bootstrap.md"
 BOOTSTRAP_MAX_ENTRY_LEN = 500   # well under per-entry char caps on all known surfaces
-BOOTSTRAP_MAX_ENTRIES = 25      # leaves headroom under claude.ai's ~30-entry userMemories cap
+BOOTSTRAP_MAX_ENTRIES = 25      # leaves headroom under claude.ai's 30-entry userMemories cap
 BOOTSTRAP_TOPIC_TAGS = {
     "user-personal": "Personal",
     "user-family": "Family",
@@ -164,7 +164,7 @@ Generated: {timestamp}
 ## Instructions — follow in order
 
 **Step 1 — Check for existing memories first:**
-If you have a `memory_user_edits` tool, run `memory_user_edits view` before touching anything else — you MUST see the current memory state to avoid duplicates. If you don't have that tool (e.g. you're in Claude Code, the API console, or a session with memory disabled), acknowledge that and proceed directly to Step 2.
+If you have a `memory_user_edits` tool, **run `memory_user_edits view` first** — you need to see existing memories before adding, replacing, or merging. If you don't have that tool (Claude Code, API console, memory-disabled session), acknowledge that and proceed to Step 2 directly.
 
 **Step 2 — Process each numbered entry below:**
 - If no existing memory covers the same topic → `add`

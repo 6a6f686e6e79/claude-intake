@@ -203,10 +203,10 @@ class TestRoundTrip:
             original_mems = build_memories(SAMPLE)
             _write_all(SAMPLE, path)
             loaded = load_memories(path)
-        rebulit_mems = build_memories(loaded)
+        rebuilt_mems = build_memories(loaded)
 
         original = {m["slug"]: m["content"] for m in original_mems if not m["slug"].startswith("user-notes-")}
-        rebuilt = {m["slug"]: m["content"] for m in rebulit_mems}
+        rebuilt = {m["slug"]: m["content"] for m in rebuilt_mems}
 
         for slug, content in original.items():
             assert slug in rebuilt, f"slug {slug!r} lost on round-trip"
