@@ -455,7 +455,7 @@ def _parse_pet_line(rest):
             out["birthday"] = _parse_month_back(p[5:])
         elif p.startswith("passed away "):
             out["date_passed"] = _parse_month_back(p[12:])
-        elif p in ("Living", "Passed away"):
+        elif p in ("Still with us", "Passed away"):
             out["status"] = p
         elif pos_idx < len(positional):
             out[positional[pos_idx]] = p

@@ -9,7 +9,7 @@ from playwright.sync_api import sync_playwright
 from pathlib import Path
 
 URL = "http://127.0.0.1:5001/"
-OUT = Path(__file__).parent / "screenshots"
+OUT = Path(__file__).parent.parent / "screenshots"
 OUT.mkdir(exist_ok=True)
 
 VIEWPORT = {"width": 1280, "height": 900}
@@ -19,6 +19,7 @@ TABS = ["personal", "family", "work", "pets", "health", "hobbies", "identity", "
 
 def fill_personal(page):
     page.fill('input[name="personal.name"]', "Riley Quinn")
+    page.fill('input[name="personal.preferred_name"]', "Riley")
     page.fill('input[name="personal.birthday"]', "1989-07-14")
     page.fill('input[name="personal.city"]', "Boulder")
     page.fill('input[name="personal.state"]', "CO")
@@ -179,6 +180,8 @@ def fill_comms(page):
     page.select_option('select[name="comms.length"]', label="Short unless depth is needed")
     page.select_option('select[name="comms.formatting"]', label="Prose over bullet points")
     page.select_option('select[name="comms.feedback"]', label="Tell me when I'm wrong, directly")
+    click_chips(page, "humor-grid", ["Dry / deadpan", "Witty / wordplay"])
+    click_chips(page, "vibes-grid", ["Curious", "Opinionated", "Pushback-friendly"])
     page.fill(
         'textarea[name="comms.never_do"]',
         "- Don't start with \"Great question!\" or any preamble\n"
