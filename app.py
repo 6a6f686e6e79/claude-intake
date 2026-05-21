@@ -24,7 +24,7 @@ def fmt_month(value):
 
 app = Flask(__name__)
 
-CONFIG_FILE = Path("config.json")
+CONFIG_FILE = Path(__file__).resolve().parent / "config.json"
 DEFAULT_MEMORY_PATH = Path.home() / ".claude" / "memory"
 
 
