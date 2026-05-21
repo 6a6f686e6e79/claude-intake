@@ -8,6 +8,7 @@ import pytest
 from app import (
     build_memories, write_memory_file, load_memories,
     merge_content, build_bootstrap, _parse_bootstrap_file,
+    fmt_month,
 )
 
 SAMPLE = {
@@ -240,3 +241,19 @@ class TestBootstrap:
         comm_pos = bt.find("Communication:")
         personal_pos = bt.find("Personal:")
         assert comm_pos < personal_pos, "Communication should appear before Personal"
+
+
+# --- fmt_month ---
+
+class TestFmtMonth:
+    def test_valid(self):
+        assert fmt_month("2024-02") == "February 2024"
+
+    def test_empty(self):
+        assert fmt_month("") == ""
+
+    def test_mangled_year_returns_input(self):
+        assert fmt_month("20205-02") == "20205-02"
+        assert fmt_month("02025-02") == "02025-02"
+        assert fmt_month("99-02") == "99-02"
+        assert fmt_month("not-a-date") == "not-a-date"

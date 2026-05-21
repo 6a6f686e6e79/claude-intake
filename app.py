@@ -6,20 +6,12 @@ from pathlib import Path
 from datetime import datetime
 
 def fmt_month(value):
-    """Convert '2024-02' to 'February 2024'."""
+    """Convert '2024-02' to 'February 2024'. Returns input unchanged on failure."""
     if not value:
         return ""
     try:
         return datetime.strptime(value, "%Y-%m").strftime("%B %Y")
     except ValueError:
-        # Try to salvage a mangled year (e.g. '20205-02' → '2025-02')
-        try:
-            parts = value.split("-")
-            if len(parts) == 2:
-                year = parts[0][:4]  # trim to 4 digits
-                return datetime.strptime(f"{year}-{parts[1]}", "%Y-%m").strftime("%B %Y")
-        except (ValueError, IndexError):
-            pass
         return value
 
 app = Flask(__name__)
