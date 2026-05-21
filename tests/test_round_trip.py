@@ -8,7 +8,7 @@ import pytest
 from app import (
     build_memories, write_memory_file, load_memories,
     merge_content, build_bootstrap, _parse_bootstrap_file,
-    fmt_month,
+    fmt_month, _chunk_body, LABEL_PATTERN, LABEL_TO_KEY,
 )
 
 SAMPLE = {
@@ -257,3 +257,26 @@ class TestFmtMonth:
         assert fmt_month("02025-02") == "02025-02"
         assert fmt_month("99-02") == "99-02"
         assert fmt_month("not-a-date") == "not-a-date"
+
+
+# --- _chunk_body label pattern ---
+
+class TestChunkBody:
+    def test_ignores_lowercase_label_lookalikes(self):
+        # Lowercase sentence with ": " inside a multi-line value should not
+        # split the chunk under the old loose check it would have.
+        body = (
+            "Notes: line one\n"
+            "url: example.com\n"
+            "lots of context: this is just prose\n"
+            "more notes"
+        )
+        chunks = _chunk_body(body)
+        assert len(chunks) == 1
+        assert chunks[0][0] == "notes"
+        assert len(chunks[0][1]) == 4
+
+    def test_label_pattern_matches_all_real_labels(self):
+        for section_labels in LABEL_TO_KEY.values():
+            for label in section_labels:
+                assert LABEL_PATTERN.match(f"{label}: value"), f"pattern missed: {label!r}"

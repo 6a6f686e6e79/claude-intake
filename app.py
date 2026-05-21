@@ -52,6 +52,9 @@ def update_memory_index(memory_path, slug, description, filename):
         memory_md.write_text(entry + "\n", encoding="utf-8")
 
 
+LABEL_PATTERN = re.compile(r"^[A-Z][A-Za-z0-9 /&,()-]{0,60}: ")
+
+
 def _chunk_body(body):
     """Group a body into chunks. Each chunk is (key_lower_or_None, lines).
 
@@ -63,7 +66,7 @@ def _chunk_body(body):
     current_key = None
     current_lines = []
     for line in body.splitlines():
-        if ": " in line and not line.startswith((" ", "\t")):
+        if LABEL_PATTERN.match(line):
             if current_lines:
                 chunks.append((current_key, current_lines))
             current_key = line.split(":", 1)[0].strip().lower()
