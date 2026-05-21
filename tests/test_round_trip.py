@@ -242,6 +242,15 @@ class TestBootstrap:
         personal_pos = bt.find("Personal:")
         assert comm_pos < personal_pos, "Communication should appear before Personal"
 
+    def test_bootstrap_roundtrip_preserves_semicolons(self):
+        sample = dict(SAMPLE)
+        sample["comms"] = dict(sample["comms"])
+        sample["comms"]["other"] = "Item one; item two; with nested clauses"
+        mems = build_memories(sample)
+        bt = build_bootstrap(mems)
+        parsed = _parse_bootstrap_file(bt)
+        assert "Item one; item two; with nested clauses" in parsed["user-communication"]
+
 
 # --- fmt_month ---
 

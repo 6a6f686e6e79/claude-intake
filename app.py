@@ -230,7 +230,13 @@ def _split_body_into_chunks(body, budget):
 
 def _memory_to_entries(memory):
     topic = _topic_for(memory["slug"])
-    parts = [line.strip() for line in memory["content"].strip().splitlines() if line.strip()]
+    # Escape literal "; " in each line so the parser can recover the original
+    # value on round-trip (semicolons inside user text would otherwise split).
+    parts = [
+        line.strip().replace("; ", r"\; ")
+        for line in memory["content"].strip().splitlines()
+        if line.strip()
+    ]
     body = "; ".join(parts)
 
     # Reserve worst-case prefix overhead "Topic (NN/NN): "
@@ -561,8 +567,14 @@ def _parse_bootstrap_file(text):
             continue
         joined = "; ".join(chunks)
         # Reverse the bootstrap chunker's "; "-flatten back into per-line
-        # "Label: value" entries that the section parsers expect.
-        lines = [p.strip() for p in joined.split("; ") if p.strip()]
+        # "Label: value" entries that the section parsers expect. Split on
+        # "; " but not on the escaped form "\; " (lookbehind), then unescape
+        # so user-entered literal "; " round-trips.
+        lines = [
+            re.sub(r"\\; ", "; ", p.strip())
+            for p in re.split(r"(?<!\\); ", joined)
+            if p.strip()
+        ]
         result[slug] = "\n".join(lines)
     return result
 
