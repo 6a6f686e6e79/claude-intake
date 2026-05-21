@@ -69,9 +69,9 @@ def test_js_syntactically_valid(built_html, tmp_path):
     m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
     assert m, "inline <script> tag missing"
     js_file = tmp_path / "inline.js"
-    js_file.write_text(m.group(1))
+    js_file.write_text(m.group(1), encoding="utf-8")
     result = subprocess.run([node, "--check", str(js_file)],
-                            capture_output=True, text=True)
+                            capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, f"node --check failed:\n{result.stderr}"
 
 
@@ -140,8 +140,8 @@ def test_js_port_matches_python(built_html, tmp_path):
         + "}));\n"
     )
     js_file = tmp_path / "runner.js"
-    js_file.write_text(runner_js)
-    result = subprocess.run([node, str(js_file)], capture_output=True, text=True)
+    js_file.write_text(runner_js, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, f"node run failed:\n{result.stderr}"
 
     js_out = json.loads(result.stdout)
@@ -175,11 +175,11 @@ def test_zip_encoder_roundtrips(built_html, tmp_path):
         + f"fs.writeFileSync({json.dumps(str(zip_path))}, Buffer.from(bytes));\n"
     )
     js_file = tmp_path / "ziprun.js"
-    js_file.write_text(runner)
-    result = subprocess.run([node, str(js_file)], capture_output=True, text=True)
+    js_file.write_text(runner, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, result.stderr
 
     out = subprocess.run([unzip, "-p", str(zip_path), "a.txt"],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, encoding="utf-8")
     assert out.returncode == 0
     assert out.stdout == payload

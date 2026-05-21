@@ -787,6 +787,10 @@ def build() -> str:
 
 
 if __name__ == "__main__":
+    import sys
+    # Console default on Windows is cp1252 and crashes on the arrow below.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     output = build()
     OUTPUT.write_text(output, encoding="utf-8")
     INDEX_OUTPUT.write_text(INDEX_REDIRECT, encoding="utf-8")
