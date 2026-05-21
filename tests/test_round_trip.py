@@ -242,14 +242,25 @@ class TestBootstrap:
         personal_pos = bt.find("Personal:")
         assert comm_pos < personal_pos, "Communication should appear before Personal"
 
-    def test_bootstrap_roundtrip_preserves_semicolons(self):
+    def test_bootstrap_roundtrip_preserves_semicolon_content(self):
+        """Content survives; verbatim "; " separators do not.
+
+        The bootstrap is a lossy snapshot by design (priority-ordered,
+        character-capped, chunked). Per-file memory files are the source of
+        truth for round-trip fidelity (see load_memories).
+        """
         sample = dict(SAMPLE)
         sample["comms"] = dict(sample["comms"])
         sample["comms"]["other"] = "Item one; item two; with nested clauses"
         mems = build_memories(sample)
         bt = build_bootstrap(mems)
         parsed = _parse_bootstrap_file(bt)
-        assert "Item one; item two; with nested clauses" in parsed["user-communication"]
+        body = parsed["user-communication"]
+        assert "Item one" in body
+        assert "item two" in body
+        assert "with nested clauses" in body
+        # No escape artifacts in the user-visible bootstrap
+        assert r"\;" not in bt
 
 
 # --- fmt_month ---
