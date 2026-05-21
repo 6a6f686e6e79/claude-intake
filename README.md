@@ -37,7 +37,12 @@ By default, files are written to `~/.claude/memory/`. Use the ⚙ Settings panel
 
 ## Standalone (no install)
 
-For non-technical users who just want to seed claude.ai memory without setting up Python, [`standalone.html`](standalone.html) is a single self-contained file that runs entirely in the browser. Download it, double-click to open, fill in the form, click **Generate** — a memory bootstrap is copied to your clipboard, ready to paste into a claude.ai conversation.
+For non-technical users who just want to seed claude.ai memory without setting up Python, [`standalone.html`](standalone.html) is a single self-contained file that runs entirely in the browser. Two ways to use it:
+
+- **From this repo via GitHub Pages** (no download needed once Pages is enabled on the repo): visit the Pages URL for this project and the form opens directly. `index.html` is a redirect so the bare repo Pages URL lands on `standalone.html`.
+- **Offline**: download `standalone.html`, double-click to open. Same form, works without internet.
+
+Fill in the tabs, click **Generate** — a memory bootstrap is copied to your clipboard, ready to paste into a claude.ai conversation.
 
 The standalone is generated from the same template as the Flask version, so the fields stay in sync. To regenerate after editing the template or CSS:
 
