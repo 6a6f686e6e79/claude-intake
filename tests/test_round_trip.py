@@ -300,3 +300,16 @@ class TestChunkBody:
         for section_labels in LABEL_TO_KEY.values():
             for label in section_labels:
                 assert LABEL_PATTERN.match(f"{label}: value"), f"pattern missed: {label!r}"
+
+    def test_label_pattern_matches_every_emitted_label(self):
+        """build_memories emits dynamic labels (Child N, Pet N, Prior employer
+        N, Military service) that aren't enumerated in LABEL_TO_KEY. Lock in
+        that LABEL_PATTERN matches them so _chunk_body keeps treating them as
+        labels rather than continuation lines."""
+        mems = build_memories(SAMPLE)
+        for m in mems:
+            for line in m["content"].splitlines():
+                if ": " in line:
+                    assert LABEL_PATTERN.match(line), (
+                        f"emitted by {m['slug']!r} but pattern missed it: {line!r}"
+                    )
