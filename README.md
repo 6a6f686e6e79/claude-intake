@@ -1,67 +1,52 @@
 # claude-intake
 
-A local Flask app for building and maintaining Claude memory files through a friendly web form instead of writing markdown frontmatter by hand.
-
-Fill in as much (or as little) as you like across nine tabs — **Personal, Family, Work, Pets, Health, Hobbies, Identity, Goals, Communication** — then choose where to send it.
+A local Flask web app for generating **Claude Code memory files**. Bootstrap your `~/.claude/memory/` directory and `MEMORY.md` index from a tabbed form instead of hand-writing YAML frontmatter.
 
 ![Personal tab](screenshots/00-personal-full.png)
 
-## Why
+## What it does
 
-Claude reads memory files to personalize how it works with you. Writing those files by hand means remembering the frontmatter schema, the index format, and staying consistent across edits. This form does the typing, handles merging when you come back to update an entry, and outputs the right format for whichever Claude surface you're targeting.
+Claude Code reads memory files to personalize how it behaves across sessions: your name, your work, your family, how you prefer to communicate. Writing those files by hand means remembering the frontmatter schema, keeping the index in sync, and being disciplined about consistency over time.
 
-Everything runs locally. Nothing is transmitted anywhere.
+claude-intake gives you a nine-tab form (Personal, Family, Work, Pets, Health, Hobbies, Identity, Goals, Communication), validates the input, writes properly-formatted memory files to `~/.claude/memory/`, and rebuilds the `MEMORY.md` index automatically. Edits merge instead of clobbering, so you can come back next week and add a hobby without losing yesterday's work.
 
-## Two output targets
+Everything runs locally on `127.0.0.1`. Nothing is transmitted to the Anthropic API or anywhere else.
 
-| Target | What it writes | Use when |
-|--------|---------------|----------|
-| **Claude Code** | One `user-*.md` per section + `MEMORY.md` index in `~/.claude/memory/` | You use Claude Code (CLI or IDE extension) |
-| **Claude.ai** | `claude-ai-bootstrap.md` — a numbered, prioritized list with step-by-step instructions for Claude | You use Claude.ai (or want to seed memories in any Claude session) |
-| **Both** | Both of the above | You use both surfaces |
+## Features
 
-The output target toggle is in the form header. The bootstrap file is designed to be pasted into a Claude.ai conversation; Claude reads the instructions and populates your User Memories automatically, deduplicating against whatever is already there.
-
-## Round-trip support
-
-When you open the app, it reads your existing memory files back into the form. You see what's already saved, edit only what changed, and re-submit — the merge logic updates existing fields and appends new ones without ever deleting content you added by hand.
+- Nine pre-built memory categories with curated fields for each
+- YAML frontmatter generated automatically and consistently
+- Re-entry safe: editing a category merges with the existing file rather than overwriting it
+- `MEMORY.md` index file kept in sync on every save
+- Configurable output path via the in-app Settings panel
+- Pure local Flask app, no external API calls, no telemetry
 
 ## Quick start
 
-```bash
+```
 git clone https://github.com/6a6f686e6e79/claude-intake.git
 cd claude-intake
-python3 -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python app.py
 ```
 
-Open <http://127.0.0.1:5001>, fill in the tabs, pick a target, click **Save to Memory**.
+Open <http://127.0.0.1:5001>, fill in the tabs, click **Save to Memory**.
 
 By default, files are written to `~/.claude/memory/`. Use the ⚙ Settings panel in the header to change the path.
 
-## Tabs
+## How Claude Code uses these files
 
-| Tab | What it captures |
-|-----|-----------------|
-| Personal | Name, birthday, location, timezone, free-form notes |
-| Family | Partner, children (with born/passed dates), parents, siblings |
-| Work | Title, company, industry, work style, prior employers, military service |
-| Pets | Name, species, breed (autocomplete), born/passed dates |
-| Health | Dietary restrictions, allergies, conditions, exercise habits |
-| Hobbies | Interests, leisure activities, additional notes |
-| Identity | Political identity, party/affiliation, leaning, sexuality, gender, religion, causes |
-| Goals | Current projects, short- and long-term goals, what you're learning |
-| Communication | Tone, format, feedback style, humor, dos and don'ts for Claude |
+When Claude Code starts in a project directory, it reads `CLAUDE.md` (project-level memory committed alongside the code) and, separately, files in `~/.claude/memory/` (user-level memory that follows you between projects). The combination gives Claude context about both the codebase and the person working in it.
 
-## Merge behavior
+claude-intake handles the user-level side: the persistent facts about you that should be available in every project, regardless of what you're working on. For project-level `CLAUDE.md` files, write those by hand alongside the code they describe.
 
-Re-submitting with changed values updates existing fields. Fields you've hand-edited in the memory files but that don't appear in the form are preserved at the end of each file. To remove a value entirely, edit the memory file directly.
+For the underlying file format and lookup behavior, see the [Claude Code memory documentation](https://docs.claude.com/en/docs/claude-code/memory).
 
 ## Screenshots
 
 | Tab | Preview |
-|-----|---------|
+| --- | --- |
 | Personal | [01-personal.png](screenshots/01-personal.png) |
 | Family | [02-family.png](screenshots/02-family.png) |
 | Work | [03-work.png](screenshots/03-work.png) |
@@ -72,11 +57,11 @@ Re-submitting with changed values updates existing fields. Fields you've hand-ed
 | Goals | [08-goals.png](screenshots/08-goals.png) |
 | Comms | [09-comms.png](screenshots/09-comms.png) |
 
-All screenshots use a fictional persona ("Riley Quinn") — no real personal data.
+All screenshots use a fictional persona ("Riley Quinn"). No real personal data is shown.
 
 ## Regenerating screenshots
 
-```bash
+```
 pip install playwright
 playwright install chromium
 python app.py &        # run the server in the background
@@ -85,4 +70,4 @@ python tools/take_screenshots.py
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
