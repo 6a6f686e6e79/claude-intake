@@ -893,8 +893,13 @@ def index():
 
 @app.route("/save-config", methods=["POST"])
 def save_config():
-    data = request.get_json()
-    requested = data["memory_path"]
+    data = request.get_json(silent=True) or {}
+    requested = data.get("memory_path")
+    if not requested or not isinstance(requested, str):
+        return jsonify({
+            "success": False,
+            "error": "memory_path is required and must be a string",
+        }), 400
     resolved = Path(requested).expanduser().resolve()
     try:
         resolved.relative_to(Path.home())
