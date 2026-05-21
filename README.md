@@ -35,6 +35,18 @@ Open <http://127.0.0.1:5001>, fill in the tabs, click **Save to Memory**.
 
 By default, files are written to `~/.claude/memory/`. Use the ⚙ Settings panel in the header to change the path.
 
+## Standalone (no install)
+
+For non-technical users who just want to seed claude.ai memory without setting up Python, [`standalone.html`](standalone.html) is a single self-contained file that runs entirely in the browser. Download it, double-click to open, fill in the form, click **Generate** — a memory bootstrap is copied to your clipboard, ready to paste into a claude.ai conversation.
+
+The standalone is generated from the same template as the Flask version, so the fields stay in sync. To regenerate after editing the template or CSS:
+
+```
+python3 tools/build_standalone.py
+```
+
+The Claude Code path is also supported as a secondary mode: pick the "Claude Code" target and **Generate** downloads a ZIP of `.md` files to extract into `~/.claude/memory/`.
+
 ## How Claude Code uses these files
 
 When Claude Code starts in a project directory, it reads `CLAUDE.md` (project-level memory committed alongside the code) and, separately, files in `~/.claude/memory/` (user-level memory that follows you between projects). The combination gives Claude context about both the codebase and the person working in it.

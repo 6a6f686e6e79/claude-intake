@@ -1,0 +1,773 @@
+"""Generate standalone.html from the Flask template.
+
+The Flask template is the source of truth for fields, chip lists, and layout.
+This script transforms it into a self-contained HTML file that runs entirely
+in the browser — no Python, no server, no install. The intended audience is
+non-technical users who want to seed claude.ai memory without touching a
+terminal: open the file in any browser, fill in the tabs, click Copy, paste
+into a claude.ai chat.
+
+Transformations applied to the template:
+  - Inline static/style.css
+  - Strip Jinja placeholders ({{ memory_path }}, {{ initial_data|tojson }})
+  - Remove the Settings panel and Settings toggle (path config is Flask-only)
+  - Swap target radios so claude.ai is first and default-checked
+  - Replace "Preview" + "Save to Memory" with a single "Generate" button
+  - Inject a JS port of build_memories / build_bootstrap and a minimal stored
+    ZIP encoder for the optional Claude Code .md download
+
+Re-run after editing the Flask template, CSS, or the bootstrap logic in
+app.py to keep standalone.html in sync.
+"""
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+TEMPLATE = ROOT / "templates" / "index.html"
+CSS = ROOT / "static" / "style.css"
+OUTPUT = ROOT / "standalone.html"
+
+
+STANDALONE_JS = r"""
+// ─────────────────────────────────────────────────────────────────
+// STANDALONE OVERRIDES — appended by tools/build_standalone.py
+//
+// Replaces the Flask-backed functions above (previewMemories,
+// submitForm, saveConfig) with pure-browser implementations.
+// The port of build_memories / build_bootstrap below must stay in
+// sync with app.py — that file is the source of truth.
+// ─────────────────────────────────────────────────────────────────
+
+const BOOTSTRAP_MAX_ENTRY_LEN = 500;
+const BOOTSTRAP_MAX_ENTRIES = 25;
+const BOOTSTRAP_TOPIC_TAGS = {
+  'user-personal': 'Personal',
+  'user-family': 'Family',
+  'user-work': 'Work',
+  'user-pets': 'Pets',
+  'user-health': 'Health',
+  'user-hobbies': 'Hobbies',
+  'user-identity': 'Identity',
+  'user-goals': 'Goals',
+  'user-communication': 'Communication',
+};
+const BOOTSTRAP_PRIORITY = [
+  'user-communication', 'user-personal', 'user-identity', 'user-work',
+  'user-family', 'user-health', 'user-hobbies', 'user-goals', 'user-pets',
+];
+
+const MONTH_NAMES = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+
+function fmtMonth(value) {
+  if (!value) return '';
+  const m = /^(\d{4,})-(\d{2})$/.exec(value);
+  if (!m) return value;
+  const year = m[1].slice(0, 4);
+  const month = parseInt(m[2], 10);
+  if (month < 1 || month > 12) return value;
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+function nb(obj, key) {
+  if (!obj) return '';
+  const v = obj[key];
+  if (v == null) return '';
+  return String(v).trim();
+}
+
+function topicFor(slug) {
+  if (slug.startsWith('user-notes-')) return 'Notes';
+  if (BOOTSTRAP_TOPIC_TAGS[slug]) return BOOTSTRAP_TOPIC_TAGS[slug];
+  return slug.replace(/^user-/, '').replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function splitBodyIntoChunks(body, budget) {
+  if (body.length <= budget) return [body];
+  const chunks = [];
+  let current = [], currentLen = 0;
+  for (const piece of body.split('; ')) {
+    const sepLen = current.length ? 2 : 0;
+    if (current.length && currentLen + sepLen + piece.length > budget) {
+      chunks.push(current.join('; '));
+      current = [piece];
+      currentLen = piece.length;
+    } else {
+      current.push(piece);
+      currentLen += sepLen + piece.length;
+    }
+  }
+  if (current.length) chunks.push(current.join('; '));
+
+  const final = [];
+  for (const chunk of chunks) {
+    if (chunk.length <= budget) { final.push(chunk); continue; }
+    let sub = [], subLen = 0;
+    for (const word of chunk.split(/\s+/)) {
+      const sepLen = sub.length ? 1 : 0;
+      if (sub.length && subLen + sepLen + word.length > budget) {
+        final.push(sub.join(' '));
+        sub = [word];
+        subLen = word.length;
+      } else {
+        sub.push(word);
+        subLen += sepLen + word.length;
+      }
+    }
+    if (sub.length) final.push(sub.join(' '));
+  }
+  return final;
+}
+
+function memoryToEntries(memory) {
+  const topic = topicFor(memory.slug);
+  const parts = memory.content.split('\n').map(l => l.trim()).filter(Boolean);
+  const body = parts.join('; ');
+  const budget = BOOTSTRAP_MAX_ENTRY_LEN - topic.length - ' (99/99): '.length;
+  const chunks = splitBodyIntoChunks(body, budget);
+  if (chunks.length === 1) {
+    const single = `${topic}: ${chunks[0]}`;
+    if (single.length <= BOOTSTRAP_MAX_ENTRY_LEN) return [single];
+  }
+  const total = chunks.length;
+  return chunks.map((c, i) => `${topic} (${i + 1}/${total}): ${c}`);
+}
+
+function buildBootstrap(memories) {
+  const memBySlug = {};
+  for (const m of memories) memBySlug[m.slug] = m;
+  const ordered = [];
+  for (const slug of BOOTSTRAP_PRIORITY) {
+    if (memBySlug[slug]) {
+      ordered.push(memBySlug[slug]);
+      delete memBySlug[slug];
+    }
+  }
+  for (const m of Object.values(memBySlug)) ordered.push(m);
+
+  const entries = [];
+  outer: for (const mem of ordered) {
+    for (const entry of memoryToEntries(mem)) {
+      if (entries.length >= BOOTSTRAP_MAX_ENTRIES) break outer;
+      entries.push(entry);
+    }
+  }
+  if (!entries.length) return '';
+
+  const ts = new Date().toISOString().slice(0, 19);
+  const header = `# Claude.ai Memory Bootstrap
+
+Generated: ${ts}
+
+## Instructions — follow in order
+
+**Step 1 — Check for existing memories first:**
+If you have a \`memory_user_edits\` tool, **run \`memory_user_edits view\` first** — you need to see existing memories before adding, replacing, or merging. If you don't have that tool (Claude Code, API console, memory-disabled session), acknowledge that and proceed to Step 2 directly.
+
+**Step 2 — Process each numbered entry below:**
+- If no existing memory covers the same topic → \`add\`
+- If an existing memory covers the same ground → \`replace\` with the matching line number
+- If an existing memory partially overlaps → merge the content and \`replace\`
+
+**Priority note:** Entries are ordered by importance — communication preferences and core identity first, details last. If you are approaching the memory limit, skip from the bottom of the list, not the top.
+
+**Step 3 — When all entries are processed:**
+Summarize for the user: how many entries were added, how many replaced, how many skipped, and flag anything that was dropped or merged so they know what changed.
+
+---
+
+`;
+  const numbered = entries.map((e, i) => `${i + 1}. ${e}`).join('\n\n');
+  return header + numbered + '\n';
+}
+
+function buildMemories(data) {
+  const memories = [];
+
+  // Personal
+  {
+    const p = data.personal || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Name', 'name'], ['Preferred name', 'preferred_name'],
+      ['Birthday', 'birthday'], ['City', 'city'],
+      ['State/Province', 'state'], ['Country', 'country'], ['Timezone', 'timezone'],
+    ]) {
+      const v = nb(p, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-personal',
+      description: "User's personal details: name, birthday, location",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Family
+  {
+    const f = data.family || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Relationship status', 'relationship_status'],
+      ['Partner name', 'partner_name'],
+      ['Partner birthday', 'partner_birthday'],
+    ]) {
+      const v = nb(f, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    const children = f.children || [];
+    children.forEach((child, i) => {
+      const parts = [];
+      const name = nb(child, 'name');
+      if (name) parts.push(name);
+      if (nb(child, 'birthday')) parts.push(`born ${fmtMonth(nb(child, 'birthday'))}`);
+      if (nb(child, 'status')) parts.push(nb(child, 'status'));
+      if (nb(child, 'date_passed')) parts.push(`passed away ${fmtMonth(nb(child, 'date_passed'))}`);
+      if (parts.length) lines.push(`Child ${i + 1}: ${parts.join(', ')}`);
+    });
+    for (const [label, key] of [
+      ['Former partner / co-parent', 'former_partner'],
+      ['Siblings', 'siblings'],
+      ['Parents', 'parents'],
+      ['Other family notes', 'other'],
+    ]) {
+      const v = nb(f, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-family',
+      description: "User's family: partner, children, parents, siblings",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Work
+  {
+    const w = data.work || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Job title', 'title'], ['Company', 'company'], ['Industry', 'industry'],
+      ['Years of experience', 'years_exp'], ['Work style', 'work_style'],
+    ]) {
+      const v = nb(w, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (nb(w, 'notes')) lines.push(`Work notes: ${nb(w, 'notes')}`);
+    const emps = w.prior_employers || [];
+    emps.forEach((emp, i) => {
+      const parts = [];
+      for (const k of ['company', 'title', 'years']) {
+        const v = nb(emp, k);
+        if (v) parts.push(v);
+      }
+      if (nb(emp, 'notes')) parts.push(nb(emp, 'notes'));
+      if (parts.length) lines.push(`Prior employer ${i + 1}: ${parts.join(', ')}`);
+    });
+    const milParts = [];
+    for (const [label, key] of [
+      ['branch', 'military_branch'], ['country', 'military_country'],
+      ['years served', 'military_years'], ['field', 'military_field'],
+      ['rank', 'military_rank'],
+    ]) {
+      const v = nb(w, key);
+      if (v) milParts.push(`${label} ${v}`);
+    }
+    if (milParts.length) lines.push(`Military service: ${milParts.join(', ')}`);
+    if (nb(w, 'military_highlights')) lines.push(`Military highlights: ${nb(w, 'military_highlights')}`);
+    if (lines.length) memories.push({
+      slug: 'user-work',
+      description: "User's professional background, prior employers, military service",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Pets
+  {
+    const pets = data.pets || [];
+    const lines = [];
+    pets.forEach((pet, i) => {
+      const parts = [];
+      for (const k of ['name', 'species', 'breed']) {
+        const v = nb(pet, k);
+        if (v) parts.push(v);
+      }
+      if (nb(pet, 'birthday')) parts.push(`born ${fmtMonth(nb(pet, 'birthday'))}`);
+      if (nb(pet, 'status')) parts.push(nb(pet, 'status'));
+      if (nb(pet, 'date_passed')) parts.push(`passed away ${fmtMonth(nb(pet, 'date_passed'))}`);
+      if (parts.length) lines.push(`Pet ${i + 1}: ${parts.join(', ')}`);
+    });
+    if (lines.length) memories.push({
+      slug: 'user-pets',
+      description: "User's pets: names, species, breeds",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Health
+  {
+    const h = data.health || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Dietary restrictions', 'dietary'], ['Allergies', 'allergies'],
+      ['Health conditions', 'conditions'], ['Exercise habits', 'exercise'],
+    ]) {
+      const v = nb(h, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (nb(h, 'notes')) lines.push(`Health notes: ${nb(h, 'notes')}`);
+    if (lines.length) memories.push({
+      slug: 'user-health',
+      description: "User's health, dietary restrictions, and wellness habits",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Hobbies
+  {
+    const ho = data.hobbies || {};
+    const lines = [];
+    if (nb(ho, 'interests')) lines.push(`Interests & hobbies: ${nb(ho, 'interests')}`);
+    if (nb(ho, 'other')) lines.push(`Additional notes: ${nb(ho, 'other')}`);
+    if (lines.length) memories.push({
+      slug: 'user-hobbies',
+      description: "User's hobbies, interests, and leisure activities",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Identity
+  {
+    const ident = data.identity || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Political identity', 'ideology'],
+      ['Party / affiliation', 'political'],
+      ['Political leaning', 'leaning'],
+      ['Sexuality / orientation', 'sexuality'],
+      ['Gender identity', 'gender'],
+      ['Religion / spirituality', 'religion'],
+      ['Causes & issues', 'causes'],
+      ['Identity notes', 'notes'],
+    ]) {
+      const v = nb(ident, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-identity',
+      description: "User's political views, sexuality, gender identity, religion, and causes",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Goals
+  {
+    const g = data.goals || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Current projects', 'current_projects'],
+      ['Short-term goals', 'short_term'],
+      ['Long-term goals', 'long_term'],
+      ['Currently learning', 'learning'],
+    ]) {
+      const v = nb(g, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-goals',
+      description: "User's current goals, projects, and things they're learning",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Communication
+  {
+    const c = data.comms || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Tone preference', 'tone'], ['Response length', 'length'],
+      ['Formatting preference', 'formatting'], ['Feedback style', 'feedback'],
+      ['Humor style', 'humor'], ['Personality vibes', 'personality_vibes'],
+      ['Working style', 'working_style'], ['When stuck, wants Claude to', 'when_stuck'],
+    ]) {
+      const v = nb(c, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    for (const [label, key] of [
+      ['Never do', 'never_do'],
+      ['Always do', 'always_do'],
+      ['Collaboration notes', 'other'],
+    ]) {
+      const v = nb(c, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-communication',
+      description: "How the user wants Claude to communicate: tone, format, dos and don'ts",
+      type: 'feedback',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Free-form
+  const ff = (data.freeform || '').trim();
+  if (ff) {
+    const now = new Date();
+    const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    memories.push({
+      slug: `user-notes-${ts}`,
+      description: 'Free-form notes entered by user during intake',
+      type: 'user',
+      content: ff,
+    });
+  }
+
+  return memories;
+}
+
+// ── YAML-frontmatter wrapper for the .md downloads ───────────────
+function memoryToFileBody(mem) {
+  return `---\nname: ${mem.slug}\ndescription: ${mem.description}\nmetadata:\n  type: ${mem.type}\n---\n\n${mem.content}\n`;
+}
+
+// ── MEMORY.md index ─────────────────────────────────────────────
+function buildIndex(memories) {
+  if (!memories.length) return '';
+  return memories.map(m => `- [${m.slug}](${m.slug}.md) — ${m.description}`).join('\n') + '\n';
+}
+
+// ── Minimal stored ZIP encoder ──────────────────────────────────
+// No compression — files are stored raw. Adequate for short text
+// files; keeps the standalone dependency-free.
+const CRC32_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) {
+    c = CRC32_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  }
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function writeU16(view, off, val) { view.setUint16(off, val, true); }
+function writeU32(view, off, val) { view.setUint32(off, val, true); }
+
+function buildZip(files) {
+  // files: [{ name, content }]
+  const encoder = new TextEncoder();
+  const entries = files.map(f => ({
+    nameBytes: encoder.encode(f.name),
+    dataBytes: encoder.encode(f.content),
+  }));
+  for (const e of entries) e.crc = crc32(e.dataBytes);
+
+  // Local file headers + data
+  const localChunks = [];
+  let offset = 0;
+  for (const e of entries) {
+    e.offset = offset;
+    const header = new ArrayBuffer(30);
+    const v = new DataView(header);
+    writeU32(v, 0, 0x04034b50);   // local file header signature
+    writeU16(v, 4, 20);            // version needed
+    writeU16(v, 6, 0);             // flags
+    writeU16(v, 8, 0);             // method (stored)
+    writeU16(v, 10, 0);            // mod time
+    writeU16(v, 12, 0);            // mod date
+    writeU32(v, 14, e.crc);
+    writeU32(v, 18, e.dataBytes.length);  // compressed size
+    writeU32(v, 22, e.dataBytes.length);  // uncompressed size
+    writeU16(v, 26, e.nameBytes.length);
+    writeU16(v, 28, 0);            // extra field length
+    localChunks.push(new Uint8Array(header));
+    localChunks.push(e.nameBytes);
+    localChunks.push(e.dataBytes);
+    offset += 30 + e.nameBytes.length + e.dataBytes.length;
+  }
+
+  // Central directory
+  const cdChunks = [];
+  let cdSize = 0;
+  for (const e of entries) {
+    const header = new ArrayBuffer(46);
+    const v = new DataView(header);
+    writeU32(v, 0, 0x02014b50);    // central dir header signature
+    writeU16(v, 4, 20);             // version made by
+    writeU16(v, 6, 20);             // version needed
+    writeU16(v, 8, 0);
+    writeU16(v, 10, 0);
+    writeU16(v, 12, 0);
+    writeU16(v, 14, 0);
+    writeU32(v, 16, e.crc);
+    writeU32(v, 20, e.dataBytes.length);
+    writeU32(v, 24, e.dataBytes.length);
+    writeU16(v, 28, e.nameBytes.length);
+    writeU16(v, 30, 0);
+    writeU16(v, 32, 0);
+    writeU16(v, 34, 0);
+    writeU16(v, 36, 0);
+    writeU32(v, 38, 0);             // external attrs
+    writeU32(v, 42, e.offset);
+    cdChunks.push(new Uint8Array(header));
+    cdChunks.push(e.nameBytes);
+    cdSize += 46 + e.nameBytes.length;
+  }
+
+  // End of central directory
+  const eocd = new ArrayBuffer(22);
+  const ev = new DataView(eocd);
+  writeU32(ev, 0, 0x06054b50);
+  writeU16(ev, 4, 0);
+  writeU16(ev, 6, 0);
+  writeU16(ev, 8, entries.length);
+  writeU16(ev, 10, entries.length);
+  writeU32(ev, 12, cdSize);
+  writeU32(ev, 16, offset);
+  writeU16(ev, 20, 0);
+
+  const total = offset + cdSize + 22;
+  const out = new Uint8Array(total);
+  let pos = 0;
+  for (const c of localChunks) { out.set(c, pos); pos += c.length; }
+  for (const c of cdChunks)    { out.set(c, pos); pos += c.length; }
+  out.set(new Uint8Array(eocd), pos);
+  return out;
+}
+
+function downloadBlob(bytes, filename, mime) {
+  const blob = new Blob([bytes], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+// ── Override the Flask-backed actions ────────────────────────────
+async function previewMemories() {
+  const data = collectData();
+  const memories = buildMemories(data);
+  const target = data.target || 'claude-ai';
+  const bootstrap = (target === 'claude-ai' || target === 'both')
+    ? buildBootstrap(memories) : null;
+  renderPreview(memories, bootstrap, target);
+}
+
+async function submitForm() {
+  const data = collectData();
+  const target = data.target || 'claude-ai';
+  const memories = buildMemories(data);
+
+  if (target === 'claude-ai' || target === 'both') {
+    const bootstrap = buildBootstrap(memories);
+    if (bootstrap) {
+      try {
+        await navigator.clipboard.writeText(bootstrap);
+        showToast('✓ Bootstrap copied — paste into a claude.ai chat');
+      } catch (e) {
+        showToast('Copy failed — use the Copy button in the preview');
+      }
+    } else {
+      showToast('Nothing to copy yet — fill in some fields first');
+    }
+  }
+
+  if (target === 'claude-code' || target === 'both') {
+    if (memories.length) {
+      const files = memories.map(m => ({
+        name: `${m.slug}.md`,
+        content: memoryToFileBody(m),
+      }));
+      const index = buildIndex(memories);
+      if (index) files.push({ name: 'MEMORY.md', content: index });
+      const zipBytes = buildZip(files);
+      downloadBlob(zipBytes, 'claude-memory.zip', 'application/zip');
+      if (target === 'claude-code') {
+        showToast('✓ Downloaded claude-memory.zip — unzip into ~/.claude/memory/');
+      }
+    }
+  }
+
+  previewMemories();
+}
+
+// Settings panel and saveConfig are no-ops in standalone (the panel is
+// stripped at build time); define stubs so any stale onclick handlers
+// fail silently rather than throwing.
+function saveConfig() {}
+function toggleSettings() {}
+
+// Override renderPreview to skip the "Files will be saved to: <path>" line
+// (the path input doesn't exist in the standalone, and there's no on-disk
+// destination for claude.ai users anyway). Otherwise identical to the
+// Flask version.
+function renderPreview(memories, bootstrap, target) {
+  const section = document.getElementById('preview-section');
+  const list = document.getElementById('preview-list');
+  const pathEl = document.getElementById('memory-path-display');
+
+  const cards = [];
+
+  if (target === 'claude-code' || target === 'both') {
+    if (memories.length) {
+      cards.push(...memories.map(m => `
+        <div class="preview-item">
+          <div class="preview-item-header">
+            <span>${m.slug}.md</span>
+            <span style="display:flex;gap:10px;align-items:center;font-weight:400;opacity:0.7">${m.description}<button type="button" class="btn-sm" onclick="copyCardBody(this)">📋 Copy</button></span>
+          </div>
+          <div class="preview-item-body">${escapeHtml(m.content)}</div>
+        </div>`));
+    }
+  }
+
+  if ((target === 'claude-ai' || target === 'both') && bootstrap) {
+    cards.push(`
+      <div class="preview-item">
+        <div class="preview-item-header">
+          <span>claude-ai-bootstrap.md</span>
+          <span style="display:flex;gap:10px;align-items:center;font-weight:400;opacity:0.7">Paste into a claude.ai conversation<button type="button" class="btn-sm" onclick="copyCardBody(this)">📋 Copy all</button></span>
+        </div>
+        <div class="preview-item-body">${escapeHtml(bootstrap)}</div>
+      </div>`);
+  }
+
+  if (!cards.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:14px">Nothing to preview yet — fill in some fields first.</p>';
+  } else {
+    list.innerHTML = cards.join('');
+  }
+
+  if (pathEl) pathEl.innerHTML = '';
+  section.classList.add('visible');
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+"""
+
+
+def inline_css(html: str, css: str) -> str:
+    return html.replace(
+        '<link rel="stylesheet" href="/static/style.css" />',
+        f"<style>\n{css}\n</style>",
+    )
+
+
+def strip_jinja(html: str) -> str:
+    html = html.replace("{{ initial_data|tojson }}", "{}")
+    html = html.replace('value="{{ memory_path }}"', 'value=""')
+    return html
+
+
+def strip_settings_panel(html: str) -> str:
+    html = re.sub(
+        r'<button class="settings-toggle"[^>]*>.*?</button>\s*',
+        "",
+        html,
+    )
+    html = re.sub(
+        r'<div class="settings-panel"[^>]*>.*?</div>\s*</div>\s*',
+        "",
+        html,
+        flags=re.DOTALL,
+        count=1,
+    )
+    return html
+
+
+def rewrite_target_radios(html: str) -> str:
+    block_re = re.compile(
+        r'<div class="target-toggle"[^>]*>.*?</div>',
+        re.DOTALL,
+    )
+    new_block = (
+        '<div class="target-toggle" style="margin-top:24px;padding:12px 16px;'
+        'background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px">\n'
+        '    <label style="font-weight:500;margin-right:14px">Output target:</label>\n'
+        '    <label style="margin-right:14px;font-weight:400">'
+        '<input type="radio" name="target" value="claude-ai" checked /> '
+        'Claude.ai <span style="color:var(--muted)">(copy a bootstrap block into chat)</span></label>\n'
+        '    <label style="margin-right:14px;font-weight:400">'
+        '<input type="radio" name="target" value="claude-code" /> '
+        'Claude Code <span style="color:var(--muted)">(download .md files as ZIP)</span></label>\n'
+        '    <label style="font-weight:400">'
+        '<input type="radio" name="target" value="both" /> Both</label>\n'
+        '  </div>'
+    )
+    return block_re.sub(new_block, html, count=1)
+
+
+def rewrite_actions(html: str) -> str:
+    block_re = re.compile(
+        r'<!-- Actions -->\s*<div class="actions">.*?</div>\s*<p[^>]*>.*?</p>',
+        re.DOTALL,
+    )
+    new_block = (
+        '<!-- Actions -->\n'
+        '  <div class="actions">\n'
+        '    <button class="btn btn-outline" onclick="previewMemories()">Preview</button>\n'
+        '    <button class="btn btn-primary" onclick="submitForm()">Generate</button>\n'
+        '  </div>\n'
+        '  <p style="text-align:right;font-size:12px;color:var(--muted);margin-top:8px">\n'
+        '    Click <strong>Generate</strong> to copy a bootstrap block for claude.ai, or download '
+        '<code>.md</code> files for Claude Code.\n'
+        '  </p>'
+    )
+    return block_re.sub(new_block, html, count=1)
+
+
+def retitle(html: str) -> str:
+    html = html.replace("<title>Claude Intake</title>",
+                        "<title>Claude Intake — Standalone</title>")
+    html = html.replace(
+        "<h1>Your Claude Memory Intake</h1>\n  "
+        "<p class=\"subtitle\">Fill in as much or as little as you like. "
+        "Everything is saved locally as Claude memory files.</p>",
+        "<h1>Your Claude Memory Intake</h1>\n  "
+        "<p class=\"subtitle\">Fill in as much or as little as you like, then click "
+        "<strong>Generate</strong> to copy a memory bootstrap into claude.ai "
+        "(or download <code>.md</code> files for Claude Code). Everything runs "
+        "in your browser — nothing is uploaded.</p>",
+    )
+    return html
+
+
+def inject_overrides(html: str) -> str:
+    return html.replace("</script>\n</body>", STANDALONE_JS + "\n</script>\n</body>")
+
+
+def build() -> str:
+    html = TEMPLATE.read_text(encoding="utf-8")
+    css = CSS.read_text(encoding="utf-8")
+    html = inline_css(html, css)
+    html = strip_jinja(html)
+    html = strip_settings_panel(html)
+    html = rewrite_target_radios(html)
+    html = rewrite_actions(html)
+    html = retitle(html)
+    html = inject_overrides(html)
+    return html
+
+
+if __name__ == "__main__":
+    output = build()
+    OUTPUT.write_text(output, encoding="utf-8")
+    print(f"Wrote {OUTPUT} ({len(output):,} bytes)")

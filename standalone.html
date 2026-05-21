@@ -1,0 +1,2727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Intake — Standalone</title>
+  <style>
+:root {
+  --bg: #f8f7f4;
+  --surface: #ffffff;
+  --border: #e2e0db;
+  --accent: #6c47ff;
+  --accent-light: #ede9ff;
+  --text: #1a1917;
+  --muted: #706e6a;
+  --success: #1a8a4a;
+  --success-bg: #e6f7ee;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
+}
+
+html[data-theme="dark"] {
+  --bg: #0f0f11;
+  --surface: #1a1a1f;
+  --border: #2c2c35;
+  --accent: #8b6fff;
+  --accent-light: #1e1833;
+  --text: #edecf0;
+  --muted: #8a8899;
+  --success: #4ade80;
+  --success-bg: #0d2318;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.3px; }
+.logo span { color: var(--text); font-weight: 400; }
+
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+.settings-toggle, .theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.settings-toggle:hover, .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.theme-toggle { padding: 6px 10px; font-size: 16px; }
+
+.settings-panel {
+  background: #faf9ff;
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease, padding 0.25s ease;
+}
+.settings-panel.open { max-height: 120px; padding: 18px 32px; }
+.settings-panel label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+.settings-row { display: flex; gap: 10px; align-items: center; }
+.settings-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-family: monospace;
+  background: var(--surface);
+}
+.settings-row input:focus { outline: none; border-color: var(--accent); }
+.btn-sm {
+  padding: 7px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-sm:hover { background: #5538e0; }
+
+.container {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
+.subtitle { color: var(--muted); margin-bottom: 28px; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+  border-radius: 6px 6px 0 0;
+}
+.tab-btn:hover { color: var(--text); background: var(--accent-light); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card h2 .icon { font-size: 17px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+@media (max-width: 600px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 13px; font-weight: 500; color: var(--muted); }
+.field input, .field select, .field textarea {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 71, 255, 0.08);
+}
+.field textarea { resize: vertical; min-height: 90px; }
+
+/* Pet / child repeatable rows */
+.repeat-group { display: flex; flex-direction: column; gap: 12px; }
+.repeat-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.repeat-row .fields { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+.repeat-row .fields .field { min-width: 0; }
+.remove-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  margin-top: 20px;
+  transition: all 0.15s;
+}
+.remove-btn:hover { border-color: #e74c3c; color: #e74c3c; }
+.add-btn {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+  padding: 9px 16px;
+  width: 100%;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+  transition: all 0.15s;
+}
+.add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* Chips */
+.chip-search {
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.chip-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,71,255,0.08); }
+
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.chip-group-label {
+  width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: -2px;
+}
+.chip {
+  padding: 5px 13px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text);
+  user-select: none;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.chip-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.chip-add-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.chip-add-row input:focus { outline: none; border-color: var(--accent); }
+
+/* Freeform */
+.freeform-area {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 14px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  background: var(--surface);
+  transition: border-color 0.15s;
+}
+.freeform-area:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,71,255,0.08); }
+.freeform-hint { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+  justify-content: flex-end;
+}
+.btn {
+  padding: 11px 26px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+.btn-outline {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #5538e0; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Preview */
+#preview-section {
+  margin-top: 32px;
+  display: none;
+}
+#preview-section.visible { display: block; }
+.preview-header {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.preview-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.preview-item-header {
+  background: var(--accent-light);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  display: flex;
+  justify-content: space-between;
+}
+.preview-item-body {
+  padding: 14px 16px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid #a8e6c2;
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 100;
+  max-width: 360px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+.path-display {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+  display: inline-block;
+  margin-top: 6px;
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">claude<span>intake</span></div>
+  <div class="header-actions">
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    </div>
+</header>
+
+<div class="container">
+  <h1>Your Claude Memory Intake</h1>
+  <p class="subtitle">Fill in as much or as little as you like, then click <strong>Generate</strong> to copy a memory bootstrap into claude.ai (or download <code>.md</code> files for Claude Code). Everything runs in your browser — nothing is uploaded.</p>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('personal', this)">Personal</button>
+    <button class="tab-btn" onclick="showTab('family', this)">Family</button>
+    <button class="tab-btn" onclick="showTab('work', this)">Work</button>
+    <button class="tab-btn" onclick="showTab('pets', this)">Pets</button>
+    <button class="tab-btn" onclick="showTab('health', this)">Health</button>
+    <button class="tab-btn" onclick="showTab('hobbies', this)">Hobbies</button>
+    <button class="tab-btn" onclick="showTab('identity', this)">Identity</button>
+    <button class="tab-btn" onclick="showTab('goals', this)">Goals</button>
+    <button class="tab-btn" onclick="showTab('comms', this)">Comms</button>
+
+  </div>
+
+  <form id="intake-form">
+
+    <!-- PERSONAL -->
+    <div class="tab-panel active" id="tab-personal">
+      <div class="card">
+        <h2><span class="icon">👤</span> Personal Info</h2>
+        <div class="grid-2">
+          <div class="field"><label>Full name</label><input type="text" name="personal.name" placeholder="Jane Doe" /></div>
+          <div class="field"><label>Preferred name / nickname <span style="font-weight:400;opacity:0.6">(what Claude should call you)</span></label><input type="text" name="personal.preferred_name" placeholder="Jane, Alex…" /></div>
+          <div class="field"><label>Birthday</label><input type="date" name="personal.birthday" /></div>
+          <div class="field"><label>City</label><input type="text" name="personal.city" placeholder="Denver" /></div>
+          <div class="field"><label>State / Province</label><input type="text" name="personal.state" placeholder="CO" /></div>
+          <div class="field"><label>Country</label><input type="text" name="personal.country" placeholder="USA" /></div>
+          <div class="field"><label>Timezone</label>
+            <select name="personal.timezone">
+              <option value="">Select…</option>
+              <option>AEST (Australia East)</option>
+              <option>Alaska (AKT)</option>
+              <option>CET (Central European)</option>
+              <option>Central (CT)</option>
+              <option>Eastern (ET)</option>
+              <option>GMT / UTC</option>
+              <option>Hawaii (HST)</option>
+              <option>IST (India)</option>
+              <option>JST (Japan)</option>
+              <option>Mountain (MT)</option>
+              <option>Pacific (PT)</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">📝</span> Anything else Claude should know about you</h2>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Stream of consciousness, bullet points, whatever — don't worry about formatting.</p>
+        <textarea class="freeform-area" name="freeform" placeholder="Things that don't fit the other tabs. Context, history, anything that should stick around but doesn't have a natural home."></textarea>
+        <div class="freeform-hint">💡 Tip: Just write what you'd want Claude to know about you.</div>
+      </div>
+    </div>
+
+    <!-- FAMILY -->
+    <div class="tab-panel" id="tab-family">
+      <div class="card">
+        <h2><span class="icon">🏠</span> Relationship & Partner</h2>
+        <div class="grid-2">
+          <div class="field"><label>Relationship status</label>
+            <select name="family.relationship_status">
+              <option value="">Select…</option>
+              <option>Divorced</option>
+              <option>Domestic partnership</option>
+              <option>Engaged</option>
+              <option>In a relationship</option>
+              <option>It's complicated</option>
+              <option>Married</option>
+              <option>Separated</option>
+              <option>Single</option>
+              <option>Widowed</option>
+            </select>
+          </div>
+          <div class="field"><label>Partner's name</label><input type="text" name="family.partner_name" placeholder="Alex" /></div>
+          <div class="field"><label>Partner's birthday</label><input type="date" name="family.partner_birthday" /></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Former partner / co-parent <span style="font-weight:400;opacity:0.6">(optional — e.g., ex-spouse, co-parent of your kids)</span></label><input type="text" name="family.former_partner" placeholder="Sam (co-parent of our kids)" /></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">👶</span> Children</h2>
+        <div class="repeat-group" id="children-group"></div>
+        <button type="button" class="add-btn" onclick="addChild()">+ Add a child</button>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">👨‍👩‍👧</span> Extended Family</h2>
+        <div class="grid-2">
+          <div class="field"><label>Siblings (names / ages)</label><input type="text" name="family.siblings" placeholder="Brother Tom (34), Sister Ava (29)" /></div>
+          <div class="field"><label>Parents (names / location)</label><input type="text" name="family.parents" placeholder="Mom in Dallas, Dad in Austin" /></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Other family notes</label><textarea name="family.other" placeholder="Anything else worth remembering about your family…"></textarea></div>
+      </div>
+    </div>
+
+    <!-- WORK -->
+    <div class="tab-panel" id="tab-work">
+      <div class="card">
+        <h2><span class="icon">💼</span> Professional Background</h2>
+        <div class="grid-2">
+          <div class="field"><label>Job title</label><input type="text" name="work.title" placeholder="Senior Product Manager" /></div>
+          <div class="field"><label>Company</label><input type="text" name="work.company" placeholder="Acme Inc." /></div>
+          <div class="field"><label>Industry</label><input type="text" name="work.industry" list="industry-suggestions" placeholder="Start typing or pick a suggestion…" />
+            <datalist id="industry-suggestions">
+              <option value="Accounting / Finance">
+              <option value="Aerospace / Defense">
+              <option value="Agriculture">
+              <option value="Architecture / Design">
+              <option value="Automotive">
+              <option value="Banking">
+              <option value="Construction">
+              <option value="Consulting">
+              <option value="Cybersecurity">
+              <option value="E-commerce">
+              <option value="Education">
+              <option value="Energy / Utilities">
+              <option value="Fintech">
+              <option value="Gaming">
+              <option value="Government">
+              <option value="Healthcare">
+              <option value="Higher education">
+              <option value="Hospitality">
+              <option value="IT / Software">
+              <option value="Insurance">
+              <option value="Legal">
+              <option value="Logistics / Transportation">
+              <option value="Manufacturing">
+              <option value="Marketing / Advertising">
+              <option value="Media / Entertainment">
+              <option value="Nonprofit">
+              <option value="Oil & Gas">
+              <option value="Pharmaceutical / Biotech">
+              <option value="Real estate">
+              <option value="Research / Academia">
+              <option value="Retail">
+              <option value="SaaS">
+              <option value="Telecommunications">
+            </datalist>
+          </div>
+          <div class="field"><label>Years of experience</label><input type="number" name="work.years_exp" min="0" max="60" placeholder="8" /></div>
+          <div class="field"><label>Work style</label>
+            <select name="work.work_style">
+              <option value="">Select…</option>
+              <option>Freelance / Self-employed</option>
+              <option>Hybrid</option>
+              <option>In-office</option>
+              <option>Remote</option>
+              <option>Retired</option>
+              <option>Student</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Work notes (projects, side gigs, anything relevant)</label><textarea name="work.notes" placeholder="Currently building a side project, transitioning to…"></textarea></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🗂️</span> Prior Employers <span style="font-size:13px;font-weight:400;color:var(--muted)">(optional)</span></h2>
+        <div class="repeat-group" id="prior-employers-group"></div>
+        <button type="button" class="add-btn" onclick="addPriorEmployer()">+ Add a prior employer</button>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🎖️</span> Military Service <span style="font-size:13px;font-weight:400;color:var(--muted)">(optional)</span></h2>
+        <div class="grid-2">
+          <div class="field"><label>Branch</label><input type="text" name="work.military_branch" placeholder="Army, Navy, Royal Marines, IDF…" /></div>
+          <div class="field"><label>Country</label><input type="text" name="work.military_country" placeholder="USA, Canada, UK…" /></div>
+          <div class="field"><label>Years served</label><input type="text" name="work.military_years" placeholder="2003–2008 or 5 years" /></div>
+          <div class="field"><label>Field / specialty</label><input type="text" name="work.military_field" placeholder="Infantry, Engineer, Signal, Aviation, Medical…" /></div>
+          <div class="field"><label>Rank <span style="font-weight:400;opacity:0.6">(at separation)</span></label><input type="text" name="work.military_rank" placeholder="E-5, Captain, Sergeant…" /></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Highlights <span style="font-weight:400;opacity:0.6">(deployments, awards, anything worth remembering)</span></label><textarea name="work.military_highlights" placeholder="Two deployments to…, awarded…"></textarea></div>
+      </div>
+    </div>
+
+    <!-- PETS -->
+    <div class="tab-panel" id="tab-pets">
+      <div class="card">
+        <h2><span class="icon">🐾</span> Pets</h2>
+        <div class="repeat-group" id="pets-group"></div>
+        <button type="button" class="add-btn" onclick="addPet()">+ Add a pet</button>
+      </div>
+    </div>
+
+    <!-- HEALTH -->
+    <div class="tab-panel" id="tab-health">
+      <div class="card">
+        <h2><span class="icon">🥗</span> Diet & Allergies</h2>
+        <div class="grid-2">
+          <div class="field"><label>Dietary restrictions / preferences</label><input type="text" name="health.dietary" placeholder="Vegetarian, gluten-free, no dairy…" /></div>
+          <div class="field"><label>Allergies</label><input type="text" name="health.allergies" placeholder="Peanuts, shellfish…" /></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">💪</span> Wellness</h2>
+
+        <div class="field" style="margin-bottom:18px">
+          <label>Health conditions <span style="font-weight:400;opacity:0.6">(select all that apply)</span></label>
+          <input type="text" id="chip-search" class="chip-search" placeholder="Filter conditions…" oninput="filterChips()" />
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--muted)">
+            Only select conditions you've been formally diagnosed with. These are saved to a memory file Claude reads every session.
+          </div>
+          <div class="chip-grid" id="conditions-grid">
+
+            <span class="chip-group-label" data-group="mental">Mental Health</span>
+            <div class="chip" onclick="toggleChip(this)">ADHD</div>
+            <div class="chip" onclick="toggleChip(this)">Anxiety (general)</div>
+            <div class="chip" onclick="toggleChip(this)">Bipolar I</div>
+            <div class="chip" onclick="toggleChip(this)">Bipolar II</div>
+            <div class="chip" onclick="toggleChip(this)">Cyclothymia</div>
+            <div class="chip" onclick="toggleChip(this)">Depression</div>
+            <div class="chip" onclick="toggleChip(this)">Dysthymia</div>
+            <div class="chip" onclick="toggleChip(this)">Seasonal affective disorder (SAD)</div>
+            <div class="chip" onclick="toggleChip(this)">OCD</div>
+            <div class="chip" onclick="toggleChip(this)">PTSD</div>
+            <div class="chip" onclick="toggleChip(this)">Complex PTSD (C-PTSD)</div>
+            <div class="chip" onclick="toggleChip(this)">Autism / ASD</div>
+            <div class="chip" onclick="toggleChip(this)">BPD</div>
+            <div class="chip" onclick="toggleChip(this)">Schizophrenia</div>
+            <div class="chip" onclick="toggleChip(this)">Schizoaffective disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Panic disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Social anxiety disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Agoraphobia</div>
+            <div class="chip" onclick="toggleChip(this)">Specific phobia</div>
+            <div class="chip" onclick="toggleChip(this)">Health anxiety</div>
+            <div class="chip" onclick="toggleChip(this)">Eating disorder (anorexia)</div>
+            <div class="chip" onclick="toggleChip(this)">Eating disorder (bulimia)</div>
+            <div class="chip" onclick="toggleChip(this)">Eating disorder (binge/BED)</div>
+            <div class="chip" onclick="toggleChip(this)">Body dysmorphic disorder (BDD)</div>
+            <div class="chip" onclick="toggleChip(this)">Dissociative identity disorder (DID)</div>
+            <div class="chip" onclick="toggleChip(this)">Depersonalization disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Tourette syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Trichotillomania</div>
+            <div class="chip" onclick="toggleChip(this)">Hoarding disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Adjustment disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Reactive attachment disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Somatic symptom disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Premenstrual dysphoric disorder (PMDD)</div>
+            <div class="chip" onclick="toggleChip(this)">Narcissistic personality disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Antisocial personality disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Avoidant personality disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Paranoid personality disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Intermittent explosive disorder</div>
+
+            <span class="chip-group-label" data-group="substance">Substance Use & Behavioral</span>
+            <div class="chip" onclick="toggleChip(this)">Alcohol use disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Substance use disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Opioid use disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Nicotine dependence</div>
+            <div class="chip" onclick="toggleChip(this)">Gambling disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Gaming / internet addiction</div>
+
+            <span class="chip-group-label" data-group="neuro">Neurological</span>
+            <div class="chip" onclick="toggleChip(this)">Epilepsy</div>
+            <div class="chip" onclick="toggleChip(this)">Migraine</div>
+            <div class="chip" onclick="toggleChip(this)">Parkinson's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Alzheimer's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Dementia (other)</div>
+            <div class="chip" onclick="toggleChip(this)">Traumatic brain injury (TBI)</div>
+            <div class="chip" onclick="toggleChip(this)">Stroke (history of)</div>
+            <div class="chip" onclick="toggleChip(this)">Transient ischemic attack (TIA)</div>
+            <div class="chip" onclick="toggleChip(this)">Peripheral neuropathy</div>
+            <div class="chip" onclick="toggleChip(this)">Multiple sclerosis</div>
+            <div class="chip" onclick="toggleChip(this)">ALS (Lou Gehrig's disease)</div>
+            <div class="chip" onclick="toggleChip(this)">Huntington's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Myasthenia gravis</div>
+            <div class="chip" onclick="toggleChip(this)">Guillain-Barré syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Cerebral palsy</div>
+            <div class="chip" onclick="toggleChip(this)">Dystonia</div>
+            <div class="chip" onclick="toggleChip(this)">Essential tremor</div>
+            <div class="chip" onclick="toggleChip(this)">Narcolepsy</div>
+            <div class="chip" onclick="toggleChip(this)">Restless leg syndrome (RLS)</div>
+            <div class="chip" onclick="toggleChip(this)">Vertigo / Ménière's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Tinnitus</div>
+            <div class="chip" onclick="toggleChip(this)">Trigeminal neuralgia</div>
+            <div class="chip" onclick="toggleChip(this)">Bell's palsy</div>
+            <div class="chip" onclick="toggleChip(this)">Chiari malformation</div>
+            <div class="chip" onclick="toggleChip(this)">Hydrocephalus</div>
+
+            <span class="chip-group-label" data-group="cardio">Cardiovascular</span>
+            <div class="chip" onclick="toggleChip(this)">Hypertension</div>
+            <div class="chip" onclick="toggleChip(this)">High cholesterol / Hyperlipidemia</div>
+            <div class="chip" onclick="toggleChip(this)">Coronary artery disease</div>
+            <div class="chip" onclick="toggleChip(this)">Heart failure</div>
+            <div class="chip" onclick="toggleChip(this)">Atrial fibrillation (AFib)</div>
+            <div class="chip" onclick="toggleChip(this)">Cardiomyopathy</div>
+            <div class="chip" onclick="toggleChip(this)">Heart valve disease</div>
+            <div class="chip" onclick="toggleChip(this)">Aortic aneurysm</div>
+            <div class="chip" onclick="toggleChip(this)">Peripheral artery disease</div>
+            <div class="chip" onclick="toggleChip(this)">Deep vein thrombosis (DVT)</div>
+            <div class="chip" onclick="toggleChip(this)">Pulmonary embolism</div>
+            <div class="chip" onclick="toggleChip(this)">POTS</div>
+            <div class="chip" onclick="toggleChip(this)">Dysautonomia</div>
+            <div class="chip" onclick="toggleChip(this)">Raynaud's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Vasculitis</div>
+            <div class="chip" onclick="toggleChip(this)">Marfan syndrome</div>
+
+            <span class="chip-group-label" data-group="respiratory">Respiratory</span>
+            <div class="chip" onclick="toggleChip(this)">Asthma</div>
+            <div class="chip" onclick="toggleChip(this)">COPD</div>
+            <div class="chip" onclick="toggleChip(this)">Sleep apnea</div>
+            <div class="chip" onclick="toggleChip(this)">Pulmonary fibrosis</div>
+            <div class="chip" onclick="toggleChip(this)">Pulmonary hypertension</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic bronchitis</div>
+            <div class="chip" onclick="toggleChip(this)">Cystic fibrosis</div>
+            <div class="chip" onclick="toggleChip(this)">Bronchiectasis</div>
+            <div class="chip" onclick="toggleChip(this)">Sarcoidosis</div>
+            <div class="chip" onclick="toggleChip(this)">Alpha-1 antitrypsin deficiency</div>
+
+            <span class="chip-group-label" data-group="gi">Gastrointestinal</span>
+            <div class="chip" onclick="toggleChip(this)">GERD / Acid reflux</div>
+            <div class="chip" onclick="toggleChip(this)">IBS</div>
+            <div class="chip" onclick="toggleChip(this)">Crohn's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Ulcerative colitis</div>
+            <div class="chip" onclick="toggleChip(this)">Celiac disease</div>
+            <div class="chip" onclick="toggleChip(this)">Diverticulitis</div>
+            <div class="chip" onclick="toggleChip(this)">Fatty liver / NAFLD</div>
+            <div class="chip" onclick="toggleChip(this)">Gallbladder disease</div>
+            <div class="chip" onclick="toggleChip(this)">Hepatitis B</div>
+            <div class="chip" onclick="toggleChip(this)">Hepatitis C</div>
+            <div class="chip" onclick="toggleChip(this)">Cirrhosis</div>
+            <div class="chip" onclick="toggleChip(this)">Pancreatitis</div>
+            <div class="chip" onclick="toggleChip(this)">Gastroparesis</div>
+            <div class="chip" onclick="toggleChip(this)">Eosinophilic esophagitis</div>
+            <div class="chip" onclick="toggleChip(this)">Peptic ulcer disease</div>
+            <div class="chip" onclick="toggleChip(this)">Barrett's esophagus</div>
+
+            <span class="chip-group-label" data-group="endo">Endocrine & Metabolic</span>
+            <div class="chip" onclick="toggleChip(this)">Diabetes (Type 1)</div>
+            <div class="chip" onclick="toggleChip(this)">Diabetes (Type 2)</div>
+            <div class="chip" onclick="toggleChip(this)">Prediabetes</div>
+            <div class="chip" onclick="toggleChip(this)">Metabolic syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Hypothyroidism</div>
+            <div class="chip" onclick="toggleChip(this)">Hyperthyroidism</div>
+            <div class="chip" onclick="toggleChip(this)">Hashimoto's thyroiditis</div>
+            <div class="chip" onclick="toggleChip(this)">Graves' disease</div>
+            <div class="chip" onclick="toggleChip(this)">Addison's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Cushing's syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Hypoglycemia</div>
+            <div class="chip" onclick="toggleChip(this)">Hyperparathyroidism</div>
+            <div class="chip" onclick="toggleChip(this)">Insulin resistance</div>
+            <div class="chip" onclick="toggleChip(this)">Testosterone deficiency</div>
+            <div class="chip" onclick="toggleChip(this)">Estrogen deficiency</div>
+            <div class="chip" onclick="toggleChip(this)">Growth hormone deficiency</div>
+
+            <span class="chip-group-label" data-group="msk">Musculoskeletal</span>
+            <div class="chip" onclick="toggleChip(this)">Osteoarthritis</div>
+            <div class="chip" onclick="toggleChip(this)">Rheumatoid arthritis</div>
+            <div class="chip" onclick="toggleChip(this)">Psoriatic arthritis</div>
+            <div class="chip" onclick="toggleChip(this)">Ankylosing spondylitis</div>
+            <div class="chip" onclick="toggleChip(this)">Gout</div>
+            <div class="chip" onclick="toggleChip(this)">Fibromyalgia</div>
+            <div class="chip" onclick="toggleChip(this)">Osteoporosis</div>
+            <div class="chip" onclick="toggleChip(this)">Osteopenia</div>
+            <div class="chip" onclick="toggleChip(this)">Scoliosis</div>
+            <div class="chip" onclick="toggleChip(this)">Herniated disc</div>
+            <div class="chip" onclick="toggleChip(this)">Spinal stenosis</div>
+            <div class="chip" onclick="toggleChip(this)">Ehlers-Danlos syndrome (EDS)</div>
+            <div class="chip" onclick="toggleChip(this)">Bursitis</div>
+            <div class="chip" onclick="toggleChip(this)">Tendinitis</div>
+            <div class="chip" onclick="toggleChip(this)">Carpal tunnel syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Plantar fasciitis</div>
+            <div class="chip" onclick="toggleChip(this)">TMJ disorder</div>
+            <div class="chip" onclick="toggleChip(this)">Muscular dystrophy</div>
+            <div class="chip" onclick="toggleChip(this)">Polymyalgia rheumatica</div>
+            <div class="chip" onclick="toggleChip(this)">Myositis</div>
+
+            <span class="chip-group-label" data-group="autoimmune">Autoimmune & Inflammatory</span>
+            <div class="chip" onclick="toggleChip(this)">Lupus</div>
+            <div class="chip" onclick="toggleChip(this)">Sjögren's syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Antiphospholipid syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Behçet's disease</div>
+            <div class="chip" onclick="toggleChip(this)">Giant cell arteritis</div>
+            <div class="chip" onclick="toggleChip(this)">Mixed connective tissue disease</div>
+            <div class="chip" onclick="toggleChip(this)">Scleroderma / Systemic sclerosis</div>
+            <div class="chip" onclick="toggleChip(this)">Polymyositis / Dermatomyositis</div>
+
+            <span class="chip-group-label" data-group="derm">Dermatological</span>
+            <div class="chip" onclick="toggleChip(this)">Psoriasis</div>
+            <div class="chip" onclick="toggleChip(this)">Eczema / Atopic dermatitis</div>
+            <div class="chip" onclick="toggleChip(this)">Rosacea</div>
+            <div class="chip" onclick="toggleChip(this)">Vitiligo</div>
+            <div class="chip" onclick="toggleChip(this)">Alopecia areata</div>
+            <div class="chip" onclick="toggleChip(this)">Hidradenitis suppurativa</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic urticaria (hives)</div>
+            <div class="chip" onclick="toggleChip(this)">Pemphigus / Pemphigoid</div>
+            <div class="chip" onclick="toggleChip(this)">Acne (severe / chronic)</div>
+
+            <span class="chip-group-label" data-group="repro">Reproductive & Hormonal</span>
+            <div class="chip" onclick="toggleChip(this)">PCOS</div>
+            <div class="chip" onclick="toggleChip(this)">Endometriosis</div>
+            <div class="chip" onclick="toggleChip(this)">Uterine fibroids</div>
+            <div class="chip" onclick="toggleChip(this)">Premature ovarian insufficiency</div>
+            <div class="chip" onclick="toggleChip(this)">Pelvic floor dysfunction</div>
+            <div class="chip" onclick="toggleChip(this)">Infertility</div>
+
+            <span class="chip-group-label" data-group="renal">Renal & Urological</span>
+            <div class="chip" onclick="toggleChip(this)">Chronic kidney disease (CKD)</div>
+            <div class="chip" onclick="toggleChip(this)">Kidney stones (recurrent)</div>
+            <div class="chip" onclick="toggleChip(this)">Polycystic kidney disease</div>
+            <div class="chip" onclick="toggleChip(this)">Overactive bladder</div>
+            <div class="chip" onclick="toggleChip(this)">Interstitial cystitis</div>
+            <div class="chip" onclick="toggleChip(this)">Urinary incontinence</div>
+            <div class="chip" onclick="toggleChip(this)">Benign prostatic hyperplasia (BPH)</div>
+
+            <span class="chip-group-label" data-group="blood">Blood & Hematological</span>
+            <div class="chip" onclick="toggleChip(this)">Anemia (iron deficiency)</div>
+            <div class="chip" onclick="toggleChip(this)">Anemia (B12 / pernicious)</div>
+            <div class="chip" onclick="toggleChip(this)">Sickle cell disease</div>
+            <div class="chip" onclick="toggleChip(this)">Thalassemia</div>
+            <div class="chip" onclick="toggleChip(this)">Hemophilia</div>
+            <div class="chip" onclick="toggleChip(this)">Von Willebrand disease</div>
+            <div class="chip" onclick="toggleChip(this)">Thrombocytopenia</div>
+            <div class="chip" onclick="toggleChip(this)">Polycythemia vera</div>
+
+            <span class="chip-group-label" data-group="cancer">Cancer (history or active)</span>
+            <div class="chip" onclick="toggleChip(this)">Breast cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Prostate cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Colorectal cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Lung cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Skin cancer / Melanoma</div>
+            <div class="chip" onclick="toggleChip(this)">Thyroid cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Cervical cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Ovarian cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Bladder cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Pancreatic cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Leukemia</div>
+            <div class="chip" onclick="toggleChip(this)">Lymphoma</div>
+            <div class="chip" onclick="toggleChip(this)">Multiple myeloma</div>
+            <div class="chip" onclick="toggleChip(this)">Brain tumor</div>
+            <div class="chip" onclick="toggleChip(this)">Kidney cancer</div>
+            <div class="chip" onclick="toggleChip(this)">Uterine / Endometrial cancer</div>
+
+            <span class="chip-group-label" data-group="sensory">Sensory</span>
+            <div class="chip" onclick="toggleChip(this)">Hearing loss</div>
+            <div class="chip" onclick="toggleChip(this)">Glaucoma</div>
+            <div class="chip" onclick="toggleChip(this)">Macular degeneration</div>
+            <div class="chip" onclick="toggleChip(this)">Cataracts</div>
+            <div class="chip" onclick="toggleChip(this)">Retinitis pigmentosa</div>
+            <div class="chip" onclick="toggleChip(this)">Legal blindness / Low vision</div>
+            <div class="chip" onclick="toggleChip(this)">Color blindness</div>
+
+            <span class="chip-group-label" data-group="infectious">Infectious & Immune</span>
+            <div class="chip" onclick="toggleChip(this)">HIV / AIDS</div>
+            <div class="chip" onclick="toggleChip(this)">Long COVID</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic Lyme disease</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic EBV / Mono</div>
+            <div class="chip" onclick="toggleChip(this)">Primary immunodeficiency</div>
+
+            <span class="chip-group-label" data-group="other">Other / Systemic</span>
+            <div class="chip" onclick="toggleChip(this)">Chronic fatigue syndrome (ME/CFS)</div>
+            <div class="chip" onclick="toggleChip(this)">Mast cell activation syndrome (MCAS)</div>
+            <div class="chip" onclick="toggleChip(this)">Chronic pain</div>
+            <div class="chip" onclick="toggleChip(this)">Hypermobility syndrome</div>
+            <div class="chip" onclick="toggleChip(this)">Obesity / Metabolic obesity</div>
+            <div class="chip" onclick="toggleChip(this)">Lymphedema</div>
+            <div class="chip" onclick="toggleChip(this)">Amyloidosis</div>
+            <div class="chip" onclick="toggleChip(this)">Rare / undiagnosed condition</div>
+
+          </div>
+          <div class="chip-add-row">
+            <input type="text" id="custom-condition-input" placeholder="Add a condition not listed…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomChip()}" />
+            <button type="button" class="btn-sm" onclick="addCustomChip()">Add</button>
+          </div>
+          <input type="hidden" name="health.conditions" id="conditions-value" />
+        </div>
+
+        <div class="field">
+          <label>Exercise habits</label>
+          <input type="text" name="health.exercise" placeholder="Run 3x/week, yoga…" />
+        </div>
+        <div class="field" style="margin-top:14px"><label>Health notes</label><textarea name="health.notes" placeholder="Anything else Claude should know about your health…"></textarea></div>
+      </div>
+    </div>
+
+    <!-- HOBBIES -->
+    <div class="tab-panel" id="tab-hobbies">
+      <div class="card">
+        <h2><span class="icon">🎯</span> Interests & Hobbies <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <input type="text" id="hobbies-search" class="chip-search" placeholder="Filter hobbies…" oninput="filterChipGrid('hobbies-grid','hobbies-search')" />
+        <div class="chip-grid" id="hobbies-grid">
+
+          <span class="chip-group-label">Sports & Fitness</span>
+          <div class="chip" onclick="toggleHobby(this)">Running</div>
+          <div class="chip" onclick="toggleHobby(this)">Cycling</div>
+          <div class="chip" onclick="toggleHobby(this)">Swimming</div>
+          <div class="chip" onclick="toggleHobby(this)">Yoga</div>
+          <div class="chip" onclick="toggleHobby(this)">Weightlifting</div>
+          <div class="chip" onclick="toggleHobby(this)">CrossFit</div>
+          <div class="chip" onclick="toggleHobby(this)">Hiking</div>
+          <div class="chip" onclick="toggleHobby(this)">Rock climbing</div>
+          <div class="chip" onclick="toggleHobby(this)">Tennis</div>
+          <div class="chip" onclick="toggleHobby(this)">Pickleball</div>
+          <div class="chip" onclick="toggleHobby(this)">Golf</div>
+          <div class="chip" onclick="toggleHobby(this)">Basketball</div>
+          <div class="chip" onclick="toggleHobby(this)">Soccer</div>
+          <div class="chip" onclick="toggleHobby(this)">Baseball / Softball</div>
+          <div class="chip" onclick="toggleHobby(this)">Football</div>
+          <div class="chip" onclick="toggleHobby(this)">Volleyball</div>
+          <div class="chip" onclick="toggleHobby(this)">Martial arts</div>
+          <div class="chip" onclick="toggleHobby(this)">Boxing / Kickboxing</div>
+          <div class="chip" onclick="toggleHobby(this)">Dance</div>
+          <div class="chip" onclick="toggleHobby(this)">Pilates</div>
+          <div class="chip" onclick="toggleHobby(this)">Skiing / Snowboarding</div>
+          <div class="chip" onclick="toggleHobby(this)">Surfing</div>
+          <div class="chip" onclick="toggleHobby(this)">Skateboarding</div>
+          <div class="chip" onclick="toggleHobby(this)">Kayaking / Canoeing</div>
+          <div class="chip" onclick="toggleHobby(this)">Rowing</div>
+          <div class="chip" onclick="toggleHobby(this)">Triathlon</div>
+          <div class="chip" onclick="toggleHobby(this)">Ice skating / Hockey</div>
+          <div class="chip" onclick="toggleHobby(this)">Archery</div>
+          <div class="chip" onclick="toggleHobby(this)">Bowling</div>
+          <div class="chip" onclick="toggleHobby(this)">Gymnastics</div>
+          <div class="chip" onclick="toggleHobby(this)">Racquetball / Squash</div>
+          <div class="chip" onclick="toggleHobby(this)">Parkour</div>
+          <div class="chip" onclick="toggleHobby(this)">Mountain biking</div>
+          <div class="chip" onclick="toggleHobby(this)">Horseback riding</div>
+          <div class="chip" onclick="toggleHobby(this)">Shooting / Range</div>
+          <div class="chip" onclick="toggleHobby(this)">Fencing</div>
+          <div class="chip" onclick="toggleHobby(this)">Wrestling / BJJ</div>
+
+          <span class="chip-group-label">Outdoors & Nature</span>
+          <div class="chip" onclick="toggleHobby(this)">Camping</div>
+          <div class="chip" onclick="toggleHobby(this)">Backpacking</div>
+          <div class="chip" onclick="toggleHobby(this)">Fishing</div>
+          <div class="chip" onclick="toggleHobby(this)">Hunting</div>
+          <div class="chip" onclick="toggleHobby(this)">Birdwatching</div>
+          <div class="chip" onclick="toggleHobby(this)">Gardening</div>
+          <div class="chip" onclick="toggleHobby(this)">Stargazing / Astronomy</div>
+          <div class="chip" onclick="toggleHobby(this)">Mushroom foraging</div>
+          <div class="chip" onclick="toggleHobby(this)">Rock / mineral collecting</div>
+          <div class="chip" onclick="toggleHobby(this)">Wildlife photography</div>
+          <div class="chip" onclick="toggleHobby(this)">Beekeeping</div>
+          <div class="chip" onclick="toggleHobby(this)">Off-roading / 4x4</div>
+          <div class="chip" onclick="toggleHobby(this)">National park visits</div>
+          <div class="chip" onclick="toggleHobby(this)">Scuba diving / Snorkeling</div>
+
+          <span class="chip-group-label">Creative Arts</span>
+          <div class="chip" onclick="toggleHobby(this)">Painting</div>
+          <div class="chip" onclick="toggleHobby(this)">Drawing / Sketching</div>
+          <div class="chip" onclick="toggleHobby(this)">Sculpture / Ceramics</div>
+          <div class="chip" onclick="toggleHobby(this)">Photography</div>
+          <div class="chip" onclick="toggleHobby(this)">Videography / Filmmaking</div>
+          <div class="chip" onclick="toggleHobby(this)">Graphic design</div>
+          <div class="chip" onclick="toggleHobby(this)">Illustration</div>
+          <div class="chip" onclick="toggleHobby(this)">Woodworking</div>
+          <div class="chip" onclick="toggleHobby(this)">Metalworking / Welding</div>
+          <div class="chip" onclick="toggleHobby(this)">Jewelry making</div>
+          <div class="chip" onclick="toggleHobby(this)">Knitting / Crocheting</div>
+          <div class="chip" onclick="toggleHobby(this)">Sewing / Quilting</div>
+          <div class="chip" onclick="toggleHobby(this)">Calligraphy / Lettering</div>
+          <div class="chip" onclick="toggleHobby(this)">Origami</div>
+          <div class="chip" onclick="toggleHobby(this)">Scrapbooking</div>
+          <div class="chip" onclick="toggleHobby(this)">DIY / Home projects</div>
+          <div class="chip" onclick="toggleHobby(this)">Candle / Soap making</div>
+          <div class="chip" onclick="toggleHobby(this)">3D modeling / Rendering</div>
+          <div class="chip" onclick="toggleHobby(this)">Cosplay</div>
+          <div class="chip" onclick="toggleHobby(this)">Animation</div>
+          <div class="chip" onclick="toggleHobby(this)">Interior design</div>
+
+          <span class="chip-group-label">Music</span>
+          <div class="chip" onclick="toggleHobby(this)">Guitar</div>
+          <div class="chip" onclick="toggleHobby(this)">Piano / Keyboard</div>
+          <div class="chip" onclick="toggleHobby(this)">Drums / Percussion</div>
+          <div class="chip" onclick="toggleHobby(this)">Bass guitar</div>
+          <div class="chip" onclick="toggleHobby(this)">Violin / Strings</div>
+          <div class="chip" onclick="toggleHobby(this)">Cello</div>
+          <div class="chip" onclick="toggleHobby(this)">Trumpet / Brass</div>
+          <div class="chip" onclick="toggleHobby(this)">Saxophone / Woodwinds</div>
+          <div class="chip" onclick="toggleHobby(this)">Flute</div>
+          <div class="chip" onclick="toggleHobby(this)">Ukulele</div>
+          <div class="chip" onclick="toggleHobby(this)">Banjo / Mandolin</div>
+          <div class="chip" onclick="toggleHobby(this)">Singing / Vocals</div>
+          <div class="chip" onclick="toggleHobby(this)">Choir / Chorus</div>
+          <div class="chip" onclick="toggleHobby(this)">DJing</div>
+          <div class="chip" onclick="toggleHobby(this)">Music production / Beatmaking</div>
+          <div class="chip" onclick="toggleHobby(this)">Songwriting</div>
+          <div class="chip" onclick="toggleHobby(this)">Concert / Live music going</div>
+          <div class="chip" onclick="toggleHobby(this)">Vinyl record collecting</div>
+
+          <span class="chip-group-label">Tech & Gaming</span>
+          <div class="chip" onclick="toggleHobby(this)">PC gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">Console gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">Mobile gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">Retro gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">VR gaming</div>
+          <div class="chip" onclick="toggleHobby(this)">Tabletop / Board games</div>
+          <div class="chip" onclick="toggleHobby(this)">Dungeons & Dragons / TTRPGs</div>
+          <div class="chip" onclick="toggleHobby(this)">Chess</div>
+          <div class="chip" onclick="toggleHobby(this)">Puzzles</div>
+          <div class="chip" onclick="toggleHobby(this)">Programming / Coding</div>
+          <div class="chip" onclick="toggleHobby(this)">Home lab / Self-hosting</div>
+          <div class="chip" onclick="toggleHobby(this)">Home automation / Smart home</div>
+          <div class="chip" onclick="toggleHobby(this)">3D printing</div>
+          <div class="chip" onclick="toggleHobby(this)">Electronics / Arduino</div>
+          <div class="chip" onclick="toggleHobby(this)">Robotics</div>
+          <div class="chip" onclick="toggleHobby(this)">Amateur radio (Ham)</div>
+          <div class="chip" onclick="toggleHobby(this)">Streaming / Content creation</div>
+          <div class="chip" onclick="toggleHobby(this)">Podcasting</div>
+          <div class="chip" onclick="toggleHobby(this)">Drone flying / FPV</div>
+          <div class="chip" onclick="toggleHobby(this)">Sim racing</div>
+
+          <span class="chip-group-label">Food & Drink</span>
+          <div class="chip" onclick="toggleHobby(this)">Cooking</div>
+          <div class="chip" onclick="toggleHobby(this)">Baking</div>
+          <div class="chip" onclick="toggleHobby(this)">Grilling / BBQ / Smoking</div>
+          <div class="chip" onclick="toggleHobby(this)">Wine tasting</div>
+          <div class="chip" onclick="toggleHobby(this)">Craft beer / Brewing</div>
+          <div class="chip" onclick="toggleHobby(this)">Cocktails / Mixology</div>
+          <div class="chip" onclick="toggleHobby(this)">Coffee / Espresso</div>
+          <div class="chip" onclick="toggleHobby(this)">Tea</div>
+          <div class="chip" onclick="toggleHobby(this)">Sourdough / Bread baking</div>
+          <div class="chip" onclick="toggleHobby(this)">Fermentation / Kombucha</div>
+          <div class="chip" onclick="toggleHobby(this)">Restaurant / Food exploring</div>
+          <div class="chip" onclick="toggleHobby(this)">Food photography</div>
+          <div class="chip" onclick="toggleHobby(this)">Meal prepping</div>
+          <div class="chip" onclick="toggleHobby(this)">Foraging</div>
+          <div class="chip" onclick="toggleHobby(this)">Cheesemaking</div>
+
+          <span class="chip-group-label">Reading & Learning</span>
+          <div class="chip" onclick="toggleHobby(this)">Fiction reading</div>
+          <div class="chip" onclick="toggleHobby(this)">Non-fiction reading</div>
+          <div class="chip" onclick="toggleHobby(this)">Audiobooks</div>
+          <div class="chip" onclick="toggleHobby(this)">History</div>
+          <div class="chip" onclick="toggleHobby(this)">Philosophy</div>
+          <div class="chip" onclick="toggleHobby(this)">Science</div>
+          <div class="chip" onclick="toggleHobby(this)">True crime</div>
+          <div class="chip" onclick="toggleHobby(this)">Biographies / Memoirs</div>
+          <div class="chip" onclick="toggleHobby(this)">Comic books / Manga</div>
+          <div class="chip" onclick="toggleHobby(this)">Language learning</div>
+          <div class="chip" onclick="toggleHobby(this)">Online courses / MOOCs</div>
+          <div class="chip" onclick="toggleHobby(this)">Writing / Journaling</div>
+          <div class="chip" onclick="toggleHobby(this)">Poetry</div>
+          <div class="chip" onclick="toggleHobby(this)">Screenwriting</div>
+
+          <span class="chip-group-label">Travel & Culture</span>
+          <div class="chip" onclick="toggleHobby(this)">Travel</div>
+          <div class="chip" onclick="toggleHobby(this)">Road trips</div>
+          <div class="chip" onclick="toggleHobby(this)">Backpacking travel</div>
+          <div class="chip" onclick="toggleHobby(this)">Museum visits</div>
+          <div class="chip" onclick="toggleHobby(this)">Theater / Opera</div>
+          <div class="chip" onclick="toggleHobby(this)">Film / Cinema</div>
+          <div class="chip" onclick="toggleHobby(this)">Antiquing</div>
+          <div class="chip" onclick="toggleHobby(this)">Cultural events / Festivals</div>
+
+          <span class="chip-group-label">Collecting</span>
+          <div class="chip" onclick="toggleHobby(this)">Vinyl records</div>
+          <div class="chip" onclick="toggleHobby(this)">Books</div>
+          <div class="chip" onclick="toggleHobby(this)">Comics / Graphic novels</div>
+          <div class="chip" onclick="toggleHobby(this)">Trading cards</div>
+          <div class="chip" onclick="toggleHobby(this)">Coins / Stamps</div>
+          <div class="chip" onclick="toggleHobby(this)">Sports memorabilia</div>
+          <div class="chip" onclick="toggleHobby(this)">Sneakers</div>
+          <div class="chip" onclick="toggleHobby(this)">Watches</div>
+          <div class="chip" onclick="toggleHobby(this)">Art</div>
+          <div class="chip" onclick="toggleHobby(this)">Antiques / Vintage</div>
+          <div class="chip" onclick="toggleHobby(this)">Action figures / Funko</div>
+          <div class="chip" onclick="toggleHobby(this)">Wine</div>
+          <div class="chip" onclick="toggleHobby(this)">Whiskey / Spirits</div>
+
+          <span class="chip-group-label">Social & Community</span>
+          <div class="chip" onclick="toggleHobby(this)">Volunteering</div>
+          <div class="chip" onclick="toggleHobby(this)">Mentoring</div>
+          <div class="chip" onclick="toggleHobby(this)">Community organizing</div>
+          <div class="chip" onclick="toggleHobby(this)">Religious / Spiritual practice</div>
+          <div class="chip" onclick="toggleHobby(this)">Book clubs</div>
+          <div class="chip" onclick="toggleHobby(this)">Game nights</div>
+          <div class="chip" onclick="toggleHobby(this)">Trivia nights</div>
+          <div class="chip" onclick="toggleHobby(this)">Hosting / Entertaining</div>
+          <div class="chip" onclick="toggleHobby(this)">Improv / Stand-up comedy</div>
+          <div class="chip" onclick="toggleHobby(this)">Meditation / Mindfulness</div>
+
+        </div>
+        <div class="chip-add-row">
+          <input type="text" id="custom-hobby-input" placeholder="Add a hobby not listed…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomHobby()}" />
+          <button type="button" class="btn-sm" onclick="addCustomHobby()">Add</button>
+        </div>
+        <input type="hidden" name="hobbies.interests" id="hobbies-value" />
+        <div class="field" style="margin-top:16px">
+          <label>Anything else <span style="font-weight:400;opacity:0.6">(passions, niche interests, context)</span></label>
+          <textarea name="hobbies.other" placeholder="I'm really into competitive BBQ, I've been restoring a '68 Mustang for 3 years…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- IDENTITY -->
+    <div class="tab-panel" id="tab-identity">
+      <div style="background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--accent)">
+        🔒 <strong>Privacy note:</strong> This tab collects sensitive personal information. It's saved only to your local machine and never transmitted anywhere. Be mindful about sharing your <code>user-identity.md</code> memory file.
+      </div>
+      <div class="card">
+        <h2><span class="icon">🗳️</span> Politics <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Political Identity <span style="font-weight:400;opacity:0.6">how you identify yourself</span></label>
+        <div class="chip-grid" id="ideology-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Anarchist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Apolitical</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Centrist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Classical Liberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Conservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Democratic Socialist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Fiscal Conservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Liberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Libertarian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nationalist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Neoconservative</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Neoliberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Populist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Progressive</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Social Democrat</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Socialist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Socially Liberal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.ideology" id="ideology-value" />
+        <label style="display:block;margin:16px 0 8px;font-size:13px;font-weight:500">Party / Affiliation</label>
+        <div class="chip-grid" id="political-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Constitution Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Democrat</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Green Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Independent</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Libertarian Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-partisan</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Reform Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Republican</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Working Families Party</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.political" id="political-value" />
+        <label style="display:block;margin:16px 0 8px;font-size:13px;font-weight:500">Leaning <span style="font-weight:400;opacity:0.6">(select one)</span></label>
+        <div class="chip-grid" id="leaning-grid" data-single-select="true">
+          <div class="chip" onclick="toggleChipInGrid(this)">Far left</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Left</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Center-left</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Centrist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Center-right</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Right</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Far right</div>
+        </div>
+        <input type="hidden" name="identity.leaning" id="leaning-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🏳️‍🌈</span> Sexuality &amp; Orientation <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="sexuality-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Aromantic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Asexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Bisexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Demisexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Fluid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gay</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Lesbian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pansexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Queer</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Questioning</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Straight / Heterosexual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.sexuality" id="sexuality-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">⚧️</span> Gender Identity <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="gender-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Agender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Bigender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Cisgender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Genderfluid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Genderqueer</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Intersex</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Man</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-binary</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Transgender</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Two-spirit</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Woman</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.gender" id="gender-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🕊️</span> Religion &amp; Spirituality <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="religion-grid">
+          <span class="chip-group-label">Christian</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Baptist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Catholic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Christian (general)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Eastern Orthodox</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Episcopal / Anglican</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Evangelical / Born-again</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jehovah's Witness</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Latter-day Saint (LDS)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Lutheran</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Methodist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-denominational Christian</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pentecostal</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Protestant</div>
+
+          <span class="chip-group-label">Jewish</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Conservative)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Orthodox)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Reconstructionist)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jewish (Reform)</div>
+
+          <span class="chip-group-label">Muslim</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Shia)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Sufi)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Muslim (Sunni)</div>
+
+          <span class="chip-group-label">Eastern</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Baha'i</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Mahayana)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Theravada)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Buddhist (Zen)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Hindu</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Jain</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Shinto</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Sikh</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Taoist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Zoroastrian</div>
+
+          <span class="chip-group-label">Pagan &amp; Alternative</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Druid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">New Age / Spiritual</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Norse / Heathen</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pagan</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Wiccan</div>
+
+          <span class="chip-group-label">Non-religious</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Agnostic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Atheist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Non-religious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Secular Humanist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Spiritual but not religious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
+        </div>
+        <input type="hidden" name="identity.religion" id="religion-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">✊</span> Causes &amp; Issues <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <input type="text" id="causes-search" class="chip-search" placeholder="Filter causes…" oninput="filterChipGrid('causes-grid','causes-search')" />
+        <div class="chip-grid" id="causes-grid">
+
+          <span class="chip-group-label">Social Justice</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Affordable housing</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-racism</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Criminal justice reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Disability rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gender equality</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Immigration reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Indigenous rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">LGBTQ+ rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Police reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Racial justice</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Voting rights</div>
+
+          <span class="chip-group-label">Environment &amp; Animals</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Animal rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Animal welfare</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-factory farming</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Climate change action</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Environmental conservation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Ocean conservation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Plastic pollution reduction</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Renewable energy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Veganism / plant-based living</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Wildlife protection</div>
+
+          <span class="chip-group-label">Health &amp; Social Welfare</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Abortion access</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Affordable healthcare</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Children's welfare</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Drug policy reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Elder care</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">End homelessness</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Food security / Hunger</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Harm reduction</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Maternal &amp; child health</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Mental health advocacy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Reproductive rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Universal healthcare</div>
+
+          <span class="chip-group-label">Economic</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Affordable education</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-corporate power</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Free market / Deregulation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Labor rights / Unions</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Living wage</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Small business support</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Student debt relief</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Tax reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Universal basic income</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Wealth inequality</div>
+
+          <span class="chip-group-label">Civil Liberties &amp; Governance</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Anti-corruption</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Campaign finance reform</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Civil liberties</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Free speech</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Government transparency</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gun control</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Gun rights / 2nd Amendment</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Privacy / Anti-surveillance</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Term limits</div>
+
+          <span class="chip-group-label">Global &amp; Humanitarian</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">Foreign aid</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Global health</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Human rights</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">International development</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nuclear disarmament</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Peace / Anti-war</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Refugee &amp; asylum support</div>
+
+          <span class="chip-group-label">Technology &amp; Future</span>
+          <div class="chip" onclick="toggleChipInGrid(this)">AI ethics / Safety</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Digital privacy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Net neutrality</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Open source / Open internet</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Tech regulation</div>
+
+        </div>
+        <div class="chip-add-row">
+          <input type="text" id="custom-cause-input" placeholder="Add a cause not listed…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomChipToGrid('custom-cause-input','causes-grid','causes-value')}" />
+          <button type="button" class="btn-sm" onclick="addCustomChipToGrid('custom-cause-input','causes-grid','causes-value')">Add</button>
+        </div>
+        <input type="hidden" name="identity.causes" id="causes-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📝</span> Identity Notes</h2>
+        <div class="field">
+          <label>Anything else about your identity, values, or worldview</label>
+          <textarea name="identity.notes" placeholder="My faith is very important to me but I keep it private. I'm politically active but moderate on most issues…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="tab-panel" id="tab-goals">
+      <div class="card">
+        <h2><span class="icon">🚀</span> Goals & Projects</h2>
+        <div class="field"><label>Current projects</label><textarea name="goals.current_projects" placeholder="What are you actively working on right now?"></textarea></div>
+        <div class="grid-2" style="margin-top:14px">
+          <div class="field"><label>Short-term goals (next 3–6 months)</label><textarea name="goals.short_term" placeholder="Launch MVP, get promoted, learn Spanish…"></textarea></div>
+          <div class="field"><label>Long-term goals (1–5 years)</label><textarea name="goals.long_term" placeholder="Start a company, buy a house, travel to Japan…"></textarea></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Currently learning</label><input type="text" name="goals.learning" placeholder="Python, piano, woodworking…" /></div>
+      </div>
+    </div>
+
+    <!-- COMMUNICATION PREFERENCES -->
+    <div class="tab-panel" id="tab-comms">
+      <div class="card">
+        <h2><span class="icon">💬</span> Response Style</h2>
+        <div class="grid-2">
+          <div class="field"><label>Tone preference</label>
+            <select name="comms.tone">
+              <option value="">Select…</option>
+              <option>Direct and blunt</option>
+              <option>Direct but warm</option>
+              <option>Conversational and casual</option>
+              <option>Formal and professional</option>
+              <option>Adapt to context</option>
+            </select>
+          </div>
+          <div class="field"><label>Response length</label>
+            <select name="comms.length">
+              <option value="">Select…</option>
+              <option>As concise as possible</option>
+              <option>Short unless depth is needed</option>
+              <option>Thorough by default</option>
+              <option>Match the complexity of the question</option>
+            </select>
+          </div>
+          <div class="field"><label>Formatting preference</label>
+            <select name="comms.formatting">
+              <option value="">Select…</option>
+              <option>Bullet points and headers</option>
+              <option>Minimal formatting, plain text</option>
+              <option>No strong preference</option>
+              <option>Prose over bullet points</option>
+            </select>
+          </div>
+          <div class="field"><label>Feedback style</label>
+            <select name="comms.feedback">
+              <option value="">Select…</option>
+              <option>Diplomatic but honest</option>
+              <option>Just give me the facts</option>
+              <option>Tell me when I'm wrong, directly</option>
+              <option>Validate first, then critique</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">😏</span> Humor & Personality <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Humor style <span style="font-weight:400;opacity:0.6">how Claude should joke around (or not)</span></label>
+        <div class="chip-grid" id="humor-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Absurdist</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Dry / deadpan</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Keep it serious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Observational</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Playful</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Sarcastic</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Self-deprecating</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Witty / wordplay</div>
+        </div>
+        <input type="hidden" name="comms.humor" id="humor-value" />
+
+        <label style="display:block;margin:18px 0 8px;font-size:13px;font-weight:500">Personality vibes <span style="font-weight:400;opacity:0.6">adjectives that describe how Claude should feel</span></label>
+        <div class="chip-grid" id="vibes-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">Confident</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Curious</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Hedged / nuanced</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nerdy</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Opinionated</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Patient explainer</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Plainspoken</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Pushback-friendly</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Skeptical</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Storyteller</div>
+        </div>
+        <input type="hidden" name="comms.personality_vibes" id="vibes-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🚫</span> Things Claude Should Never Do</h2>
+        <div class="field">
+          <label>Behaviors you dislike (e.g. "don't placate me", "skip the preamble", "no excessive caveats")</label>
+          <textarea name="comms.never_do" placeholder="Don't start responses with 'Great question!', don't add unnecessary disclaimers, don't repeat what I just said back to me…"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">✅</span> Things Claude Should Always Do</h2>
+        <div class="field">
+          <label>Behaviors you want consistently (e.g. "always give me options", "push back if you disagree", "ask before assuming")</label>
+          <textarea name="comms.always_do" placeholder="Always tell me if you think I'm approaching something the wrong way. Always ask clarifying questions before diving in on big tasks…"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🧠</span> How You Think & Work</h2>
+        <div class="grid-2">
+          <div class="field"><label>Your working style</label>
+            <select name="comms.working_style">
+              <option value="">Select…</option>
+              <option>I come in with a clear plan</option>
+              <option>I like to explore before deciding</option>
+              <option>I prefer async / written over verbal</option>
+              <option>I think out loud — help me structure</option>
+              <option>I work in short focused bursts</option>
+            </select>
+          </div>
+          <div class="field"><label>When you're stuck, you want Claude to…</label>
+            <select name="comms.when_stuck">
+              <option value="">Select…</option>
+              <option>Ask what I've already tried</option>
+              <option>Give me options and let me choose</option>
+              <option>Just solve it</option>
+              <option>Walk me through it step by step</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Anything else about how you like to collaborate</label>
+          <textarea name="comms.other" placeholder="I get frustrated when… I work best when… The thing that helps me most is…"></textarea>
+        </div>
+      </div>
+    </div>
+
+
+  </form><!-- /form -->
+
+  <!-- Output target -->
+  <div class="target-toggle" style="margin-top:24px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px">
+    <label style="font-weight:500;margin-right:14px">Output target:</label>
+    <label style="margin-right:14px;font-weight:400"><input type="radio" name="target" value="claude-ai" checked /> Claude.ai <span style="color:var(--muted)">(copy a bootstrap block into chat)</span></label>
+    <label style="margin-right:14px;font-weight:400"><input type="radio" name="target" value="claude-code" /> Claude Code <span style="color:var(--muted)">(download .md files as ZIP)</span></label>
+    <label style="font-weight:400"><input type="radio" name="target" value="both" /> Both</label>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="btn btn-outline" onclick="previewMemories()">Preview</button>
+    <button class="btn btn-primary" onclick="submitForm()">Generate</button>
+  </div>
+  <p style="text-align:right;font-size:12px;color:var(--muted);margin-top:8px">
+    Click <strong>Generate</strong> to copy a bootstrap block for claude.ai, or download <code>.md</code> files for Claude Code.
+  </p>
+
+  <!-- Preview section -->
+  <div id="preview-section">
+    <div class="preview-header">📋 Preview — what will be saved</div>
+    <div id="preview-list"></div>
+    <div id="memory-path-display"></div>
+  </div>
+
+</div><!-- /container -->
+
+<script id="initial-data" type="application/json">{}</script>
+
+<div id="toast"></div>
+
+<script>
+// ── Dark mode ───────────────────────────────────────────────────
+(function () {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.addEventListener('DOMContentLoaded', () => syncThemeIcon(saved));
+})();
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  syncThemeIcon(next);
+}
+
+function syncThemeIcon(theme) {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+// ── Tab navigation ──────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Settings ────────────────────────────────────────────────────
+function toggleSettings() {
+  document.getElementById('settings-panel').classList.toggle('open');
+}
+
+async function saveConfig() {
+  const path = document.getElementById('memory-path-input').value.trim();
+  const res = await fetch('/save-config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ memory_path: path }),
+  });
+  const data = await res.json();
+  if (data.success) showToast('Memory path saved!');
+}
+
+// ── Repeatable rows ─────────────────────────────────────────────
+function addPriorEmployer() {
+  const group = document.getElementById('prior-employers-group');
+  const idx = group.children.length;
+  const row = document.createElement('div');
+  row.className = 'repeat-row';
+  row.innerHTML = `
+    <div class="fields">
+      <div class="field"><label>Company</label><input type="text" name="work.prior_employers[${idx}].company" placeholder="Acme Inc." /></div>
+      <div class="field"><label>Title / role</label><input type="text" name="work.prior_employers[${idx}].title" placeholder="Senior Engineer" /></div>
+      <div class="field"><label>Years</label><input type="text" name="work.prior_employers[${idx}].years" placeholder="2015–2020 or 5 years" /></div>
+      <div class="field"><label>Notes <span style="font-weight:400;opacity:0.6">(optional)</span></label><input type="text" name="work.prior_employers[${idx}].notes" placeholder="What you built, why you left…" /></div>
+    </div>
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+  group.appendChild(row);
+}
+
+function addChild() {
+  const group = document.getElementById('children-group');
+  const idx = group.children.length;
+  const row = document.createElement('div');
+  row.className = 'repeat-row';
+  row.innerHTML = `
+    <div class="fields">
+      <div class="field"><label>Name</label><input type="text" name="family.children[${idx}].name" placeholder="Emma" /></div>
+      <div class="field"><label>Birthday (month/year)</label><input type="month" name="family.children[${idx}].birthday" min="1900-01" max="2099-12" /></div>
+      <div class="field"><label>Status</label>
+        <select name="family.children[${idx}].status" onchange="togglePassedDate(this,'child-passed-${idx}')">
+          <option value="">Select…</option>
+          <option value="Living">Living</option>
+          <option value="Passed away">Passed away</option>
+        </select>
+      </div>
+      <div class="field" id="child-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="family.children[${idx}].date_passed" min="1900-01" max="2099-12" /></div>
+    </div>
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+  group.appendChild(row);
+}
+
+function addPet() {
+  const group = document.getElementById('pets-group');
+  const idx = group.children.length;
+  const row = document.createElement('div');
+  row.className = 'repeat-row';
+  row.innerHTML = `
+    <div class="fields">
+      <div class="field"><label>Name</label><input type="text" name="pets[${idx}].name" placeholder="Toby" /></div>
+      <div class="field"><label>Species</label>
+        <select name="pets[${idx}].species" onchange="updateBreedHints(this,${idx})">
+          <option value="">Select…</option>
+          <optgroup label="Common">
+            <option>Bird</option><option>Cat</option><option>Dog</option><option>Fish</option>
+            <option>Gerbil</option><option>Guinea pig</option><option>Hamster</option>
+            <option>Mouse</option><option>Rabbit</option><option>Rat</option>
+          </optgroup>
+          <optgroup label="Reptiles & Amphibians">
+            <option>Axolotl</option><option>Bearded dragon</option><option>Chameleon</option>
+            <option>Frog / Toad</option><option>Gecko</option><option>Lizard</option>
+            <option>Snake</option><option>Turtle / Tortoise</option>
+          </optgroup>
+          <optgroup label="Birds (specific)">
+            <option>Canary</option><option>Cockatiel</option><option>Cockatoo</option>
+            <option>Conure</option><option>Finch</option><option>Macaw</option>
+            <option>Parakeet / Budgie</option><option>Parrot</option>
+          </optgroup>
+          <optgroup label="Larger Animals">
+            <option>Alpaca / Llama</option><option>Chicken</option><option>Donkey</option>
+            <option>Duck</option><option>Goat</option><option>Horse</option>
+            <option>Pig / Potbelly pig</option><option>Pony</option><option>Sheep</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option>Chinchilla</option><option>Degu</option><option>Ferret</option>
+            <option>Hedgehog</option><option>Sugar glider</option><option>Other</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field"><label>Breed <span style="font-size:11px;opacity:0.6" id="breed-hint-${idx}"></span></label><input type="text" name="pets[${idx}].breed" placeholder="Breed" id="breed-input-${idx}" list="breed-list-${idx}" autocomplete="off" /><datalist id="breed-list-${idx}"></datalist></div>
+      <div class="field"><label>Birthday (month/year)</label><input type="month" name="pets[${idx}].birthday" min="1900-01" max="2099-12" /></div>
+      <div class="field"><label>Status</label>
+        <select name="pets[${idx}].status" onchange="togglePassedDate(this,'pet-passed-${idx}')">
+          <option value="">Select…</option>
+          <option value="Still with us">Still with us</option>
+          <option value="Passed away">Passed away</option>
+        </select>
+      </div>
+      <div class="field" id="pet-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="pets[${idx}].date_passed" min="1900-01" max="2099-12" /></div>
+    </div>
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+  group.appendChild(row);
+}
+
+const BREED_OPTIONS = {
+  'Dog': ['Akita','Alaskan Malamute','Australian Shepherd','Basset Hound','Beagle','Bernese Mountain Dog','Bichon Frise','Bloodhound','Border Collie','Boston Terrier','Boxer','Bull Terrier','Bulldog','Cardigan Welsh Corgi','Cavalier King Charles Spaniel','Chihuahua','Chow Chow','Cocker Spaniel','Dachshund','Dalmatian','Doberman Pinscher','English Springer Spaniel','French Bulldog','German Shepherd','Golden Retriever','Great Dane','Greyhound','Irish Setter','Jack Russell Terrier','Labrador Retriever','Maltese','Miniature Schnauzer','Pembroke Welsh Corgi','Pit Bull','Pomeranian','Poodle','Rottweiler','Samoyed','Scottish Terrier','Shetland Sheepdog','Shih Tzu','Siberian Husky','Staffordshire Bull Terrier','Vizsla','Weimaraner','West Highland White Terrier','Whippet','Yorkshire Terrier','Mixed / Mutt'],
+  'Cat': ['Abyssinian','American Shorthair','Bengal','Birman','British Shorthair','Burmese','Cornish Rex','Devon Rex','Domestic Longhair','Domestic Shorthair','Exotic Shorthair','Himalayan','Maine Coon','Manx','Munchkin','Norwegian Forest Cat','Oriental Shorthair','Persian','Ragdoll','Russian Blue','Savannah','Scottish Fold','Siamese','Sphynx','Tabby','Tonkinese','Turkish Angora','Mixed'],
+  'Rabbit': ['American','Californian','Dutch','English Angora','Flemish Giant','Himalayan','Holland Lop','Lionhead','Mini Lop','Mini Rex','Netherland Dwarf','New Zealand','Polish','Rex','Mixed'],
+  'Guinea pig': ['Abyssinian','American','Baldwin','Crested','Peruvian','Rex','Silkie / Sheltie','Skinny pig','Teddy','Texel','Mixed'],
+  'Hamster': ['Chinese','Dwarf Campbell','Dwarf Winter White','Roborovski','Syrian','Mixed'],
+  'Rat': ['Dumbo','Hairless','Rex','Standard','Mixed'],
+  'Gerbil': ['Fat-tailed','Mongolian','Mixed'],
+  'Horse': ['Andalusian','Appaloosa','Arabian','Clydesdale','Friesian','Lipizzaner','Morgan','Mustang','Paint Horse','Percheron','Quarter Horse','Shetland Pony','Tennessee Walking Horse','Thoroughbred','Warmblood','Mixed'],
+  'Pony': ['Connemara','Dartmoor','Haflinger','New Forest','Shetland','Welsh','Mixed'],
+  'Bird': ['Budgie / Parakeet','Canary','Cockatiel','Finch','Lovebird','Mixed'],
+  'Parakeet / Budgie': ['American Budgie','English Budgie'],
+  'Parrot': ['African Grey','Amazon (Blue-fronted)','Amazon (Yellow-naped)','Caique','Eclectus','Green Cheek Conure','Jenday Conure','Lorikeet','Nanday Conure','Pionus','Senegal','Sun Conure','Mixed'],
+  'Cockatiel': ['Cinnamon','Lutino','Normal Grey','Pearl','Pied','Whiteface','Mixed'],
+  'Macaw': ['Blue-and-Gold','Green-winged','Hyacinth','Military','Scarlet','Mixed'],
+  'Cockatoo': ["Goffin's","Moluccan","Rose-breasted / Galah","Sulphur-crested","Umbrella","Mixed"],
+  'Conure': ['Dusky','Green Cheek','Jenday','Nanday','Patagonian','Sun','Mixed'],
+  'Snake': ['Ball Python','Blood Python','Boa Constrictor','Carpet Python','Corn Snake','Garter Snake','King Snake','Milk Snake','Western Hognose Snake','Mixed'],
+  'Lizard': ['Bearded Dragon','Blue-tongued Skink','Crested Gecko','Green Iguana','Leopard Gecko','Monitor Lizard','Tegu','Uromastyx','Mixed'],
+  'Gecko': ['Crested Gecko','Day Gecko','Fat-tailed Gecko','Gargoyle Gecko','Leopard Gecko','Tokay Gecko','Mixed'],
+  'Bearded dragon': ['Citrus','German Giant','Inland / Central','Leatherback','Silkback','Mixed'],
+  'Chameleon': ["Jackson's",'Panther','Veiled','Mixed'],
+  'Turtle / Tortoise': ['Aquatic Turtle','Box Turtle','Greek Tortoise',"Hermann's Tortoise",'Map Turtle','Painted Turtle','Red-eared Slider','Russian Tortoise','Sulcata / African Spurred','Mixed'],
+  'Fish': ['Angelfish','Betta','Cichlid','Clownfish','Corydora','Discus','Goldfish','Guppy','Koi','Molly','Platy','Pleco','Swordtail','Tang','Tetra','Mixed'],
+};
+const BREED_HINTS = {
+  'Dog': 'e.g. Labrador, Poodle, Schnauzer…',
+  'Cat': 'e.g. Tabby, Siamese, Maine Coon…',
+  'Bird': 'e.g. Budgie, Cockatiel…',
+  'Parrot': 'e.g. African Grey, Amazon…',
+  'Rabbit': 'e.g. Holland Lop, Rex…',
+  'Horse': 'e.g. Quarter Horse, Thoroughbred…',
+  'Snake': 'e.g. Ball Python, Corn Snake…',
+  'Lizard': 'e.g. Bearded Dragon, Leopard Gecko…',
+};
+function updateBreedHints(select, idx) {
+  const hint = document.getElementById(`breed-hint-${idx}`);
+  const input = document.getElementById(`breed-input-${idx}`);
+  const datalist = document.getElementById(`breed-list-${idx}`);
+  const breeds = BREED_OPTIONS[select.value] || [];
+  const h = BREED_HINTS[select.value] || '';
+  if (hint) hint.textContent = h ? `(${h})` : '';
+  if (input) input.placeholder = breeds.length ? 'Type or choose a breed…' : 'Breed';
+  if (datalist) datalist.innerHTML = breeds.map(b => `<option value="${b}"></option>`).join('');
+}
+
+function togglePassedDate(select, fieldId) {
+  const el = document.getElementById(fieldId);
+  if (el) el.style.display = select.value === 'Passed away' ? 'flex' : 'none';
+}
+
+// ── Chip filter (generic) ───────────────────────────────────────
+function filterChipGrid(gridId, searchId) {
+  const q = document.getElementById(searchId).value.toLowerCase();
+  const grid = document.getElementById(gridId);
+  grid.querySelectorAll('.chip').forEach(chip => {
+    chip.style.display = (!q || chip.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+  grid.querySelectorAll('.chip-group-label').forEach(label => {
+    let next = label.nextElementSibling;
+    let visible = false;
+    while (next && !next.classList.contains('chip-group-label')) {
+      if (next.classList.contains('chip') && next.style.display !== 'none') visible = true;
+      next = next.nextElementSibling;
+    }
+    label.style.display = visible ? '' : 'none';
+  });
+}
+// Legacy alias for health conditions grid
+function filterChips() { filterChipGrid('conditions-grid', 'chip-search'); }
+
+// ── Health condition chips ──────────────────────────────────────
+function toggleChip(chip) {
+  chip.classList.toggle('selected');
+  syncConditionsValue();
+}
+
+function addCustomChip() {
+  const input = document.getElementById('custom-condition-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const grid = document.getElementById('conditions-grid');
+  const chip = document.createElement('div');
+  chip.className = 'chip selected';
+  chip.textContent = val;
+  chip.onclick = () => { toggleChip(chip); };
+  grid.appendChild(chip);
+  input.value = '';
+  syncConditionsValue();
+}
+
+function syncConditionsValue() {
+  const selected = [...document.querySelectorAll('#conditions-grid .chip.selected')]
+    .map(c => c.textContent.trim());
+  document.getElementById('conditions-value').value = selected.join(', ');
+}
+
+// ── Hobby chips ─────────────────────────────────────────────────
+function toggleHobby(chip) {
+  chip.classList.toggle('selected');
+  syncHobbiesValue();
+}
+
+function addCustomHobby() {
+  const input = document.getElementById('custom-hobby-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const grid = document.getElementById('hobbies-grid');
+  const chip = document.createElement('div');
+  chip.className = 'chip selected';
+  chip.textContent = val;
+  chip.onclick = () => { toggleHobby(chip); };
+  grid.appendChild(chip);
+  input.value = '';
+  syncHobbiesValue();
+}
+
+function syncHobbiesValue() {
+  const selected = [...document.querySelectorAll('#hobbies-grid .chip.selected')]
+    .map(c => c.textContent.trim());
+  document.getElementById('hobbies-value').value = selected.join(', ');
+}
+
+// ── Collect form data ───────────────────────────────────────────
+function collectData() {
+  const form = document.getElementById('intake-form');
+  const elements = form.querySelectorAll('input, select, textarea');
+  const data = { personal: {}, family: { children: [] }, work: { prior_employers: [] }, pets: [], health: {}, hobbies: {}, identity: {}, goals: {}, comms: {}, freeform: '' };
+
+  elements.forEach(el => {
+    const name = el.name;
+    const value = el.value.trim();
+    if (!name || !value) return;
+
+    if (name === 'freeform') { data.freeform = value; return; }
+
+    // pets[0].name
+    const petMatch = name.match(/^pets\[(\d+)\]\.(\w+)$/);
+    if (petMatch) {
+      const [, i, key] = petMatch;
+      if (!data.pets[+i]) data.pets[+i] = {};
+      data.pets[+i][key] = value;
+      return;
+    }
+
+    // section.subarray[0].key  — e.g., family.children[0].name, work.prior_employers[0].company
+    const nestedArrMatch = name.match(/^(\w+)\.(\w+)\[(\d+)\]\.(\w+)$/);
+    if (nestedArrMatch) {
+      const [, section, arr, i, key] = nestedArrMatch;
+      if (!data[section]) data[section] = {};
+      if (!data[section][arr]) data[section][arr] = [];
+      if (!data[section][arr][+i]) data[section][arr][+i] = {};
+      data[section][arr][+i][key] = value;
+      return;
+    }
+
+    // section.key
+    const dotMatch = name.match(/^(\w+)\.(\w+)$/);
+    if (dotMatch) {
+      const [, section, key] = dotMatch;
+      if (data[section] !== undefined) data[section][key] = value;
+    }
+  });
+
+  // Clean up sparse arrays
+  data.pets = data.pets.filter(Boolean);
+  data.family.children = data.family.children.filter(Boolean);
+  data.work.prior_employers = (data.work.prior_employers || []).filter(Boolean);
+
+  const targetEl = document.querySelector('input[name="target"]:checked');
+  data.target = targetEl ? targetEl.value : 'claude-code';
+  return data;
+}
+
+// ── Preview ─────────────────────────────────────────────────────
+async function previewMemories() {
+  const data = collectData();
+  const res = await fetch('/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const result = await res.json();
+  renderPreview(result.memories, result.bootstrap, result.target || 'claude-code');
+}
+
+function renderPreview(memories, bootstrap, target) {
+  const section = document.getElementById('preview-section');
+  const list = document.getElementById('preview-list');
+  const pathEl = document.getElementById('memory-path-display');
+
+  const cards = [];
+
+  if (target === 'claude-code' || target === 'both') {
+    if (memories.length) {
+      cards.push(...memories.map(m => `
+        <div class="preview-item">
+          <div class="preview-item-header">
+            <span>${m.slug}.md</span>
+            <span style="display:flex;gap:10px;align-items:center;font-weight:400;opacity:0.7">${m.description}<button type="button" class="btn-sm" onclick="copyCardBody(this)">📋 Copy</button></span>
+          </div>
+          <div class="preview-item-body">${escapeHtml(m.content)}</div>
+        </div>`));
+    }
+  }
+
+  if ((target === 'claude-ai' || target === 'both') && bootstrap) {
+    cards.push(`
+      <div class="preview-item">
+        <div class="preview-item-header">
+          <span>claude-ai-bootstrap.md</span>
+          <span style="display:flex;gap:10px;align-items:center;font-weight:400;opacity:0.7">Paste into a claude.ai conversation<button type="button" class="btn-sm" onclick="copyCardBody(this)">📋 Copy all</button></span>
+        </div>
+        <div class="preview-item-body">${escapeHtml(bootstrap)}</div>
+      </div>`);
+  }
+
+  if (!cards.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:14px">Nothing to preview yet — fill in some fields first.</p>';
+  } else {
+    list.innerHTML = cards.join('');
+  }
+
+  const memPath = document.getElementById('memory-path-input').value;
+  pathEl.innerHTML = `<div style="margin-top:12px;font-size:13px;color:var(--muted)">Files will be saved to: <span class="path-display">${escapeHtml(memPath)}</span></div>`;
+  section.classList.add('visible');
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Submit ──────────────────────────────────────────────────────
+async function submitForm() {
+  const data = collectData();
+  const res = await fetch('/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const result = await res.json();
+  if (result.success) {
+    showToast(`✓ Saved ${result.saved.length} memory file${result.saved.length !== 1 ? 's' : ''}!`);
+    // Also update the preview
+    previewMemories();
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+async function copyCardBody(btn) {
+  const card = btn.closest('.preview-item');
+  if (!card) return;
+  const body = card.querySelector('.preview-item-body');
+  if (!body) return;
+  try {
+    await navigator.clipboard.writeText(body.textContent);
+    showToast('✓ Copied to clipboard');
+  } catch (err) {
+    showToast('Copy failed — select and copy manually');
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Identity / generic chip grid ────────────────────────────────
+function toggleChipInGrid(chip) {
+  const grid = chip.closest('.chip-grid');
+  const singleSelect = grid.dataset.singleSelect === 'true';
+  if (singleSelect) {
+    if (chip.classList.contains('selected')) {
+      chip.classList.remove('selected');
+    } else {
+      grid.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+    }
+  } else {
+    chip.classList.toggle('selected');
+  }
+  const valueId = grid.id.replace('-grid', '-value');
+  const hiddenEl = document.getElementById(valueId);
+  if (hiddenEl) {
+    hiddenEl.value = [...grid.querySelectorAll('.chip.selected')].map(c => c.textContent.trim()).join(', ');
+  }
+}
+
+// ── Hydration: populate form from initial_data on page load ─────
+function hydrateFormFromInitial() {
+  const dataEl = document.getElementById('initial-data');
+  if (!dataEl) return;
+  let data;
+  try { data = JSON.parse(dataEl.textContent); } catch (e) { return; }
+  if (!data || typeof data !== 'object') return;
+
+  const setVal = (name, value) => {
+    if (value === undefined || value === null || value === '') return;
+    const el = document.querySelector(`[name="${name}"]`);
+    if (!el) return;
+    el.value = value;
+  };
+
+  // Plain field sections
+  for (const section of ['personal', 'family', 'work', 'health', 'hobbies', 'identity', 'goals', 'comms']) {
+    const obj = data[section];
+    if (!obj || typeof obj !== 'object') continue;
+    for (const [k, v] of Object.entries(obj)) {
+      if (Array.isArray(v) || (v && typeof v === 'object')) continue;
+      setVal(`${section}.${k}`, v);
+    }
+  }
+  if (data.freeform) setVal('freeform', data.freeform);
+
+  // Chip grids
+  const chipGrids = {
+    'conditions-grid': 'health.conditions',
+    'hobbies-grid':    'hobbies.interests',
+    'ideology-grid':   'identity.ideology',
+    'political-grid':  'identity.political',
+    'leaning-grid':    'identity.leaning',
+    'sexuality-grid':  'identity.sexuality',
+    'gender-grid':     'identity.gender',
+    'religion-grid':   'identity.religion',
+    'causes-grid':     'identity.causes',
+    'humor-grid':      'comms.humor',
+    'vibes-grid':      'comms.personality_vibes',
+  };
+  for (const [gridId, hiddenName] of Object.entries(chipGrids)) {
+    const [section, key] = hiddenName.split('.');
+    const csv = data[section] && data[section][key];
+    if (!csv) continue;
+    const wanted = new Set(csv.split(',').map(s => s.trim()).filter(Boolean));
+    const grid = document.getElementById(gridId);
+    if (!grid) continue;
+    grid.querySelectorAll('.chip').forEach(chip => {
+      const text = chip.textContent.trim();
+      if (wanted.has(text)) {
+        chip.classList.add('selected');
+        wanted.delete(text);
+      }
+    });
+    // Anything left over: user-added custom chips that aren't in the default list
+    wanted.forEach(custom => {
+      const chip = document.createElement('div');
+      chip.className = 'chip selected';
+      chip.textContent = custom;
+      chip.onclick = () => toggleChipInGrid(chip);
+      grid.appendChild(chip);
+    });
+    const hiddenEl = document.getElementById(gridId.replace('-grid', '-value'));
+    if (hiddenEl) {
+      hiddenEl.value = [...grid.querySelectorAll('.chip.selected')]
+        .map(c => c.textContent.trim()).join(', ');
+    }
+  }
+
+  // Children
+  if (data.family && Array.isArray(data.family.children)) {
+    data.family.children.forEach((child, i) => {
+      addChild();
+      setVal(`family.children[${i}].name`, child.name);
+      setVal(`family.children[${i}].birthday`, child.birthday);
+      setVal(`family.children[${i}].status`, child.status);
+      setVal(`family.children[${i}].date_passed`, child.date_passed);
+      const statusEl = document.querySelector(`[name="family.children[${i}].status"]`);
+      if (statusEl && statusEl.value) statusEl.dispatchEvent(new Event('change'));
+    });
+  }
+
+  // Pets
+  if (Array.isArray(data.pets)) {
+    data.pets.forEach((pet, i) => {
+      addPet();
+      setVal(`pets[${i}].name`, pet.name);
+      setVal(`pets[${i}].species`, pet.species);
+      setVal(`pets[${i}].breed`, pet.breed);
+      setVal(`pets[${i}].birthday`, pet.birthday);
+      setVal(`pets[${i}].status`, pet.status);
+      setVal(`pets[${i}].date_passed`, pet.date_passed);
+      const speciesEl = document.querySelector(`[name="pets[${i}].species"]`);
+      if (speciesEl && speciesEl.value) speciesEl.dispatchEvent(new Event('change'));
+      const statusEl = document.querySelector(`[name="pets[${i}].status"]`);
+      if (statusEl && statusEl.value) statusEl.dispatchEvent(new Event('change'));
+    });
+  }
+
+  // Prior employers
+  if (data.work && Array.isArray(data.work.prior_employers)) {
+    data.work.prior_employers.forEach((emp, i) => {
+      addPriorEmployer();
+      setVal(`work.prior_employers[${i}].company`, emp.company);
+      setVal(`work.prior_employers[${i}].title`, emp.title);
+      setVal(`work.prior_employers[${i}].years`, emp.years);
+      setVal(`work.prior_employers[${i}].notes`, emp.notes);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', hydrateFormFromInitial);
+
+function addCustomChipToGrid(inputId, gridId, valueId) {
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  if (!val) return;
+  const grid = document.getElementById(gridId);
+  const chip = document.createElement('div');
+  chip.className = 'chip selected';
+  chip.textContent = val;
+  chip.onclick = () => toggleChipInGrid(chip);
+  grid.appendChild(chip);
+  input.value = '';
+  const hiddenEl = document.getElementById(valueId);
+  if (hiddenEl) {
+    hiddenEl.value = [...grid.querySelectorAll('.chip.selected')].map(c => c.textContent.trim()).join(', ');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// STANDALONE OVERRIDES — appended by tools/build_standalone.py
+//
+// Replaces the Flask-backed functions above (previewMemories,
+// submitForm, saveConfig) with pure-browser implementations.
+// The port of build_memories / build_bootstrap below must stay in
+// sync with app.py — that file is the source of truth.
+// ─────────────────────────────────────────────────────────────────
+
+const BOOTSTRAP_MAX_ENTRY_LEN = 500;
+const BOOTSTRAP_MAX_ENTRIES = 25;
+const BOOTSTRAP_TOPIC_TAGS = {
+  'user-personal': 'Personal',
+  'user-family': 'Family',
+  'user-work': 'Work',
+  'user-pets': 'Pets',
+  'user-health': 'Health',
+  'user-hobbies': 'Hobbies',
+  'user-identity': 'Identity',
+  'user-goals': 'Goals',
+  'user-communication': 'Communication',
+};
+const BOOTSTRAP_PRIORITY = [
+  'user-communication', 'user-personal', 'user-identity', 'user-work',
+  'user-family', 'user-health', 'user-hobbies', 'user-goals', 'user-pets',
+];
+
+const MONTH_NAMES = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+
+function fmtMonth(value) {
+  if (!value) return '';
+  const m = /^(\d{4,})-(\d{2})$/.exec(value);
+  if (!m) return value;
+  const year = m[1].slice(0, 4);
+  const month = parseInt(m[2], 10);
+  if (month < 1 || month > 12) return value;
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+function nb(obj, key) {
+  if (!obj) return '';
+  const v = obj[key];
+  if (v == null) return '';
+  return String(v).trim();
+}
+
+function topicFor(slug) {
+  if (slug.startsWith('user-notes-')) return 'Notes';
+  if (BOOTSTRAP_TOPIC_TAGS[slug]) return BOOTSTRAP_TOPIC_TAGS[slug];
+  return slug.replace(/^user-/, '').replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function splitBodyIntoChunks(body, budget) {
+  if (body.length <= budget) return [body];
+  const chunks = [];
+  let current = [], currentLen = 0;
+  for (const piece of body.split('; ')) {
+    const sepLen = current.length ? 2 : 0;
+    if (current.length && currentLen + sepLen + piece.length > budget) {
+      chunks.push(current.join('; '));
+      current = [piece];
+      currentLen = piece.length;
+    } else {
+      current.push(piece);
+      currentLen += sepLen + piece.length;
+    }
+  }
+  if (current.length) chunks.push(current.join('; '));
+
+  const final = [];
+  for (const chunk of chunks) {
+    if (chunk.length <= budget) { final.push(chunk); continue; }
+    let sub = [], subLen = 0;
+    for (const word of chunk.split(/\s+/)) {
+      const sepLen = sub.length ? 1 : 0;
+      if (sub.length && subLen + sepLen + word.length > budget) {
+        final.push(sub.join(' '));
+        sub = [word];
+        subLen = word.length;
+      } else {
+        sub.push(word);
+        subLen += sepLen + word.length;
+      }
+    }
+    if (sub.length) final.push(sub.join(' '));
+  }
+  return final;
+}
+
+function memoryToEntries(memory) {
+  const topic = topicFor(memory.slug);
+  const parts = memory.content.split('\n').map(l => l.trim()).filter(Boolean);
+  const body = parts.join('; ');
+  const budget = BOOTSTRAP_MAX_ENTRY_LEN - topic.length - ' (99/99): '.length;
+  const chunks = splitBodyIntoChunks(body, budget);
+  if (chunks.length === 1) {
+    const single = `${topic}: ${chunks[0]}`;
+    if (single.length <= BOOTSTRAP_MAX_ENTRY_LEN) return [single];
+  }
+  const total = chunks.length;
+  return chunks.map((c, i) => `${topic} (${i + 1}/${total}): ${c}`);
+}
+
+function buildBootstrap(memories) {
+  const memBySlug = {};
+  for (const m of memories) memBySlug[m.slug] = m;
+  const ordered = [];
+  for (const slug of BOOTSTRAP_PRIORITY) {
+    if (memBySlug[slug]) {
+      ordered.push(memBySlug[slug]);
+      delete memBySlug[slug];
+    }
+  }
+  for (const m of Object.values(memBySlug)) ordered.push(m);
+
+  const entries = [];
+  outer: for (const mem of ordered) {
+    for (const entry of memoryToEntries(mem)) {
+      if (entries.length >= BOOTSTRAP_MAX_ENTRIES) break outer;
+      entries.push(entry);
+    }
+  }
+  if (!entries.length) return '';
+
+  const ts = new Date().toISOString().slice(0, 19);
+  const header = `# Claude.ai Memory Bootstrap
+
+Generated: ${ts}
+
+## Instructions — follow in order
+
+**Step 1 — Check for existing memories first:**
+If you have a \`memory_user_edits\` tool, **run \`memory_user_edits view\` first** — you need to see existing memories before adding, replacing, or merging. If you don't have that tool (Claude Code, API console, memory-disabled session), acknowledge that and proceed to Step 2 directly.
+
+**Step 2 — Process each numbered entry below:**
+- If no existing memory covers the same topic → \`add\`
+- If an existing memory covers the same ground → \`replace\` with the matching line number
+- If an existing memory partially overlaps → merge the content and \`replace\`
+
+**Priority note:** Entries are ordered by importance — communication preferences and core identity first, details last. If you are approaching the memory limit, skip from the bottom of the list, not the top.
+
+**Step 3 — When all entries are processed:**
+Summarize for the user: how many entries were added, how many replaced, how many skipped, and flag anything that was dropped or merged so they know what changed.
+
+---
+
+`;
+  const numbered = entries.map((e, i) => `${i + 1}. ${e}`).join('\n\n');
+  return header + numbered + '\n';
+}
+
+function buildMemories(data) {
+  const memories = [];
+
+  // Personal
+  {
+    const p = data.personal || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Name', 'name'], ['Preferred name', 'preferred_name'],
+      ['Birthday', 'birthday'], ['City', 'city'],
+      ['State/Province', 'state'], ['Country', 'country'], ['Timezone', 'timezone'],
+    ]) {
+      const v = nb(p, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-personal',
+      description: "User's personal details: name, birthday, location",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Family
+  {
+    const f = data.family || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Relationship status', 'relationship_status'],
+      ['Partner name', 'partner_name'],
+      ['Partner birthday', 'partner_birthday'],
+    ]) {
+      const v = nb(f, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    const children = f.children || [];
+    children.forEach((child, i) => {
+      const parts = [];
+      const name = nb(child, 'name');
+      if (name) parts.push(name);
+      if (nb(child, 'birthday')) parts.push(`born ${fmtMonth(nb(child, 'birthday'))}`);
+      if (nb(child, 'status')) parts.push(nb(child, 'status'));
+      if (nb(child, 'date_passed')) parts.push(`passed away ${fmtMonth(nb(child, 'date_passed'))}`);
+      if (parts.length) lines.push(`Child ${i + 1}: ${parts.join(', ')}`);
+    });
+    for (const [label, key] of [
+      ['Former partner / co-parent', 'former_partner'],
+      ['Siblings', 'siblings'],
+      ['Parents', 'parents'],
+      ['Other family notes', 'other'],
+    ]) {
+      const v = nb(f, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-family',
+      description: "User's family: partner, children, parents, siblings",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Work
+  {
+    const w = data.work || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Job title', 'title'], ['Company', 'company'], ['Industry', 'industry'],
+      ['Years of experience', 'years_exp'], ['Work style', 'work_style'],
+    ]) {
+      const v = nb(w, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (nb(w, 'notes')) lines.push(`Work notes: ${nb(w, 'notes')}`);
+    const emps = w.prior_employers || [];
+    emps.forEach((emp, i) => {
+      const parts = [];
+      for (const k of ['company', 'title', 'years']) {
+        const v = nb(emp, k);
+        if (v) parts.push(v);
+      }
+      if (nb(emp, 'notes')) parts.push(nb(emp, 'notes'));
+      if (parts.length) lines.push(`Prior employer ${i + 1}: ${parts.join(', ')}`);
+    });
+    const milParts = [];
+    for (const [label, key] of [
+      ['branch', 'military_branch'], ['country', 'military_country'],
+      ['years served', 'military_years'], ['field', 'military_field'],
+      ['rank', 'military_rank'],
+    ]) {
+      const v = nb(w, key);
+      if (v) milParts.push(`${label} ${v}`);
+    }
+    if (milParts.length) lines.push(`Military service: ${milParts.join(', ')}`);
+    if (nb(w, 'military_highlights')) lines.push(`Military highlights: ${nb(w, 'military_highlights')}`);
+    if (lines.length) memories.push({
+      slug: 'user-work',
+      description: "User's professional background, prior employers, military service",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Pets
+  {
+    const pets = data.pets || [];
+    const lines = [];
+    pets.forEach((pet, i) => {
+      const parts = [];
+      for (const k of ['name', 'species', 'breed']) {
+        const v = nb(pet, k);
+        if (v) parts.push(v);
+      }
+      if (nb(pet, 'birthday')) parts.push(`born ${fmtMonth(nb(pet, 'birthday'))}`);
+      if (nb(pet, 'status')) parts.push(nb(pet, 'status'));
+      if (nb(pet, 'date_passed')) parts.push(`passed away ${fmtMonth(nb(pet, 'date_passed'))}`);
+      if (parts.length) lines.push(`Pet ${i + 1}: ${parts.join(', ')}`);
+    });
+    if (lines.length) memories.push({
+      slug: 'user-pets',
+      description: "User's pets: names, species, breeds",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Health
+  {
+    const h = data.health || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Dietary restrictions', 'dietary'], ['Allergies', 'allergies'],
+      ['Health conditions', 'conditions'], ['Exercise habits', 'exercise'],
+    ]) {
+      const v = nb(h, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (nb(h, 'notes')) lines.push(`Health notes: ${nb(h, 'notes')}`);
+    if (lines.length) memories.push({
+      slug: 'user-health',
+      description: "User's health, dietary restrictions, and wellness habits",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Hobbies
+  {
+    const ho = data.hobbies || {};
+    const lines = [];
+    if (nb(ho, 'interests')) lines.push(`Interests & hobbies: ${nb(ho, 'interests')}`);
+    if (nb(ho, 'other')) lines.push(`Additional notes: ${nb(ho, 'other')}`);
+    if (lines.length) memories.push({
+      slug: 'user-hobbies',
+      description: "User's hobbies, interests, and leisure activities",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Identity
+  {
+    const ident = data.identity || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Political identity', 'ideology'],
+      ['Party / affiliation', 'political'],
+      ['Political leaning', 'leaning'],
+      ['Sexuality / orientation', 'sexuality'],
+      ['Gender identity', 'gender'],
+      ['Religion / spirituality', 'religion'],
+      ['Causes & issues', 'causes'],
+      ['Identity notes', 'notes'],
+    ]) {
+      const v = nb(ident, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-identity',
+      description: "User's political views, sexuality, gender identity, religion, and causes",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Goals
+  {
+    const g = data.goals || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Current projects', 'current_projects'],
+      ['Short-term goals', 'short_term'],
+      ['Long-term goals', 'long_term'],
+      ['Currently learning', 'learning'],
+    ]) {
+      const v = nb(g, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-goals',
+      description: "User's current goals, projects, and things they're learning",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Communication
+  {
+    const c = data.comms || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Tone preference', 'tone'], ['Response length', 'length'],
+      ['Formatting preference', 'formatting'], ['Feedback style', 'feedback'],
+      ['Humor style', 'humor'], ['Personality vibes', 'personality_vibes'],
+      ['Working style', 'working_style'], ['When stuck, wants Claude to', 'when_stuck'],
+    ]) {
+      const v = nb(c, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    for (const [label, key] of [
+      ['Never do', 'never_do'],
+      ['Always do', 'always_do'],
+      ['Collaboration notes', 'other'],
+    ]) {
+      const v = nb(c, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-communication',
+      description: "How the user wants Claude to communicate: tone, format, dos and don'ts",
+      type: 'feedback',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Free-form
+  const ff = (data.freeform || '').trim();
+  if (ff) {
+    const now = new Date();
+    const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    memories.push({
+      slug: `user-notes-${ts}`,
+      description: 'Free-form notes entered by user during intake',
+      type: 'user',
+      content: ff,
+    });
+  }
+
+  return memories;
+}
+
+// ── YAML-frontmatter wrapper for the .md downloads ───────────────
+function memoryToFileBody(mem) {
+  return `---\nname: ${mem.slug}\ndescription: ${mem.description}\nmetadata:\n  type: ${mem.type}\n---\n\n${mem.content}\n`;
+}
+
+// ── MEMORY.md index ─────────────────────────────────────────────
+function buildIndex(memories) {
+  if (!memories.length) return '';
+  return memories.map(m => `- [${m.slug}](${m.slug}.md) — ${m.description}`).join('\n') + '\n';
+}
+
+// ── Minimal stored ZIP encoder ──────────────────────────────────
+// No compression — files are stored raw. Adequate for short text
+// files; keeps the standalone dependency-free.
+const CRC32_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) {
+    c = CRC32_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  }
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function writeU16(view, off, val) { view.setUint16(off, val, true); }
+function writeU32(view, off, val) { view.setUint32(off, val, true); }
+
+function buildZip(files) {
+  // files: [{ name, content }]
+  const encoder = new TextEncoder();
+  const entries = files.map(f => ({
+    nameBytes: encoder.encode(f.name),
+    dataBytes: encoder.encode(f.content),
+  }));
+  for (const e of entries) e.crc = crc32(e.dataBytes);
+
+  // Local file headers + data
+  const localChunks = [];
+  let offset = 0;
+  for (const e of entries) {
+    e.offset = offset;
+    const header = new ArrayBuffer(30);
+    const v = new DataView(header);
+    writeU32(v, 0, 0x04034b50);   // local file header signature
+    writeU16(v, 4, 20);            // version needed
+    writeU16(v, 6, 0);             // flags
+    writeU16(v, 8, 0);             // method (stored)
+    writeU16(v, 10, 0);            // mod time
+    writeU16(v, 12, 0);            // mod date
+    writeU32(v, 14, e.crc);
+    writeU32(v, 18, e.dataBytes.length);  // compressed size
+    writeU32(v, 22, e.dataBytes.length);  // uncompressed size
+    writeU16(v, 26, e.nameBytes.length);
+    writeU16(v, 28, 0);            // extra field length
+    localChunks.push(new Uint8Array(header));
+    localChunks.push(e.nameBytes);
+    localChunks.push(e.dataBytes);
+    offset += 30 + e.nameBytes.length + e.dataBytes.length;
+  }
+
+  // Central directory
+  const cdChunks = [];
+  let cdSize = 0;
+  for (const e of entries) {
+    const header = new ArrayBuffer(46);
+    const v = new DataView(header);
+    writeU32(v, 0, 0x02014b50);    // central dir header signature
+    writeU16(v, 4, 20);             // version made by
+    writeU16(v, 6, 20);             // version needed
+    writeU16(v, 8, 0);
+    writeU16(v, 10, 0);
+    writeU16(v, 12, 0);
+    writeU16(v, 14, 0);
+    writeU32(v, 16, e.crc);
+    writeU32(v, 20, e.dataBytes.length);
+    writeU32(v, 24, e.dataBytes.length);
+    writeU16(v, 28, e.nameBytes.length);
+    writeU16(v, 30, 0);
+    writeU16(v, 32, 0);
+    writeU16(v, 34, 0);
+    writeU16(v, 36, 0);
+    writeU32(v, 38, 0);             // external attrs
+    writeU32(v, 42, e.offset);
+    cdChunks.push(new Uint8Array(header));
+    cdChunks.push(e.nameBytes);
+    cdSize += 46 + e.nameBytes.length;
+  }
+
+  // End of central directory
+  const eocd = new ArrayBuffer(22);
+  const ev = new DataView(eocd);
+  writeU32(ev, 0, 0x06054b50);
+  writeU16(ev, 4, 0);
+  writeU16(ev, 6, 0);
+  writeU16(ev, 8, entries.length);
+  writeU16(ev, 10, entries.length);
+  writeU32(ev, 12, cdSize);
+  writeU32(ev, 16, offset);
+  writeU16(ev, 20, 0);
+
+  const total = offset + cdSize + 22;
+  const out = new Uint8Array(total);
+  let pos = 0;
+  for (const c of localChunks) { out.set(c, pos); pos += c.length; }
+  for (const c of cdChunks)    { out.set(c, pos); pos += c.length; }
+  out.set(new Uint8Array(eocd), pos);
+  return out;
+}
+
+function downloadBlob(bytes, filename, mime) {
+  const blob = new Blob([bytes], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+// ── Override the Flask-backed actions ────────────────────────────
+async function previewMemories() {
+  const data = collectData();
+  const memories = buildMemories(data);
+  const target = data.target || 'claude-ai';
+  const bootstrap = (target === 'claude-ai' || target === 'both')
+    ? buildBootstrap(memories) : null;
+  renderPreview(memories, bootstrap, target);
+}
+
+async function submitForm() {
+  const data = collectData();
+  const target = data.target || 'claude-ai';
+  const memories = buildMemories(data);
+
+  if (target === 'claude-ai' || target === 'both') {
+    const bootstrap = buildBootstrap(memories);
+    if (bootstrap) {
+      try {
+        await navigator.clipboard.writeText(bootstrap);
+        showToast('✓ Bootstrap copied — paste into a claude.ai chat');
+      } catch (e) {
+        showToast('Copy failed — use the Copy button in the preview');
+      }
+    } else {
+      showToast('Nothing to copy yet — fill in some fields first');
+    }
+  }
+
+  if (target === 'claude-code' || target === 'both') {
+    if (memories.length) {
+      const files = memories.map(m => ({
+        name: `${m.slug}.md`,
+        content: memoryToFileBody(m),
+      }));
+      const index = buildIndex(memories);
+      if (index) files.push({ name: 'MEMORY.md', content: index });
+      const zipBytes = buildZip(files);
+      downloadBlob(zipBytes, 'claude-memory.zip', 'application/zip');
+      if (target === 'claude-code') {
+        showToast('✓ Downloaded claude-memory.zip — unzip into ~/.claude/memory/');
+      }
+    }
+  }
+
+  previewMemories();
+}
+
+// Settings panel and saveConfig are no-ops in standalone (the panel is
+// stripped at build time); define stubs so any stale onclick handlers
+// fail silently rather than throwing.
+function saveConfig() {}
+function toggleSettings() {}
+
+// Override renderPreview to skip the "Files will be saved to: <path>" line
+// (the path input doesn't exist in the standalone, and there's no on-disk
+// destination for claude.ai users anyway). Otherwise identical to the
+// Flask version.
+function renderPreview(memories, bootstrap, target) {
+  const section = document.getElementById('preview-section');
+  const list = document.getElementById('preview-list');
+  const pathEl = document.getElementById('memory-path-display');
+
+  const cards = [];
+
+  if (target === 'claude-code' || target === 'both') {
+    if (memories.length) {
+      cards.push(...memories.map(m => `
+        <div class="preview-item">
+          <div class="preview-item-header">
+            <span>${m.slug}.md</span>
+            <span style="display:flex;gap:10px;align-items:center;font-weight:400;opacity:0.7">${m.description}<button type="button" class="btn-sm" onclick="copyCardBody(this)">📋 Copy</button></span>
+          </div>
+          <div class="preview-item-body">${escapeHtml(m.content)}</div>
+        </div>`));
+    }
+  }
+
+  if ((target === 'claude-ai' || target === 'both') && bootstrap) {
+    cards.push(`
+      <div class="preview-item">
+        <div class="preview-item-header">
+          <span>claude-ai-bootstrap.md</span>
+          <span style="display:flex;gap:10px;align-items:center;font-weight:400;opacity:0.7">Paste into a claude.ai conversation<button type="button" class="btn-sm" onclick="copyCardBody(this)">📋 Copy all</button></span>
+        </div>
+        <div class="preview-item-body">${escapeHtml(bootstrap)}</div>
+      </div>`);
+  }
+
+  if (!cards.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:14px">Nothing to preview yet — fill in some fields first.</p>';
+  } else {
+    list.innerHTML = cards.join('');
+  }
+
+  if (pathEl) pathEl.innerHTML = '';
+  section.classList.add('visible');
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+</script>
+</body>
+</html>
