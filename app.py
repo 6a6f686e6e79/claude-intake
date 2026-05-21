@@ -15,6 +15,7 @@ def fmt_month(value):
         return value
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB
 
 CONFIG_FILE = Path(__file__).resolve().parent / "config.json"
 DEFAULT_MEMORY_PATH = Path.home() / ".claude" / "memory"
