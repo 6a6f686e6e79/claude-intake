@@ -2,11 +2,21 @@
 
 Dummy persona: "Riley Quinn" — entirely fictional, no relation to the user.
 Pets, kids, etc. all use fresh invented names.
-Run with the Flask app already serving on http://127.0.0.1:5001.
+
+Self-launches Flask against a temp memory dir so the form starts empty,
+regardless of the user's real ~/.claude/memory state. A defensive
+clear_form() also runs before any filler as a second layer.
 """
 
-from playwright.sync_api import sync_playwright
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
 from pathlib import Path
+
+from playwright.sync_api import sync_playwright
 
 URL = "http://127.0.0.1:5001/"
 OUT = Path(__file__).parent.parent / "screenshots"
@@ -15,6 +25,42 @@ OUT.mkdir(exist_ok=True)
 VIEWPORT = {"width": 1280, "height": 900}
 
 TABS = ["personal", "family", "work", "pets", "health", "hobbies", "identity", "goals", "comms"]
+
+
+def wait_for_server(url, timeout=10):
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            urllib.request.urlopen(url, timeout=1)
+            return True
+        except (urllib.error.URLError, ConnectionError):
+            time.sleep(0.2)
+    return False
+
+
+def clear_form(page):
+    """Reset every interactive control to its empty state.
+
+    Defense in depth — the temp-dir Flask launch should already ensure
+    no real data hydrates, but if that's ever bypassed by accident this
+    keeps the persona fictional.
+    """
+    page.evaluate("""
+      () => {
+        document.querySelectorAll(
+          'input[type="text"], input[type="date"], input[type="month"], textarea'
+        ).forEach(el => { el.value = ''; });
+        document.querySelectorAll('select').forEach(el => { el.selectedIndex = 0; });
+        document.querySelectorAll('.chip.selected')
+          .forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('input[type="hidden"][id$="-value"]')
+          .forEach(el => { el.value = ''; });
+        ['children-group', 'pets-group', 'prior-employers-group'].forEach(id => {
+          const g = document.getElementById(id);
+          if (g) g.innerHTML = '';
+        });
+      }
+    """)
 
 
 def fill_personal(page):
@@ -219,37 +265,55 @@ FILLERS = {
 
 
 def main():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        ctx = browser.new_context(viewport=VIEWPORT, device_scale_factor=1)
-        page = ctx.new_page()
-        page.goto(URL, wait_until="networkidle")
+    tmpdir = tempfile.mkdtemp(prefix="claude-intake-screenshots-")
+    app_path = Path(__file__).resolve().parent.parent / "app.py"
+    flask_proc = subprocess.Popen(
+        [sys.executable, str(app_path), "--memory-path", tmpdir],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    try:
+        if not wait_for_server(URL):
+            raise RuntimeError("Flask didn't start in time")
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            ctx = browser.new_context(viewport=VIEWPORT, device_scale_factor=1)
+            page = ctx.new_page()
+            page.goto(URL, wait_until="networkidle")
 
-        # Fill every tab. We click the tab, then run its filler.
-        for tab in TABS:
-            page.click(f'button.tab-btn:has-text("{tab.capitalize()}")')
-            page.wait_for_timeout(150)
-            FILLERS[tab](page)
+            # Belt and suspenders: clear any hydrated state before filling.
+            clear_form(page)
 
-        # Now screenshot each tab.
-        for i, tab in enumerate(TABS, start=1):
-            page.click(f'button.tab-btn:has-text("{tab.capitalize()}")')
+            # Fill every tab. We click the tab, then run its filler.
+            for tab in TABS:
+                page.click(f'button.tab-btn:has-text("{tab.capitalize()}")')
+                page.wait_for_timeout(150)
+                FILLERS[tab](page)
+
+            # Now screenshot each tab.
+            for i, tab in enumerate(TABS, start=1):
+                page.click(f'button.tab-btn:has-text("{tab.capitalize()}")')
+                page.wait_for_timeout(200)
+                # Scroll to top
+                page.evaluate("window.scrollTo(0, 0)")
+                page.wait_for_timeout(100)
+                out = OUT / f"{i:02d}-{tab}.png"
+                page.screenshot(path=str(out), full_page=False)
+                print(f"wrote {out}")
+
+            # Full-page personal screenshot
+            page.click('button.tab-btn:has-text("Personal")')
             page.wait_for_timeout(200)
-            # Scroll to top
-            page.evaluate("window.scrollTo(0, 0)")
-            page.wait_for_timeout(100)
-            out = OUT / f"{i:02d}-{tab}.png"
-            page.screenshot(path=str(out), full_page=False)
-            print(f"wrote {out}")
+            out_full = OUT / "00-personal-full.png"
+            page.screenshot(path=str(out_full), full_page=True)
+            print(f"wrote {out_full}")
 
-        # Full-page personal screenshot
-        page.click('button.tab-btn:has-text("Personal")')
-        page.wait_for_timeout(200)
-        out_full = OUT / "00-personal-full.png"
-        page.screenshot(path=str(out_full), full_page=True)
-        print(f"wrote {out_full}")
-
-        browser.close()
+            browser.close()
+    finally:
+        flask_proc.terminate()
+        try:
+            flask_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            flask_proc.kill()
 
 
 if __name__ == "__main__":

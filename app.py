@@ -22,6 +22,9 @@ DEFAULT_MEMORY_PATH = Path.home() / ".claude" / "memory"
 
 
 def get_memory_path():
+    env_override = os.environ.get("CLAUDE_INTAKE_MEMORY_PATH")
+    if env_override:
+        return Path(env_override).expanduser()
     if CONFIG_FILE.exists():
         with open(CONFIG_FILE) as f:
             cfg = json.load(f)
@@ -943,4 +946,10 @@ def submit():
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--memory-path", help="Override memory path (skips config.json)")
+    args = parser.parse_args()
+    if args.memory_path:
+        os.environ["CLAUDE_INTAKE_MEMORY_PATH"] = args.memory_path
     app.run(debug=os.getenv("FLASK_DEBUG") == "1", host="127.0.0.1", port=5001)

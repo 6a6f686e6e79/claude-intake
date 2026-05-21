@@ -81,9 +81,10 @@ All screenshots use a fictional persona ("Riley Quinn"). No real personal data i
 ```
 pip install playwright
 playwright install chromium
-python app.py &        # run the server in the background
 python tools/take_screenshots.py
 ```
+
+The script launches its own Flask instance against an empty temp memory dir so the fictional persona never mixes with your real data.
 
 ## License
 
