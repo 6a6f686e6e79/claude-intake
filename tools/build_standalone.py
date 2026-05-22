@@ -185,14 +185,21 @@ Generated: ${ts}
 If you have a \`memory_user_edits\` tool, **run \`memory_user_edits view\` first** — you need to see existing memories before adding, replacing, or merging. If you don't have that tool (Claude Code, API console, memory-disabled session), acknowledge that and proceed to Step 2 directly.
 
 **Step 2 — Process each numbered entry below:**
+
+If you have \`memory_user_edits\`, use it for each entry:
 - If no existing memory covers the same topic → \`add\`
 - If an existing memory covers the same ground → \`replace\` with the matching line number
 - If an existing memory partially overlaps → merge the content and \`replace\`
 
+If you don't have the tool, walk through each entry and restate the key facts in your own words. Don't compress the list into a bulleted summary — engage with each entry's content as if these are things you're being told about the user. On claude.ai, the conversation itself is the input to the automatic memory generator, so rich engagement produces richer memories.
+
 **Priority note:** Entries are ordered by importance — communication preferences and core identity first, details last. If you are approaching the memory limit, skip from the bottom of the list, not the top.
 
 **Step 3 — When all entries are processed:**
-Summarize for the user: how many entries were added, how many replaced, how many skipped, and flag anything that was dropped or merged so they know what changed.
+
+If you used the tool, summarize for the user: how many entries were added, how many replaced, how many skipped, and flag anything that was dropped or merged.
+
+If you didn't, let the user know you've read through everything and that claude.ai will generate memories from this conversation automatically — typically within a day. Suggest they verify in a fresh chat by asking "what do you remember about me?"
 
 ---
 

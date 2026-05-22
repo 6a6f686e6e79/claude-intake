@@ -262,6 +262,28 @@ class TestBootstrap:
         # No escape artifacts in the user-visible bootstrap
         assert r"\;" not in bt
 
+    def test_bootstrap_prompt_handles_no_tool_case(self):
+        """Step 2 and Step 3 must address sessions without memory_user_edits.
+
+        Without explicit no-tool branches, Claude on claude.ai defaults to
+        a bulleted summary, which is then summarized again by the automatic
+        memory generator — double-compression loses detail at ingestion.
+        """
+        bt = build_bootstrap(build_memories(SAMPLE))
+        # Split on the bolded section headers, not bare "Step 2" — the latter
+        # also appears in Step 1's body ("proceed to Step 2 directly").
+        step_2 = bt.split("**Step 2 —")[1].split("**Step 3 —")[0]
+        step_3 = bt.split("**Step 3 —")[1].split("---")[0]
+
+        # Step 2 has a tool branch and a no-tool branch
+        assert "memory_user_edits" in step_2
+        assert "If you don't have the tool" in step_2 or "Without" in step_2
+
+        # Step 3 has a tool branch and a no-tool branch
+        assert "added" in step_3.lower()  # tool branch (counts)
+        assert ("automatically" in step_3.lower()
+                or "what do you remember" in step_3.lower())  # no-tool branch
+
 
 # --- fmt_month ---
 
