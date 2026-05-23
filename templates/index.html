@@ -1909,16 +1909,45 @@ function importBootstrap() {
 }
 
 const EXPORT_REQUEST_PROMPT = (
-  "I have an existing claude-intake memory bootstrap saved in your memory. " +
-  "Please respond with ONLY a verbatim recitation of those entries, in the " +
-  "exact format they were originally added: numbered lines like\n\n" +
-  "    1. Communication: Tone preference: Direct but warm; Response length: ...\n" +
-  "    2. Personal: Name: ...; City: ...\n\n" +
-  "Wrap your full response in a fenced code block labeled `claude-intake-export` " +
-  "so I can paste it back into the standalone form. No commentary, no headers, " +
-  "no summary — just the fenced block.\n\n" +
-  "If you don't see any claude-intake memory entries, respond with the empty " +
-  "fence:\n\n    ```claude-intake-export\n    ```\n"
+  "Look at your memories of me and translate them into the structured intake\n" +
+  "format below. You are mapping freeform memory entries onto a fixed schema,\n" +
+  "not reciting them verbatim — claude.ai's automatic memory generator stores\n" +
+  "memories in prose, but this tool needs them grouped under specific topics\n" +
+  "and labels.\n" +
+  "\n" +
+  "Schema (topic → labels you may populate):\n" +
+  "- Personal: Name, Preferred name, Birthday, City, State/Province, Country, Timezone\n" +
+  "- Family: Relationship status, Partner name, Partner birthday, Siblings, Parents\n" +
+  "- Work: Job title, Company, Industry, Years of experience, Work style\n" +
+  "- Health: Dietary restrictions, Allergies, Health conditions, Exercise habits, Health notes\n" +
+  "- Hobbies: Interests & hobbies, Additional notes\n" +
+  "- Tech: Computer OS, Distro / other OS details, Shell, Code editor / IDE,\n" +
+  "        Phone OS, Smart home ecosystem, Gaming platforms, Tech notes\n" +
+  "- Identity: Political identity, Political leaning, Sexuality / orientation,\n" +
+  "            Gender identity, Religion / spirituality, Causes & issues, Identity notes\n" +
+  "- Goals: Current projects, Short-term goals, Long-term goals, Currently learning\n" +
+  "- Communication: Tone preference, Response length, Feedback style, Humor style,\n" +
+  "                 Working style, When stuck wants Claude to, Never do, Always do\n" +
+  "\n" +
+  "Output a single fenced code block labeled `claude-intake-export`. Inside,\n" +
+  "emit one numbered line per topic where you have data, in this exact format:\n" +
+  "\n" +
+  "    1. Personal: Name: Jane Doe; Birthday: 1985-07-12; City: Seattle\n" +
+  "    2. Tech: Computer OS: macOS; Shell: zsh; Gaming platforms: PC gaming, Steam Deck / Handheld\n" +
+  "\n" +
+  "Rules:\n" +
+  "- Use \"; \" (semicolon-space) between fields within a topic.\n" +
+  "- Use \", \" (comma-space) between multiple values for a single field\n" +
+  "  (multiple OSes, multiple hobbies, multiple gaming platforms, etc.).\n" +
+  "- Only include topics where you actually have data; skip empty topics.\n" +
+  "- Don't invent values. If you'd be guessing, omit the field.\n" +
+  "- Dates: prefer YYYY-MM-DD; YYYY-MM is also fine.\n" +
+  "- No commentary outside the fence.\n" +
+  "\n" +
+  "If you have no relevant memories, return an empty fence:\n" +
+  "\n" +
+  "    ```claude-intake-export\n" +
+  "    ```\n"
 );
 
 async function copyExportRequestPrompt() {
