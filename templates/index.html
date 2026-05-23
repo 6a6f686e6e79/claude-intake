@@ -30,20 +30,33 @@
 
   <!-- Import existing bootstrap -->
   <details class="import-panel">
-    <summary>📥 Import existing memory <span style="font-weight:400;color:var(--muted);font-size:13px">(paste a bootstrap to pre-fill the form)</span></summary>
-    <p style="font-size:13px;color:var(--muted);margin:10px 0 6px">
-      Paste a <code>claude-ai-bootstrap.md</code> block (or anything containing the numbered <code>Topic: …</code> entries) and click <strong>Load</strong>. Your form will be pre-filled so you can edit and re-export.
+    <summary>📥 Import existing memory <span style="font-weight:400;color:var(--muted);font-size:13px">(pre-fill the form from your current claude.ai memory or a saved bootstrap)</span></summary>
+
+    <p style="font-size:13px;color:var(--text);margin:12px 0 6px;font-weight:600">
+      To pull your current claude.ai memory into this form:
     </p>
+    <ol style="font-size:13px;color:var(--text);margin:0 0 12px;padding-left:22px;line-height:1.7">
+      <li>Click <strong>📋 Copy prompt to clipboard</strong> below.</li>
+      <li>Open a <a href="https://claude.ai" target="_blank" rel="noopener" style="color:var(--accent)">claude.ai</a> chat and paste it. Send.</li>
+      <li>Claude will reply with a fenced <code>claude-intake-export</code> block. Copy its entire reply.</li>
+      <li>Paste that into the box below and click <strong>Load</strong>.</li>
+    </ol>
     <p style="font-size:13px;color:var(--muted);margin:0 0 10px">
-      Don't have your bootstrap handy? Click <strong>📤 Copy 'ask Claude' prompt</strong> to copy a prompt you can paste into a claude.ai chat to make Claude recite its current memory back in the right format.
+      Already have a <code>claude-ai-bootstrap.md</code> file from a previous intake? Skip steps 1–3 and paste its contents directly.
     </p>
-    <textarea id="import-textarea" placeholder="Paste bootstrap text here…" style="width:100%;min-height:120px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+
+    <details style="margin:0 0 12px;font-size:12px">
+      <summary style="cursor:pointer;color:var(--muted);user-select:none">See the exact prompt that gets copied</summary>
+      <pre id="export-prompt-preview" style="margin:8px 0 0;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;white-space:pre-wrap;color:var(--text);max-height:240px;overflow:auto"></pre>
+    </details>
+
+    <textarea id="import-textarea" placeholder="Paste Claude's reply (or your saved bootstrap) here…" style="width:100%;min-height:120px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical"></textarea>
     <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap">
+      <button type="button" class="btn-sm" onclick="copyExportRequestPrompt()">📋 Copy prompt to clipboard</button>
       <button type="button" class="btn-sm" onclick="importBootstrap()">Load</button>
-      <button type="button" class="btn-sm" onclick="copyExportRequestPrompt()">📤 Copy 'ask Claude' prompt</button>
       <span id="import-status" style="font-size:13px;color:var(--muted)"></span>
     </div>
-    <p style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5">
+    <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">
       <strong>Note:</strong> v1 restores Personal, Health, Hobbies, Tech, Identity, Goals, and Comms. Family, Work history, and Pets aren't yet auto-restored — re-fill those manually if they're in your bootstrap.
     </p>
   </details>
@@ -1914,9 +1927,16 @@ async function copyExportRequestPrompt() {
     await navigator.clipboard.writeText(EXPORT_REQUEST_PROMPT);
     if (status) status.textContent = '✓ Prompt copied — paste it into a claude.ai chat.';
   } catch (e) {
-    if (status) status.textContent = 'Copy failed — select the prompt manually.';
+    if (status) status.textContent = 'Copy failed — open the "See the exact prompt" panel and copy it manually.';
   }
 }
+
+// Populate the "See the exact prompt" preview from the same constant the
+// Copy button uses, so the displayed and copied text can't drift apart.
+document.addEventListener('DOMContentLoaded', () => {
+  const preview = document.getElementById('export-prompt-preview');
+  if (preview) preview.textContent = EXPORT_REQUEST_PROMPT;
+});
 
 // ── Hydration: populate form from initial_data on page load ─────
 function hydrateFormFromInitial() {
