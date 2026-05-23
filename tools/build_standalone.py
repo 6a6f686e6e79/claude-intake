@@ -66,13 +66,15 @@ const BOOTSTRAP_TOPIC_TAGS = {
   'user-pets': 'Pets',
   'user-health': 'Health',
   'user-hobbies': 'Hobbies',
+  'user-tech': 'Tech',
   'user-identity': 'Identity',
   'user-goals': 'Goals',
   'user-communication': 'Communication',
 };
 const BOOTSTRAP_PRIORITY = [
-  'user-communication', 'user-personal', 'user-identity', 'user-work',
-  'user-family', 'user-health', 'user-hobbies', 'user-goals', 'user-pets',
+  'user-communication', 'user-personal', 'user-identity', 'user-tech',
+  'user-work', 'user-family', 'user-health', 'user-hobbies', 'user-goals',
+  'user-pets',
 ];
 
 const MONTH_NAMES = ['January','February','March','April','May','June',
@@ -363,6 +365,31 @@ function buildMemories(data) {
     if (lines.length) memories.push({
       slug: 'user-hobbies',
       description: "User's hobbies, interests, and leisure activities",
+      type: 'user',
+      content: lines.join('\n'),
+    });
+  }
+
+  // Tech
+  {
+    const t = data.tech || {};
+    const lines = [];
+    for (const [label, key] of [
+      ['Computer OS', 'os'],
+      ['Distro / other OS details', 'os_details'],
+      ['Shell', 'shell'],
+      ['Code editor / IDE', 'editor'],
+      ['Phone OS', 'phone'],
+      ['Smart home ecosystem', 'smart_home'],
+      ['Gaming platforms', 'gaming'],
+      ['Tech notes', 'notes'],
+    ]) {
+      const v = nb(t, key);
+      if (v) lines.push(`${label}: ${v}`);
+    }
+    if (lines.length) memories.push({
+      slug: 'user-tech',
+      description: "User's tech stack: OS, shell, editor, phone, smart home, gaming platforms",
       type: 'user',
       content: lines.join('\n'),
     });

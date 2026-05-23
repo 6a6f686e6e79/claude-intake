@@ -52,6 +52,16 @@ SAMPLE = {
         "interests": "Running, Hiking, Photography",
         "other": "Working on the Colorado 14ers",
     },
+    "tech": {
+        "os": "macOS, Linux",
+        "os_details": "Arch on the home rig",
+        "shell": "zsh, fish",
+        "editor": "VS Code, Neovim",
+        "phone": "iOS",
+        "smart_home": "HomeKit / Apple Home, Home Assistant",
+        "gaming": "PlayStation, Steam Deck / Handheld",
+        "notes": "Daily-driver MBP for work, custom Linux box at home",
+    },
     "identity": {
         "ideology": "Progressive", "political": "Independent",
         "leaning": "Center-left", "sexuality": "Straight / Heterosexual",
@@ -186,6 +196,21 @@ class TestRoundTrip:
         assert i["sexuality"] == "Straight / Heterosexual"
         assert i["causes"] == "Climate change action, Digital privacy"
 
+    def test_tech(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            _write_all(SAMPLE, path)
+            loaded = load_memories(path)
+        t = loaded["tech"]
+        assert t["os"] == "macOS, Linux"
+        assert t["os_details"] == "Arch on the home rig"
+        assert t["shell"] == "zsh, fish"
+        assert t["editor"] == "VS Code, Neovim"
+        assert t["phone"] == "iOS"
+        assert t["smart_home"] == "HomeKit / Apple Home, Home Assistant"
+        assert t["gaming"] == "PlayStation, Steam Deck / Handheld"
+        assert t["notes"] == "Daily-driver MBP for work, custom Linux box at home"
+
     def test_comms_with_humor_and_vibes(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)
@@ -224,7 +249,7 @@ class TestBootstrap:
     def test_bootstrap_contains_all_topics(self):
         mems = build_memories(SAMPLE)
         bt = build_bootstrap(mems)
-        for topic in ("Communication", "Personal", "Identity", "Work", "Pets"):
+        for topic in ("Communication", "Personal", "Identity", "Tech", "Work", "Pets"):
             assert topic in bt
 
     def test_parse_bootstrap_recovers_topics(self):
@@ -234,6 +259,7 @@ class TestBootstrap:
         assert "user-personal" in parsed
         assert "user-communication" in parsed
         assert "user-pets" in parsed
+        assert "user-tech" in parsed
 
     def test_bootstrap_priority_communication_first(self):
         mems = build_memories(SAMPLE)

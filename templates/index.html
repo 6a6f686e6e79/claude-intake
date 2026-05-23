@@ -36,6 +36,7 @@
     <button class="tab-btn" onclick="showTab('pets', this)">Pets</button>
     <button class="tab-btn" onclick="showTab('health', this)">Health</button>
     <button class="tab-btn" onclick="showTab('hobbies', this)">Hobbies</button>
+    <button class="tab-btn" onclick="showTab('tech', this)">Tech</button>
     <button class="tab-btn" onclick="showTab('identity', this)">Identity</button>
     <button class="tab-btn" onclick="showTab('goals', this)">Goals</button>
     <button class="tab-btn" onclick="showTab('comms', this)">Comms</button>
@@ -607,12 +608,7 @@
           <div class="chip" onclick="toggleHobby(this)">Concert / Live music going</div>
           <div class="chip" onclick="toggleHobby(this)">Vinyl record collecting</div>
 
-          <span class="chip-group-label">Tech & Gaming</span>
-          <div class="chip" onclick="toggleHobby(this)">PC gaming</div>
-          <div class="chip" onclick="toggleHobby(this)">Console gaming</div>
-          <div class="chip" onclick="toggleHobby(this)">Mobile gaming</div>
-          <div class="chip" onclick="toggleHobby(this)">Retro gaming</div>
-          <div class="chip" onclick="toggleHobby(this)">VR gaming</div>
+          <span class="chip-group-label">Games & Tinkering</span>
           <div class="chip" onclick="toggleHobby(this)">Tabletop / Board games</div>
           <div class="chip" onclick="toggleHobby(this)">Dungeons & Dragons / TTRPGs</div>
           <div class="chip" onclick="toggleHobby(this)">Chess</div>
@@ -627,7 +623,6 @@
           <div class="chip" onclick="toggleHobby(this)">Streaming / Content creation</div>
           <div class="chip" onclick="toggleHobby(this)">Podcasting</div>
           <div class="chip" onclick="toggleHobby(this)">Drone flying / FPV</div>
-          <div class="chip" onclick="toggleHobby(this)">Sim racing</div>
 
           <span class="chip-group-label">Food & Drink</span>
           <div class="chip" onclick="toggleHobby(this)">Cooking</div>
@@ -708,6 +703,104 @@
         <div class="field" style="margin-top:16px">
           <label>Anything else <span style="font-weight:400;opacity:0.6">(passions, niche interests, context)</span></label>
           <textarea name="hobbies.other" placeholder="I'm really into competitive BBQ, I've been restoring a '68 Mustang for 3 years…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECH -->
+    <div class="tab-panel" id="tab-tech">
+      <div class="card">
+        <h2><span class="icon">💻</span> Computer <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="tech-os-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">macOS</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Windows</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Linux</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">ChromeOS</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">BSD</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Other</div>
+        </div>
+        <input type="hidden" name="tech.os" id="tech-os-value" />
+        <div class="field" style="margin-top:14px">
+          <label>Distro / version / details <span style="font-weight:400;opacity:0.6">(Arch, Ubuntu 24.04, FreeBSD 14, NixOS…)</span></label>
+          <input type="text" name="tech.os_details" placeholder="Arch btw" />
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">⌨️</span> Shell & Editor <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Shell <span style="font-weight:400;opacity:0.6">what Claude should target for command suggestions</span></label>
+        <div class="chip-grid" id="tech-shell-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">zsh</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">bash</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">PowerShell</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">fish</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nushell</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">cmd</div>
+        </div>
+        <input type="hidden" name="tech.shell" id="tech-shell-value" />
+
+        <label style="display:block;margin:18px 0 8px;font-size:13px;font-weight:500">Code editor / IDE</label>
+        <div class="chip-grid" id="tech-editor-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">VS Code</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Cursor</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Zed</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Neovim</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Vim</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">JetBrains (any)</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Xcode</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Sublime Text</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Emacs</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Notepad++</div>
+        </div>
+        <input type="hidden" name="tech.editor" id="tech-editor-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📱</span> Phone</h2>
+        <div class="chip-grid" id="tech-phone-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">iOS</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Android</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Other</div>
+        </div>
+        <input type="hidden" name="tech.phone" id="tech-phone-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🏠</span> Smart home ecosystem <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="tech-smart-home-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">HomeKit / Apple Home</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Alexa / Echo</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Google Home</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">SmartThings</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Home Assistant</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Hubitat</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">None</div>
+        </div>
+        <input type="hidden" name="tech.smart_home" id="tech-smart-home-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🎮</span> Gaming platforms <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
+        <div class="chip-grid" id="tech-gaming-grid">
+          <div class="chip" onclick="toggleChipInGrid(this)">PC gaming</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">PlayStation</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Xbox</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Nintendo Switch</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Steam Deck / Handheld</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">VR / Headset gaming</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Mobile gaming</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Retro gaming</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Sim racing</div>
+          <div class="chip" onclick="toggleChipInGrid(this)">Cloud gaming</div>
+        </div>
+        <input type="hidden" name="tech.gaming" id="tech-gaming-value" />
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📝</span> Other tech notes</h2>
+        <div class="field">
+          <label>Anything else about your setup <span style="font-weight:400;opacity:0.6">(window manager, dotfiles, work-issued machine quirks, hardware…)</span></label>
+          <textarea name="tech.notes" placeholder="Daily-driver MBP for work, custom-built Linux box at home with an RX 7900 XTX. dotfiles on GitHub."></textarea>
         </div>
       </div>
     </div>
@@ -1396,7 +1489,7 @@ function syncHobbiesValue() {
 function collectData() {
   const form = document.getElementById('intake-form');
   const elements = form.querySelectorAll('input, select, textarea');
-  const data = { personal: {}, family: { children: [] }, work: { prior_employers: [] }, pets: [], health: {}, hobbies: {}, identity: {}, goals: {}, comms: {}, freeform: '' };
+  const data = { personal: {}, family: { children: [] }, work: { prior_employers: [] }, pets: [], health: {}, hobbies: {}, tech: {}, identity: {}, goals: {}, comms: {}, freeform: '' };
 
   elements.forEach(el => {
     const name = el.name;
@@ -1576,7 +1669,7 @@ function hydrateFormFromInitial() {
   };
 
   // Plain field sections
-  for (const section of ['personal', 'family', 'work', 'health', 'hobbies', 'identity', 'goals', 'comms']) {
+  for (const section of ['personal', 'family', 'work', 'health', 'hobbies', 'tech', 'identity', 'goals', 'comms']) {
     const obj = data[section];
     if (!obj || typeof obj !== 'object') continue;
     for (const [k, v] of Object.entries(obj)) {
@@ -1588,17 +1681,23 @@ function hydrateFormFromInitial() {
 
   // Chip grids
   const chipGrids = {
-    'conditions-grid': 'health.conditions',
-    'hobbies-grid':    'hobbies.interests',
-    'ideology-grid':   'identity.ideology',
-    'political-grid':  'identity.political',
-    'leaning-grid':    'identity.leaning',
-    'sexuality-grid':  'identity.sexuality',
-    'gender-grid':     'identity.gender',
-    'religion-grid':   'identity.religion',
-    'causes-grid':     'identity.causes',
-    'humor-grid':      'comms.humor',
-    'vibes-grid':      'comms.personality_vibes',
+    'conditions-grid':     'health.conditions',
+    'hobbies-grid':        'hobbies.interests',
+    'tech-os-grid':        'tech.os',
+    'tech-shell-grid':     'tech.shell',
+    'tech-editor-grid':    'tech.editor',
+    'tech-phone-grid':     'tech.phone',
+    'tech-smart-home-grid':'tech.smart_home',
+    'tech-gaming-grid':    'tech.gaming',
+    'ideology-grid':       'identity.ideology',
+    'political-grid':      'identity.political',
+    'leaning-grid':        'identity.leaning',
+    'sexuality-grid':      'identity.sexuality',
+    'gender-grid':         'identity.gender',
+    'religion-grid':       'identity.religion',
+    'causes-grid':         'identity.causes',
+    'humor-grid':          'comms.humor',
+    'vibes-grid':          'comms.personality_vibes',
   };
   for (const [gridId, hiddenName] of Object.entries(chipGrids)) {
     const [section, key] = hiddenName.split('.');

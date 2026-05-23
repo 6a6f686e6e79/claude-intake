@@ -152,6 +152,7 @@ BOOTSTRAP_TOPIC_TAGS = {
     "user-pets": "Pets",
     "user-health": "Health",
     "user-hobbies": "Hobbies",
+    "user-tech": "Tech",
     "user-identity": "Identity",
     "user-goals": "Goals",
     "user-communication": "Communication",
@@ -257,6 +258,7 @@ BOOTSTRAP_PRIORITY = [
     "user-communication",
     "user-personal",
     "user-identity",
+    "user-tech",
     "user-work",
     "user-family",
     "user-health",
@@ -317,6 +319,7 @@ SLUG_TO_SECTION = {
     "user-pets": "pets",
     "user-health": "health",
     "user-hobbies": "hobbies",
+    "user-tech": "tech",
     "user-identity": "identity",
     "user-goals": "goals",
     "user-communication": "comms",
@@ -347,6 +350,12 @@ LABEL_TO_KEY = {
     },
     "user-hobbies": {
         "Interests & hobbies": "interests", "Additional notes": "other",
+    },
+    "user-tech": {
+        "Computer OS": "os", "Distro / other OS details": "os_details",
+        "Shell": "shell", "Code editor / IDE": "editor",
+        "Phone OS": "phone", "Smart home ecosystem": "smart_home",
+        "Gaming platforms": "gaming", "Tech notes": "notes",
     },
     "user-identity": {
         "Political identity": "ideology", "Party / affiliation": "political",
@@ -600,7 +609,7 @@ def load_memories(memory_path):
     data = {
         "personal": {}, "family": {"children": []},
         "work": {"prior_employers": []}, "pets": [],
-        "health": {}, "hobbies": {}, "identity": {},
+        "health": {}, "hobbies": {}, "tech": {}, "identity": {},
         "goals": {}, "comms": {}, "freeform": "",
     }
     if not memory_path.exists():
@@ -618,8 +627,8 @@ def load_memories(memory_path):
 
     loaded_from_file = set()
     for slug in ("user-personal", "user-family", "user-work", "user-pets",
-                 "user-health", "user-hobbies", "user-identity", "user-goals",
-                 "user-communication"):
+                 "user-health", "user-hobbies", "user-tech", "user-identity",
+                 "user-goals", "user-communication"):
         body = _read_body(slug)
         if body is None:
             continue
@@ -796,6 +805,30 @@ def build_memories(data):
         memories.append({
             "slug": "user-hobbies",
             "description": "User's hobbies, interests, and leisure activities",
+            "type": "user",
+            "content": "\n".join(lines),
+        })
+
+    # --- Tech ---
+    t = data.get("tech", {})
+    lines = []
+    for label, key in [
+        ("Computer OS", "os"),
+        ("Distro / other OS details", "os_details"),
+        ("Shell", "shell"),
+        ("Code editor / IDE", "editor"),
+        ("Phone OS", "phone"),
+        ("Smart home ecosystem", "smart_home"),
+        ("Gaming platforms", "gaming"),
+        ("Tech notes", "notes"),
+    ]:
+        v = _nb(t, key)
+        if v:
+            lines.append(f"{label}: {v}")
+    if lines:
+        memories.append({
+            "slug": "user-tech",
+            "description": "User's tech stack: OS, shell, editor, phone, smart home, gaming platforms",
             "type": "user",
             "content": "\n".join(lines),
         })

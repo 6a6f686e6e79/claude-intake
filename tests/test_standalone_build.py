@@ -96,6 +96,12 @@ SAMPLE = {
               "birthday": "2020-03", "status": "Still with us"}],
     "health": {"dietary": "Vegetarian", "allergies": "Peanuts"},
     "hobbies": {"interests": "Running, Hiking"},
+    "tech": {
+        "os": "macOS, Linux", "os_details": "Arch on home rig",
+        "shell": "zsh", "editor": "VS Code, Neovim", "phone": "iOS",
+        "smart_home": "HomeKit / Apple Home", "gaming": "Steam Deck / Handheld",
+        "notes": "Mostly remote, dotfiles in GitHub",
+    },
     "identity": {"leaning": "Center-left", "religion": "Agnostic"},
     "goals": {"current_projects": "Launch MVP", "learning": "Spanish"},
     "comms": {
