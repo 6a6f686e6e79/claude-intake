@@ -59,18 +59,8 @@ STANDALONE_JS = r"""
 
 const BOOTSTRAP_MAX_ENTRY_LEN = 500;
 const BOOTSTRAP_MAX_ENTRIES = 25;
-const BOOTSTRAP_TOPIC_TAGS = {
-  'user-personal': 'Personal',
-  'user-family': 'Family',
-  'user-work': 'Work',
-  'user-pets': 'Pets',
-  'user-health': 'Health',
-  'user-hobbies': 'Hobbies',
-  'user-tech': 'Tech',
-  'user-identity': 'Identity',
-  'user-goals': 'Goals',
-  'user-communication': 'Communication',
-};
+// BOOTSTRAP_TOPIC_TAGS is defined in the template JS (used by the import
+// parser); reused here so it stays the single source of truth on the page.
 const BOOTSTRAP_PRIORITY = [
   'user-communication', 'user-personal', 'user-identity', 'user-tech',
   'user-work', 'user-family', 'user-health', 'user-hobbies', 'user-goals',

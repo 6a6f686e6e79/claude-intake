@@ -28,6 +28,26 @@
   <h1>Your Claude Memory Intake</h1>
   <p class="subtitle">Fill in as much or as little as you like. Everything is saved locally as Claude memory files.</p>
 
+  <!-- Import existing bootstrap -->
+  <details class="import-panel">
+    <summary>📥 Import existing memory <span style="font-weight:400;color:var(--muted);font-size:13px">(paste a bootstrap to pre-fill the form)</span></summary>
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 6px">
+      Paste a <code>claude-ai-bootstrap.md</code> block (or anything containing the numbered <code>Topic: …</code> entries) and click <strong>Load</strong>. Your form will be pre-filled so you can edit and re-export.
+    </p>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 10px">
+      Don't have your bootstrap handy? Click <strong>📤 Copy 'ask Claude' prompt</strong> to copy a prompt you can paste into a claude.ai chat to make Claude recite its current memory back in the right format.
+    </p>
+    <textarea id="import-textarea" placeholder="Paste bootstrap text here…" style="width:100%;min-height:120px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+    <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap">
+      <button type="button" class="btn-sm" onclick="importBootstrap()">Load</button>
+      <button type="button" class="btn-sm" onclick="copyExportRequestPrompt()">📤 Copy 'ask Claude' prompt</button>
+      <span id="import-status" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5">
+      <strong>Note:</strong> v1 restores Personal, Health, Hobbies, Tech, Identity, Goals, and Comms. Family, Work history, and Pets aren't yet auto-restored — re-fill those manually if they're in your bootstrap.
+    </p>
+  </details>
+
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('personal', this)">Personal</button>
@@ -1650,6 +1670,251 @@ function toggleChipInGrid(chip) {
   const hiddenEl = document.getElementById(valueId);
   if (hiddenEl) {
     hiddenEl.value = [...grid.querySelectorAll('.chip.selected')].map(c => c.textContent.trim()).join(', ');
+  }
+}
+
+// ── Bootstrap import (JS mirror of app.py parsers) ──────────────
+// Lets users paste a claude-ai-bootstrap.md and pre-fill the form.
+// Source of truth: _parse_kv_lines + _parse_bootstrap_file in app.py.
+
+const BOOTSTRAP_TOPIC_TAGS = {
+  'user-personal': 'Personal',
+  'user-family': 'Family',
+  'user-work': 'Work',
+  'user-pets': 'Pets',
+  'user-health': 'Health',
+  'user-hobbies': 'Hobbies',
+  'user-tech': 'Tech',
+  'user-identity': 'Identity',
+  'user-goals': 'Goals',
+  'user-communication': 'Communication',
+};
+
+const SLUG_TO_SECTION = {
+  'user-personal': 'personal', 'user-family': 'family', 'user-work': 'work',
+  'user-pets': 'pets', 'user-health': 'health', 'user-hobbies': 'hobbies',
+  'user-tech': 'tech', 'user-identity': 'identity', 'user-goals': 'goals',
+  'user-communication': 'comms',
+};
+
+// Flat-key sections only. user-family / user-work / user-pets have row-format
+// sub-parsers in Python that aren't ported in v1 — those sections are skipped
+// on import (warning shown in the UI).
+const LABEL_TO_KEY = {
+  'user-personal': {
+    'Name': 'name', 'Preferred name': 'preferred_name', 'Birthday': 'birthday',
+    'City': 'city', 'State/Province': 'state', 'Country': 'country', 'Timezone': 'timezone',
+  },
+  'user-health': {
+    'Dietary restrictions': 'dietary', 'Allergies': 'allergies',
+    'Health conditions': 'conditions', 'Exercise habits': 'exercise',
+    'Health notes': 'notes',
+  },
+  'user-hobbies': {
+    'Interests & hobbies': 'interests', 'Additional notes': 'other',
+  },
+  'user-tech': {
+    'Computer OS': 'os', 'Distro / other OS details': 'os_details',
+    'Shell': 'shell', 'Code editor / IDE': 'editor',
+    'Phone OS': 'phone', 'Smart home ecosystem': 'smart_home',
+    'Gaming platforms': 'gaming', 'Tech notes': 'notes',
+  },
+  'user-identity': {
+    'Political identity': 'ideology', 'Party / affiliation': 'political',
+    'Political leaning': 'leaning', 'Sexuality / orientation': 'sexuality',
+    'Gender identity': 'gender', 'Religion / spirituality': 'religion',
+    'Causes & issues': 'causes', 'Identity notes': 'notes',
+  },
+  'user-goals': {
+    'Current projects': 'current_projects', 'Short-term goals': 'short_term',
+    'Long-term goals': 'long_term', 'Currently learning': 'learning',
+  },
+  'user-communication': {
+    'Tone preference': 'tone', 'Response length': 'length',
+    'Formatting preference': 'formatting', 'Feedback style': 'feedback',
+    'Humor style': 'humor', 'Personality vibes': 'personality_vibes',
+    'Working style': 'working_style', 'When stuck, wants Claude to': 'when_stuck',
+    'Never do': 'never_do', 'Always do': 'always_do',
+    'Collaboration notes': 'other',
+  },
+};
+
+const IMPORT_SKIPPED_SLUGS = new Set(['user-family', 'user-work', 'user-pets']);
+
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function parseKvLines(body, labelMap) {
+  const result = {};
+  let currentKey = null;
+  let currentLines = [];
+  const flush = () => {
+    if (currentKey !== null) {
+      result[currentKey] = currentLines.join('\n').trim();
+    }
+    currentKey = null;
+    currentLines = [];
+  };
+  for (const rawLine of body.split('\n')) {
+    const stripped = rawLine.replace(/\s+$/, '');
+    if (!stripped.trim()) {
+      if (currentKey !== null) currentLines.push('');
+      continue;
+    }
+    let matched = false;
+    for (const [label, key] of Object.entries(labelMap)) {
+      const prefix = `${label}: `;
+      const bare = `${label}:`;
+      if (stripped.startsWith(prefix) || stripped === bare) {
+        flush();
+        currentKey = key;
+        const value = stripped.slice(bare.length).replace(/^\s+/, '');
+        currentLines = value ? [value] : [];
+        matched = true;
+        break;
+      }
+    }
+    if (!matched && currentKey !== null) {
+      currentLines.push(stripped.trim());
+    }
+  }
+  flush();
+  return result;
+}
+
+function parseBootstrapFile(text) {
+  const topics = Object.values(BOOTSTRAP_TOPIC_TAGS);
+  const pattern = new RegExp(
+    '\\b\\d+\\.\\s+(' + topics.map(escapeRegex).join('|') +
+    ')(?:\\s*\\(\\d+/\\d+\\))?\\s*:\\s*',
+    'g'
+  );
+  const matches = [];
+  let m;
+  while ((m = pattern.exec(text)) !== null) {
+    matches.push({ topic: m[1], start: m.index, end: m.index + m[0].length });
+  }
+  if (!matches.length) return {};
+
+  const byTopic = {};
+  for (let i = 0; i < matches.length; i++) {
+    const topic = matches[i].topic;
+    const start = matches[i].end;
+    const end = i + 1 < matches.length ? matches[i + 1].start : text.length;
+    const content = text.slice(start, end).trim();
+    if (content) {
+      (byTopic[topic] = byTopic[topic] || []).push(content);
+    }
+  }
+
+  const topicToSlug = {};
+  for (const [slug, topic] of Object.entries(BOOTSTRAP_TOPIC_TAGS)) topicToSlug[topic] = slug;
+
+  const result = {};
+  for (const [topic, chunks] of Object.entries(byTopic)) {
+    const slug = topicToSlug[topic];
+    if (!slug) continue;
+    const joined = chunks.join('; ');
+    const lines = joined.split('; ').map(s => s.trim()).filter(Boolean);
+    result[slug] = lines.join('\n');
+  }
+  return result;
+}
+
+function emptyFormData() {
+  return {
+    personal: {}, family: { children: [] },
+    work: { prior_employers: [] }, pets: [],
+    health: {}, hobbies: {}, tech: {}, identity: {},
+    goals: {}, comms: {}, freeform: '',
+  };
+}
+
+function dataFromBootstrap(text) {
+  const sections = parseBootstrapFile(text);
+  const data = emptyFormData();
+  const restored = [];
+  const skipped = [];
+  for (const [slug, body] of Object.entries(sections)) {
+    if (IMPORT_SKIPPED_SLUGS.has(slug)) {
+      skipped.push(BOOTSTRAP_TOPIC_TAGS[slug] || slug);
+      continue;
+    }
+    const section = SLUG_TO_SECTION[slug];
+    const labelMap = LABEL_TO_KEY[slug];
+    if (!section || !labelMap || !body) continue;
+    data[section] = parseKvLines(body, labelMap);
+    restored.push(BOOTSTRAP_TOPIC_TAGS[slug] || slug);
+  }
+  return { data, restored, skipped };
+}
+
+function clearForm() {
+  document.querySelectorAll(
+    '#intake-form input[type="text"], #intake-form input[type="date"], ' +
+    '#intake-form input[type="month"], #intake-form textarea'
+  ).forEach(el => { el.value = ''; });
+  document.querySelectorAll('#intake-form select').forEach(el => { el.selectedIndex = 0; });
+  document.querySelectorAll('#intake-form .chip.selected')
+    .forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('#intake-form input[type="hidden"][id$="-value"]')
+    .forEach(el => { el.value = ''; });
+  ['children-group', 'pets-group', 'prior-employers-group'].forEach(id => {
+    const g = document.getElementById(id);
+    if (g) g.innerHTML = '';
+  });
+}
+
+function importBootstrap() {
+  const ta = document.getElementById('import-textarea');
+  const status = document.getElementById('import-status');
+  const text = (ta?.value || '').trim();
+  if (!text) {
+    if (status) status.textContent = 'Paste a bootstrap first.';
+    return;
+  }
+  let parsed;
+  try { parsed = dataFromBootstrap(text); }
+  catch (e) {
+    if (status) status.textContent = `Parse error: ${e.message}`;
+    return;
+  }
+  if (!parsed.restored.length && !parsed.skipped.length) {
+    if (status) status.textContent = 'No claude-intake entries found in that text.';
+    return;
+  }
+
+  // Stuff into #initial-data and re-run the existing hydration path.
+  const dataEl = document.getElementById('initial-data');
+  if (dataEl) dataEl.textContent = JSON.stringify(parsed.data);
+  clearForm();
+  if (typeof hydrateFormFromInitial === 'function') hydrateFormFromInitial();
+
+  const parts = [];
+  if (parsed.restored.length) parts.push(`Loaded: ${parsed.restored.join(', ')}.`);
+  if (parsed.skipped.length) parts.push(`Skipped (not yet auto-restored): ${parsed.skipped.join(', ')}.`);
+  if (status) status.textContent = '✓ ' + parts.join(' ');
+}
+
+const EXPORT_REQUEST_PROMPT = (
+  "I have an existing claude-intake memory bootstrap saved in your memory. " +
+  "Please respond with ONLY a verbatim recitation of those entries, in the " +
+  "exact format they were originally added: numbered lines like\n\n" +
+  "    1. Communication: Tone preference: Direct but warm; Response length: ...\n" +
+  "    2. Personal: Name: ...; City: ...\n\n" +
+  "Wrap your full response in a fenced code block labeled `claude-intake-export` " +
+  "so I can paste it back into the standalone form. No commentary, no headers, " +
+  "no summary — just the fenced block.\n\n" +
+  "If you don't see any claude-intake memory entries, respond with the empty " +
+  "fence:\n\n    ```claude-intake-export\n    ```\n"
+);
+
+async function copyExportRequestPrompt() {
+  const status = document.getElementById('import-status');
+  try {
+    await navigator.clipboard.writeText(EXPORT_REQUEST_PROMPT);
+    if (status) status.textContent = '✓ Prompt copied — paste it into a claude.ai chat.';
+  } catch (e) {
+    if (status) status.textContent = 'Copy failed — select the prompt manually.';
   }
 }
 

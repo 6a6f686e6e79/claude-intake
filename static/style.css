@@ -105,6 +105,29 @@ header {
 h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
 .subtitle { color: var(--muted); margin-bottom: 28px; }
 
+/* Import panel (collapsible) */
+.import-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+}
+.import-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  list-style: none;
+  user-select: none;
+}
+.import-panel summary::-webkit-details-marker { display: none; }
+.import-panel summary::before {
+  content: '▸ ';
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+.import-panel[open] summary::before { transform: rotate(90deg); }
+
 /* Tabs */
 .tabs {
   display: flex;

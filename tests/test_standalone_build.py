@@ -127,16 +127,24 @@ def test_js_port_matches_python(built_html, tmp_path):
 
     m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
     js_src = m.group(1)
-    # Extract just the chunk of standalone overrides we need; the surrounding
-    # template JS touches the DOM which node can't run.
-    needed = re.search(
+    # Pull two non-contiguous chunks: BOOTSTRAP_TOPIC_TAGS (defined in the
+    # template JS — also used by the import parser) and the override block's
+    # build helpers. Stitching them avoids node trying to execute the rest of
+    # the template JS, which touches the DOM and would crash at module load.
+    tags = re.search(
+        r"const BOOTSTRAP_TOPIC_TAGS = \{.*?\};",
+        js_src, re.DOTALL,
+    )
+    helpers = re.search(
         r"const BOOTSTRAP_MAX_ENTRY_LEN.*?// ── YAML",
         js_src, re.DOTALL,
     )
-    assert needed, "build helpers section not found in inline JS"
+    assert tags, "BOOTSTRAP_TOPIC_TAGS not found in template JS"
+    assert helpers, "build helpers section not found in inline JS"
 
     runner_js = (
-        needed.group(0)
+        tags.group(0) + "\n"
+        + helpers.group(0)
         + "\nconst SAMPLE = " + json.dumps(SAMPLE) + ";\n"
         + "const mems = buildMemories(SAMPLE);\n"
         + "const boot = buildBootstrap(mems);\n"
@@ -155,6 +163,56 @@ def test_js_port_matches_python(built_html, tmp_path):
         "JS buildMemories diverged from Python build_memories"
     assert js_out["bootstrap"] == py_boot_norm, \
         "JS buildBootstrap diverged from Python build_bootstrap"
+
+
+def test_js_import_parser_matches_python(built_html, tmp_path):
+    """JS parseBootstrapFile + parseKvLines should recover the same flat-section
+    body text Python's _parse_bootstrap_file produces. v1 ports only the flat
+    sections (personal/health/hobbies/tech/identity/goals/comms); user-family,
+    user-work, and user-pets are intentionally skipped and excluded here."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+
+    from app import build_memories, build_bootstrap, _parse_bootstrap_file
+
+    py_boot = build_bootstrap(build_memories(SAMPLE))
+    py_sections = _parse_bootstrap_file(py_boot)
+    flat = {
+        slug: body for slug, body in py_sections.items()
+        if slug not in ("user-family", "user-work", "user-pets")
+    }
+
+    m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
+    js_src = m.group(1)
+    # The import parser lives in the template JS; pull the whole block from
+    # BOOTSTRAP_TOPIC_TAGS through the end of dataFromBootstrap.
+    parser_chunk = re.search(
+        r"const BOOTSTRAP_TOPIC_TAGS = \{.*?function dataFromBootstrap[^\n]*\{.*?\n\}\n",
+        js_src, re.DOTALL,
+    )
+    assert parser_chunk, "import parser chunk not found in template JS"
+
+    runner_js = (
+        parser_chunk.group(0)
+        + "\nconst BOOT = " + json.dumps(py_boot) + ";\n"
+        + "const parsed = parseBootstrapFile(BOOT);\n"
+        + "console.log(JSON.stringify(parsed));\n"
+    )
+    js_file = tmp_path / "import_runner.js"
+    js_file.write_text(runner_js, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, f"node run failed:\n{result.stderr}"
+    js_sections = json.loads(result.stdout)
+
+    # JS should recover the same body text Python does for every flat slug.
+    for slug, body in flat.items():
+        assert slug in js_sections, f"JS parser missed slug {slug!r}"
+        assert js_sections[slug] == body, (
+            f"body mismatch for {slug!r}\n"
+            f"--- python ---\n{body}\n"
+            f"--- js     ---\n{js_sections[slug]}"
+        )
 
 
 def test_zip_encoder_roundtrips(built_html, tmp_path):
