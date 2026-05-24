@@ -8,13 +8,13 @@ A local Flask web app for generating **Claude Code memory files**. Bootstrap you
 
 Claude Code reads memory files to personalize how it behaves across sessions: your name, your work, your family, how you prefer to communicate. Writing those files by hand means remembering the frontmatter schema, keeping the index in sync, and being disciplined about consistency over time.
 
-claude-intake gives you a nine-tab form (Personal, Family, Work, Pets, Health, Hobbies, Identity, Goals, Communication), validates the input, writes properly-formatted memory files to `~/.claude/memory/`, and rebuilds the `MEMORY.md` index automatically. Edits merge instead of clobbering, so you can come back next week and add a hobby without losing yesterday's work.
+claude-intake gives you a ten-tab form (Personal, Family, Work, Pets, Health, Hobbies, Tech, Identity, Goals, Communication), validates the input, writes properly-formatted memory files to `~/.claude/memory/`, and rebuilds the `MEMORY.md` index automatically. Edits merge instead of clobbering, so you can come back next week and add a hobby without losing yesterday's work.
 
 Everything runs locally on `127.0.0.1`. Nothing is transmitted to the Anthropic API or anywhere else.
 
 ## Features
 
-- Nine pre-built memory categories with curated fields for each
+- Ten pre-built memory categories with curated fields for each
 - YAML frontmatter generated automatically and consistently
 - Re-entry safe: editing a category merges with the existing file rather than overwriting it
 - `MEMORY.md` index file kept in sync on every save
@@ -85,6 +85,29 @@ python tools/take_screenshots.py
 ```
 
 The script launches its own Flask instance against an empty temp memory dir so the fictional persona never mixes with your real data.
+
+## Schema versioning (for contributors)
+
+The standalone's **Backup / Restore** feature writes a JSON file with a top-level `schemaVersion` field. The version is defined in two places and they must stay equal:
+
+- `SCHEMA_VERSION` in `app.py`
+- `SCHEMA_VERSION` in `templates/index.html` (JS constant)
+
+`tests/test_standalone_build.py::test_schema_version_parity` enforces equality on every build.
+
+**Bump the version when:**
+
+- A tab is added, renamed, or removed
+- A field is added, renamed, or removed
+- A field's value semantics change (e.g. CSV → list)
+
+**To bump and add a migration:**
+
+1. Update `SCHEMA_VERSION` in both files (same commit).
+2. Add a transform to `MIGRATIONS` in both files, keyed `"<old>-to-<new>"`. The JS dict lives in `templates/index.html`; the Python dict in `app.py`. The transform takes the old data shape and returns the new one.
+3. Existing backups created at the old version will run through the new transform on restore — no user action required.
+
+The Python migration registry is kept symmetric with the JS one for consistency, even though only the standalone (browser-side) uses the backup-file format today.
 
 ## License
 

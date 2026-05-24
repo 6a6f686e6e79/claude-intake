@@ -20,6 +20,24 @@ def fmt_month(value):
 # enforces they stay equal.
 SCHEMA_VERSION = "1"
 
+# Migration registry. Keys are "fromVersion-to-toVersion"; values are
+# pure (data) -> data transforms. Empty in v1; the pattern exists so
+# future schema changes plug in without restructuring callers.
+# Kept symmetric with the JS MIGRATIONS in templates/index.html.
+MIGRATIONS = {}
+
+
+def migrate_backup(data, from_version, to_version):
+    if from_version == to_version:
+        return data
+    key = f"{from_version}-to-{to_version}"
+    transform = MIGRATIONS.get(key)
+    if transform is None:
+        raise ValueError(
+            f"No migration registered from {from_version} to {to_version}"
+        )
+    return transform(data)
+
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB
 
