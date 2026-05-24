@@ -105,6 +105,19 @@ header {
 h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
 .subtitle { color: var(--muted); margin-bottom: 28px; }
 
+/* Privacy reassurance shown at the top of the standalone build only.
+   Injected by tools/build_standalone.py; not used in the Flask build. */
+.privacy-banner {
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
 /* Coverage banner shown after a recovery-from-claude.ai import */
 .coverage-banner {
   position: relative;

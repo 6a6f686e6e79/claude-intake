@@ -794,6 +794,24 @@ def retitle(html: str) -> str:
     return html
 
 
+def inject_privacy_banner(html: str) -> str:
+    """Insert the privacy-reassurance banner directly after the subtitle.
+
+    Standalone-only: the Flask version posts to its own localhost endpoints
+    so 'No data is sent to any server' would be misleading there. Injected
+    here rather than living in the template so the Flask page stays accurate.
+    """
+    banner = (
+        '\n  <div class="privacy-banner">\n'
+        '    🔒 This tool runs entirely in your browser. No data is sent to any '
+        'server. Use <strong>Backup / Restore</strong> to keep a copy.\n'
+        '  </div>'
+    )
+    # Find the closing </p> of the standalone subtitle and inject after it.
+    marker = "in your browser — nothing is uploaded.</p>"
+    return html.replace(marker, marker + banner, 1)
+
+
 def inject_overrides(html: str) -> str:
     return html.replace("</script>\n</body>", STANDALONE_JS + "\n</script>\n</body>")
 
@@ -807,6 +825,7 @@ def build() -> str:
     html = rewrite_target_radios(html)
     html = rewrite_actions(html)
     html = retitle(html)
+    html = inject_privacy_banner(html)
     html = inject_overrides(html)
     return html
 

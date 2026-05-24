@@ -112,6 +112,19 @@ header {
 h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
 .subtitle { color: var(--muted); margin-bottom: 28px; }
 
+/* Privacy reassurance shown at the top of the standalone build only.
+   Injected by tools/build_standalone.py; not used in the Flask build. */
+.privacy-banner {
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
 /* Coverage banner shown after a recovery-from-claude.ai import */
 .coverage-banner {
   position: relative;
@@ -525,6 +538,9 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
 <div class="container">
   <h1>Your Claude Memory Intake</h1>
   <p class="subtitle">Fill in as much or as little as you like, then click <strong>Generate</strong> to copy a memory bootstrap into claude.ai (or download <code>.md</code> files for Claude Code). Everything runs in your browser — nothing is uploaded.</p>
+  <div class="privacy-banner">
+    🔒 This tool runs entirely in your browser. No data is sent to any server. Use <strong>Backup / Restore</strong> to keep a copy.
+  </div>
 
   <!-- Backup / Restore -->
   <details class="import-panel">

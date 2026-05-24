@@ -86,6 +86,10 @@ python tools/take_screenshots.py
 
 The script launches its own Flask instance against an empty temp memory dir so the fictional persona never mixes with your real data.
 
+## Privacy
+
+claude-intake has no backend, no analytics, no telemetry, and no network calls. The Flask version runs entirely on `127.0.0.1`; the standalone HTML runs entirely in your browser. Form data auto-saves to your browser's `localStorage`, which is scoped per-browser and per-device — clearing your browser data clears your form. The downloaded backup JSON is yours alone; the tool never sees it after you save it.
+
 ## Schema versioning (for contributors)
 
 The standalone's **Backup / Restore** feature writes a JSON file with a top-level `schemaVersion` field. The version is defined in two places and they must stay equal:
