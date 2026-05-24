@@ -1953,7 +1953,9 @@ const EXPORT_REQUEST_PROMPT = (
 async function copyExportRequestPrompt() {
   const status = document.getElementById('import-status');
   try {
-    await navigator.clipboard.writeText(EXPORT_REQUEST_PROMPT);
+    // .trim() defensively — guarantees no trailing whitespace on the clipboard
+    // even if the prompt constant ever picks one up.
+    await navigator.clipboard.writeText(EXPORT_REQUEST_PROMPT.trim());
     if (status) status.textContent = '✓ Prompt copied — paste it into a claude.ai chat.';
   } catch (e) {
     if (status) status.textContent = 'Copy failed — open the "See the exact prompt" panel and copy it manually.';
@@ -1964,7 +1966,7 @@ async function copyExportRequestPrompt() {
 // Copy button uses, so the displayed and copied text can't drift apart.
 document.addEventListener('DOMContentLoaded', () => {
   const preview = document.getElementById('export-prompt-preview');
-  if (preview) preview.textContent = EXPORT_REQUEST_PROMPT;
+  if (preview) preview.textContent = EXPORT_REQUEST_PROMPT.trim();
 });
 
 // ── Hydration: populate form from initial_data on page load ─────
