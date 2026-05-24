@@ -287,6 +287,52 @@ def test_js_dataFromBootstrap_extracts_family_work_kv(built_html, tmp_path):
     assert "Pets" in out["skipped"]
 
 
+def test_js_parser_strips_sentinel_lines(built_html, tmp_path):
+    """JS parseBootstrapFile should produce the same parsed sections from
+    sentinel-wrapped input as it does from bare input. Locks in the JS
+    side of the format-as-protocol promise."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+
+    bare = (
+        "1. Personal: Name: Riley Quinn; City: Boulder\n"
+        "2. Tech: Computer OS: macOS; Shell: zsh\n"
+    )
+    wrapped = "### beginning of form ###\n" + bare + "### end of form ###\n"
+
+    m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
+    js_src = m.group(1)
+    parser_chunk = re.search(
+        r"const BOOTSTRAP_TOPIC_TAGS = \{.*?function dataFromBootstrap[^\n]*\{.*?\n\}\n",
+        js_src, re.DOTALL,
+    )
+    assert parser_chunk, "import parser chunk not found"
+
+    runner_js = (
+        parser_chunk.group(0)
+        + "\nconst BARE = " + json.dumps(bare) + ";\n"
+        + "const WRAPPED = " + json.dumps(wrapped) + ";\n"
+        + "console.log(JSON.stringify({\n"
+        + "  bare: parseBootstrapFile(BARE),\n"
+        + "  wrapped: parseBootstrapFile(WRAPPED),\n"
+        + "}));\n"
+    )
+    js_file = tmp_path / "sentinel_runner.js"
+    js_file.write_text(runner_js, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    out = json.loads(result.stdout)
+    assert out["bare"] == out["wrapped"], (
+        f"sentinel-wrapped output differs from bare\n"
+        f"--- bare ---\n{out['bare']}\n"
+        f"--- wrapped ---\n{out['wrapped']}"
+    )
+    # Both should have parsed user-personal and user-tech
+    assert "user-personal" in out["bare"]
+    assert "user-tech" in out["bare"]
+
+
 def test_js_tech_migration_shim_moves_pre_tech_chips(built_html, tmp_path):
     """Pre-Tech-tab bootstraps stored gaming platforms in hobbies.interests.
     After import, those values should move to tech.gaming so they land in the

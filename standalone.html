@@ -2436,7 +2436,14 @@ function parseKvLines(body, labelMap) {
   return result;
 }
 
+// Decoration lines stripped before parsing so the same payload arrives
+// identical whether it's bare, sentinel-wrapped, or wrapped in a
+// ```claude-intake-export ... ``` fence.
+const SENTINEL_REGEX = /^\s*###\s+(?:beginning|end)\s+of\s+form\s+###\s*$/gim;
+const FENCE_REGEX = /^\s*```(?:claude-intake-export)?\s*$/gm;
+
 function parseBootstrapFile(text) {
+  text = text.replace(SENTINEL_REGEX, '').replace(FENCE_REGEX, '');
   const topics = Object.values(BOOTSTRAP_TOPIC_TAGS);
   const pattern = new RegExp(
     '\\b\\d+\\.\\s+(' + topics.map(escapeRegex).join('|') +

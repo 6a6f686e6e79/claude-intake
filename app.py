@@ -564,6 +564,36 @@ def _parse_pets(body):
     return pets
 
 
+SENTINEL_PATTERN = re.compile(
+    r"^\s*###\s+(?:beginning|end)\s+of\s+form\s+###\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+# Strip whole-line code-fence markers (opening and closing) so a paste
+# wrapped in ```claude-intake-export ... ``` parses the same as a bare
+# paste. Body content with embedded triple-backticks is a theoretical
+# risk in the bootstrap format but doesn't occur in practice.
+FENCE_PATTERN = re.compile(
+    r"^\s*```(?:claude-intake-export)?\s*$",
+    re.MULTILINE,
+)
+
+
+def _strip_sentinels(text):
+    """Remove sentinel and fence-marker decoration.
+
+    Sentinel: `### beginning of form ###` / `### end of form ###` lines,
+    case-insensitive, whole-line, surrounding whitespace allowed.
+    Fences: bare ``` and ```claude-intake-export marker lines.
+
+    Lets the empty-form template, a partially-filled paste, a
+    sentinel-wrapped paste, and a fenced export all share one wire
+    format with optional decoration.
+    """
+    text = SENTINEL_PATTERN.sub("", text)
+    text = FENCE_PATTERN.sub("", text)
+    return text
+
+
 def _parse_bootstrap_file(text):
     """Parse a claude-ai-bootstrap.md back into {slug: body_text}.
 
@@ -573,8 +603,10 @@ def _parse_bootstrap_file(text):
     contents in document order with '; ' separators.
 
     Robust to whitespace-flattened paste: entries are located by matching
-    on the topic-name vocabulary, not by newline boundaries.
+    on the topic-name vocabulary, not by newline boundaries. Also tolerant
+    of `### beginning/end of form ###` sentinel decoration.
     """
+    text = _strip_sentinels(text)
     topics = list(BOOTSTRAP_TOPIC_TAGS.values())
     pattern = (
         r"\b\d+\.\s+(" + "|".join(re.escape(t) for t in topics) +

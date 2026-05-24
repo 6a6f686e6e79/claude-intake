@@ -288,6 +288,28 @@ class TestBootstrap:
         # No escape artifacts in the user-visible bootstrap
         assert r"\;" not in bt
 
+    def test_parser_handles_bare_sentinel_and_fenced_input(self):
+        """Same payload, three wrappings: bare, sentinel-wrapped, fenced.
+        All three should produce identical parsed output. Locks in the
+        format-as-protocol promise — the empty-form template, a partial
+        paste, and a fenced export are all the same input shape."""
+        bare = (
+            "1. Personal: Name: Riley Quinn; City: Boulder\n"
+            "2. Tech: Computer OS: macOS; Shell: zsh"
+        )
+        wrapped = "### beginning of form ###\n" + bare + "\n### end of form ###"
+        # Mix case + extra whitespace to exercise the case-insensitive /
+        # whitespace-tolerant matching.
+        wrapped_varied = (
+            "  ### Beginning Of Form ###\n" + bare + "\n###  END OF FORM  ###  "
+        )
+        fenced = "```claude-intake-export\n" + bare + "\n```"
+
+        baseline = _parse_bootstrap_file(bare)
+        assert _parse_bootstrap_file(wrapped) == baseline
+        assert _parse_bootstrap_file(wrapped_varied) == baseline
+        assert _parse_bootstrap_file(fenced) == baseline
+
     def test_bootstrap_prompt_handles_no_tool_case(self):
         """Step 2 and Step 3 must address sessions without memory_user_edits.
 
