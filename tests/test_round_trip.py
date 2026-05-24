@@ -288,6 +288,38 @@ class TestBootstrap:
         # No escape artifacts in the user-visible bootstrap
         assert r"\;" not in bt
 
+    def test_parser_routes_notes_topic_to_freeform(self):
+        """build_bootstrap emits user-notes-{date} slugs as 'Notes:' entries.
+        The parser must recognize 'Notes' as a topic name and route its
+        content to the synthetic 'user-freeform' slug so _populate_from_body
+        can lift it into the top-level data.freeform field."""
+        from app import _populate_from_body
+        text = (
+            "1. Personal: Name: Riley Quinn\n"
+            "2. Notes: Some overflow content the schema doesn't have a slot for."
+        )
+        sections = _parse_bootstrap_file(text)
+        assert "user-freeform" in sections, "Notes topic not routed to user-freeform"
+        assert "Some overflow content" in sections["user-freeform"]
+
+        data = {"freeform": ""}
+        _populate_from_body(data, "user-freeform", sections["user-freeform"])
+        assert "Some overflow content" in data["freeform"]
+
+    def test_freeform_round_trips_through_bootstrap(self):
+        """A non-empty freeform value survives build_bootstrap → parse →
+        _populate_from_body and lands back in data.freeform."""
+        from app import _populate_from_body
+        sample = dict(SAMPLE)
+        sample["freeform"] = "Some long-form context that doesn't fit elsewhere."
+        mems = build_memories(sample)
+        bt = build_bootstrap(mems)
+        sections = _parse_bootstrap_file(bt)
+        assert "user-freeform" in sections
+        data = {"freeform": ""}
+        _populate_from_body(data, "user-freeform", sections["user-freeform"])
+        assert "Some long-form context" in data["freeform"]
+
     def test_parser_handles_bare_sentinel_and_fenced_input(self):
         """Same payload, three wrappings: bare, sentinel-wrapped, fenced.
         All three should produce identical parsed output. Locks in the

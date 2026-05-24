@@ -287,6 +287,43 @@ def test_js_dataFromBootstrap_extracts_family_work_kv(built_html, tmp_path):
     assert "Pets" in out["skipped"]
 
 
+def test_js_dataFromBootstrap_routes_notes_to_freeform(built_html, tmp_path):
+    """JS dataFromBootstrap should route a 'Notes:' topic to data.freeform,
+    matching the Python side's _populate_from_body('user-freeform')."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+
+    boot = (
+        "1. Personal: Name: Riley Quinn\n"
+        "2. Notes: Some overflow that doesn't fit a structured field."
+    )
+    m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
+    js_src = m.group(1)
+    parser_chunk = re.search(
+        r"const BOOTSTRAP_TOPIC_TAGS = \{.*?function dataFromBootstrap[^\n]*\{.*?\n\}\n",
+        js_src, re.DOTALL,
+    )
+    assert parser_chunk, "import parser chunk not found"
+
+    runner_js = (
+        parser_chunk.group(0)
+        + "\nconst BOOT = " + json.dumps(boot) + ";\n"
+        + "const out = dataFromBootstrap(BOOT);\n"
+        + "console.log(JSON.stringify(out));\n"
+    )
+    js_file = tmp_path / "notes_runner.js"
+    js_file.write_text(runner_js, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    out = json.loads(result.stdout)
+
+    assert "Some overflow" in out["data"]["freeform"], (
+        f"Notes content didn't land in freeform: {out['data'].get('freeform')!r}"
+    )
+    assert "Notes" in out["restored"]
+
+
 def test_js_parser_strips_sentinel_lines(built_html, tmp_path):
     """JS parseBootstrapFile should produce the same parsed sections from
     sentinel-wrapped input as it does from bare input. Locks in the JS

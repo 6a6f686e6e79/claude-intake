@@ -607,7 +607,12 @@ def _parse_bootstrap_file(text):
     of `### beginning/end of form ###` sentinel decoration.
     """
     text = _strip_sentinels(text)
-    topics = list(BOOTSTRAP_TOPIC_TAGS.values())
+    # "Notes" is a parse-side alias for the top-level freeform textarea.
+    # build_bootstrap emits user-notes-{date} slugs as "Notes: ..." entries
+    # via _topic_for, so the parser has to recognize that topic name even
+    # though it isn't in BOOTSTRAP_TOPIC_TAGS. Routes to the synthetic
+    # "user-freeform" slug, which _populate_from_body lifts into data.freeform.
+    topics = list(BOOTSTRAP_TOPIC_TAGS.values()) + ["Notes"]
     pattern = (
         r"\b\d+\.\s+(" + "|".join(re.escape(t) for t in topics) +
         r")(?:\s*\(\d+/\d+\))?\s*:\s*"
@@ -626,6 +631,7 @@ def _parse_bootstrap_file(text):
             by_topic.setdefault(topic, []).append(content)
 
     topic_to_slug = {v: k for k, v in BOOTSTRAP_TOPIC_TAGS.items()}
+    topic_to_slug["Notes"] = "user-freeform"
     result = {}
     for topic, chunks in by_topic.items():
         slug = topic_to_slug.get(topic)
@@ -643,6 +649,12 @@ def _parse_bootstrap_file(text):
 
 def _populate_from_body(data, slug, body):
     """Apply a parsed section body to the form-state dict in place."""
+    if slug == "user-freeform":
+        # Synthetic slug produced by _parse_bootstrap_file for "Notes:"
+        # entries. Lifts the content into the top-level freeform textarea.
+        if body:
+            data["freeform"] = body
+        return
     section = SLUG_TO_SECTION.get(slug)
     if not section or not body:
         return

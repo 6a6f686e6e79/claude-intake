@@ -1930,7 +1930,13 @@ const FENCE_REGEX = /^\s*```(?:claude-intake-export)?\s*$/gm;
 
 function parseBootstrapFile(text) {
   text = text.replace(SENTINEL_REGEX, '').replace(FENCE_REGEX, '');
-  const topics = Object.values(BOOTSTRAP_TOPIC_TAGS);
+  // "Notes" is a parse-side alias for the top-level freeform textarea.
+  // build_bootstrap emits user-notes-{date} slugs as "Notes: ..." entries,
+  // and claude.ai sometimes invents a "Notes" topic to hold overflow even
+  // when the schema doesn't list it. Either way it ends up routed to the
+  // synthetic user-freeform slug, which dataFromBootstrap lifts into
+  // data.freeform.
+  const topics = Object.values(BOOTSTRAP_TOPIC_TAGS).concat(['Notes']);
   const pattern = new RegExp(
     '\\b\\d+\\.\\s+(' + topics.map(escapeRegex).join('|') +
     ')(?:\\s*\\(\\d+/\\d+\\))?\\s*:\\s*',
@@ -1956,6 +1962,7 @@ function parseBootstrapFile(text) {
 
   const topicToSlug = {};
   for (const [slug, topic] of Object.entries(BOOTSTRAP_TOPIC_TAGS)) topicToSlug[topic] = slug;
+  topicToSlug['Notes'] = 'user-freeform';
 
   const result = {};
   for (const [topic, chunks] of Object.entries(byTopic)) {
@@ -1983,6 +1990,12 @@ function dataFromBootstrap(text) {
   const restored = [];
   const skipped = [];
   for (const [slug, body] of Object.entries(sections)) {
+    if (slug === 'user-freeform') {
+      // "Notes" topic → top-level freeform textarea.
+      if (body) data.freeform = body;
+      restored.push('Notes');
+      continue;
+    }
     if (IMPORT_SKIPPED_SLUGS.has(slug)) {
       skipped.push(BOOTSTRAP_TOPIC_TAGS[slug] || slug);
       continue;
@@ -2156,6 +2169,10 @@ const EXPORT_REQUEST_PROMPT = (
   "    2. Tech: Computer OS: macOS; Shell: zsh; Gaming platforms: PC gaming, Steam Deck / Handheld\n" +
   "\n" +
   "Rules:\n" +
+  "- Use ONLY the topic names listed in the schema above. Don't invent new\n" +
+  "  topics (\"Notes\", \"Background\", \"Misc\", etc.) to hold overflow content.\n" +
+  "  If something doesn't fit a listed field, put it in the closest matching\n" +
+  "  notes field (Identity notes, Tech notes, Work notes) or omit it.\n" +
   "- Use \"; \" (semicolon-space) between fields within a topic.\n" +
   "- Use \", \" (comma-space) between multiple values for a single field\n" +
   "  (multiple OSes, multiple hobbies, multiple gaming platforms, etc.).\n" +
