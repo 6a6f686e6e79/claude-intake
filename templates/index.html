@@ -57,7 +57,7 @@
       <span id="import-status" style="font-size:13px;color:var(--muted)"></span>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">
-      <strong>Note:</strong> v1 restores Personal, Health, Hobbies, Tech, Identity, Goals, and Comms. Family, Work history, and Pets aren't yet auto-restored — re-fill those manually if they're in your bootstrap.
+      <strong>Notes:</strong> Pets aren't yet auto-restored — re-fill manually if your bootstrap has them. Family children and prior employers also stay manual; their flat fields (relationship status, job title, etc.) do hydrate. Chip values are matched tolerantly (case, parentheticals, hyphens) so close variations land on the right chip instead of becoming custom.
     </p>
   </details>
 
@@ -1710,13 +1710,27 @@ const SLUG_TO_SECTION = {
   'user-communication': 'comms',
 };
 
-// Flat-key sections only. user-family / user-work / user-pets have row-format
-// sub-parsers in Python that aren't ported in v1 — those sections are skipped
-// on import (warning shown in the UI).
+// Flat-key labels per slug. user-family and user-work also have row-format
+// sub-sections (Child N:, Prior employer N:, Military service:) that we strip
+// before parseKvLines — see stripRowFormatLines / SLUGS_NEEDING_ROW_STRIP.
+// user-pets is entirely row-format with no flat-kv fields, so it stays in
+// IMPORT_SKIPPED_SLUGS.
 const LABEL_TO_KEY = {
   'user-personal': {
     'Name': 'name', 'Preferred name': 'preferred_name', 'Birthday': 'birthday',
     'City': 'city', 'State/Province': 'state', 'Country': 'country', 'Timezone': 'timezone',
+  },
+  'user-family': {
+    'Relationship status': 'relationship_status',
+    'Partner name': 'partner_name', 'Partner birthday': 'partner_birthday',
+    'Former partner / co-parent': 'former_partner',
+    'Siblings': 'siblings', 'Parents': 'parents',
+    'Other family notes': 'other',
+  },
+  'user-work': {
+    'Job title': 'title', 'Company': 'company', 'Industry': 'industry',
+    'Years of experience': 'years_exp', 'Work style': 'work_style',
+    'Work notes': 'notes', 'Military highlights': 'military_highlights',
   },
   'user-health': {
     'Dietary restrictions': 'dietary', 'Allergies': 'allergies',
@@ -1752,7 +1766,75 @@ const LABEL_TO_KEY = {
   },
 };
 
-const IMPORT_SKIPPED_SLUGS = new Set(['user-family', 'user-work', 'user-pets']);
+const IMPORT_SKIPPED_SLUGS = new Set(['user-pets']);
+const SLUGS_NEEDING_ROW_STRIP = new Set(['user-family', 'user-work']);
+
+// Lines matching these patterns are sub-section rows the JS port doesn't yet
+// parse. Stripping them before parseKvLines prevents the loose-line continuation
+// behavior from contaminating the previous label's value with row content.
+const ROW_LINE_PATTERNS = [
+  /^Child \d+:/,
+  /^Pet \d+:/,
+  /^Prior employer \d+:/,
+  /^Military service:/,
+];
+
+function stripRowFormatLines(body) {
+  return body.split('\n')
+    .filter(line => !ROW_LINE_PATTERNS.some(re => re.test(line.trim())))
+    .join('\n');
+}
+
+// Pre-Tech-tab bootstraps stored gaming platforms in hobbies.interests. After
+// the Tech tab landed, these belong in tech.gaming. Move them at import time
+// so old bootstraps migrate cleanly. Case-insensitive match on the source
+// value; the mapped value is the canonical current chip label (one rename:
+// "VR gaming" → "VR / Headset gaming"). "Console gaming" has no single-chip
+// equivalent in the new grid, so it lands in tech.gaming as a custom chip
+// where the user is likeliest to update it.
+const TECH_GAMING_MIGRATIONS_MAP = {
+  'pc gaming': 'PC gaming',
+  'console gaming': 'Console gaming',
+  'mobile gaming': 'Mobile gaming',
+  'retro gaming': 'Retro gaming',
+  'vr gaming': 'VR / Headset gaming',
+  'sim racing': 'Sim racing',
+};
+
+function applyTechMigrationShim(data) {
+  const raw = (data.hobbies && data.hobbies.interests) || '';
+  if (!raw) return;
+  const items = raw.split(',').map(s => s.trim()).filter(Boolean);
+  const stays = [], moves = [];
+  for (const item of items) {
+    const mapped = TECH_GAMING_MIGRATIONS_MAP[item.toLowerCase()];
+    if (mapped) moves.push(mapped); else stays.push(item);
+  }
+  if (!moves.length) return;
+  data.hobbies.interests = stays.join(', ');
+  if (!data.tech) data.tech = {};
+  const existing = (data.tech.gaming || '').split(',').map(s => s.trim()).filter(Boolean);
+  // De-dupe while preserving order: existing first, then new moves.
+  const seen = new Set();
+  const merged = [];
+  for (const v of [...existing, ...moves]) {
+    if (!seen.has(v)) { seen.add(v); merged.push(v); }
+  }
+  data.tech.gaming = merged.join(', ');
+}
+
+// Normalize a chip label for tolerant matching: lowercases, strips
+// parentheticals, normalizes hyphens-to-spaces and runs of whitespace.
+// "Catholic (converted 2007)" → "catholic". "Far-left" → "far left".
+// Conservative — does NOT stem or strip non-parenthetical content, so
+// "PC gaming" and "PC games" still won't collide.
+function normalizeChipLabel(s) {
+  return s.toLowerCase()
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
@@ -1855,9 +1937,17 @@ function dataFromBootstrap(text) {
     const section = SLUG_TO_SECTION[slug];
     const labelMap = LABEL_TO_KEY[slug];
     if (!section || !labelMap || !body) continue;
-    data[section] = parseKvLines(body, labelMap);
+    const cleanBody = SLUGS_NEEDING_ROW_STRIP.has(slug)
+      ? stripRowFormatLines(body)
+      : body;
+    const parsed = parseKvLines(cleanBody, labelMap);
+    // Preserve sub-arrays (children, prior_employers) that emptyFormData seeded.
+    for (const [k, v] of Object.entries(parsed)) {
+      data[section][k] = v;
+    }
     restored.push(BOOTSTRAP_TOPIC_TAGS[slug] || slug);
   }
+  applyTechMigrationShim(data);
   return { data, restored, skipped };
 }
 
@@ -1981,7 +2071,19 @@ function hydrateFormFromInitial() {
     if (value === undefined || value === null || value === '') return;
     const el = document.querySelector(`[name="${name}"]`);
     if (!el) return;
-    el.value = value;
+    let v = value;
+    // Date inputs require YYYY-MM-DD. Tolerate YYYY-MM by defaulting to day 01.
+    if (el.type === 'date' && /^\d{4}-\d{2}$/.test(v)) {
+      v = v + '-01';
+    }
+    // Number inputs silently reject non-numeric values. Extract the leading
+    // number so things like "20+" or "around 8" land on the closest integer
+    // instead of vanishing.
+    if (el.type === 'number' && !/^-?\d+(?:\.\d+)?$/.test(String(v).trim())) {
+      const m = String(v).match(/-?\d+(?:\.\d+)?/);
+      if (m) v = m[0]; else return;
+    }
+    el.value = v;
   };
 
   // Plain field sections
@@ -2019,18 +2121,33 @@ function hydrateFormFromInitial() {
     const [section, key] = hiddenName.split('.');
     const csv = data[section] && data[section][key];
     if (!csv) continue;
-    const wanted = new Set(csv.split(',').map(s => s.trim()).filter(Boolean));
+    const wanted = csv.split(',').map(s => s.trim()).filter(Boolean);
     const grid = document.getElementById(gridId);
     if (!grid) continue;
+
+    // Build two lookup maps so we can prefer exact matches but fall back to
+    // tolerant ones (case-insensitive, parentheticals stripped, hyphens
+    // normalized — see normalizeChipLabel).
+    const chipByText = new Map();
+    const chipByNormalized = new Map();
     grid.querySelectorAll('.chip').forEach(chip => {
       const text = chip.textContent.trim();
-      if (wanted.has(text)) {
-        chip.classList.add('selected');
-        wanted.delete(text);
-      }
+      chipByText.set(text, chip);
+      chipByNormalized.set(normalizeChipLabel(text), chip);
     });
+
+    const unmatched = [];
+    for (const want of wanted) {
+      let chip = chipByText.get(want);
+      if (!chip) chip = chipByNormalized.get(normalizeChipLabel(want));
+      if (chip) {
+        chip.classList.add('selected');
+      } else {
+        unmatched.push(want);
+      }
+    }
     // Anything left over: user-added custom chips that aren't in the default list
-    wanted.forEach(custom => {
+    unmatched.forEach(custom => {
       const chip = document.createElement('div');
       chip.className = 'chip selected';
       chip.textContent = custom;

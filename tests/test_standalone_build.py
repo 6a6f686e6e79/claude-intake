@@ -166,10 +166,11 @@ def test_js_port_matches_python(built_html, tmp_path):
 
 
 def test_js_import_parser_matches_python(built_html, tmp_path):
-    """JS parseBootstrapFile + parseKvLines should recover the same flat-section
-    body text Python's _parse_bootstrap_file produces. v1 ports only the flat
-    sections (personal/health/hobbies/tech/identity/goals/comms); user-family,
-    user-work, and user-pets are intentionally skipped and excluded here."""
+    """JS parseBootstrapFile should recover the same body text Python's
+    _parse_bootstrap_file produces for every slug. user-pets is excluded
+    because the JS port doesn't ingest pets in v1; family and work are
+    included (the JS strips their row-format lines later in dataFromBootstrap,
+    but parseBootstrapFile itself returns the raw body just like Python)."""
     node = shutil.which("node")
     if not node:
         pytest.skip("node not installed")
@@ -178,9 +179,9 @@ def test_js_import_parser_matches_python(built_html, tmp_path):
 
     py_boot = build_bootstrap(build_memories(SAMPLE))
     py_sections = _parse_bootstrap_file(py_boot)
-    flat = {
+    expected = {
         slug: body for slug, body in py_sections.items()
-        if slug not in ("user-family", "user-work", "user-pets")
+        if slug != "user-pets"
     }
 
     m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
@@ -205,14 +206,126 @@ def test_js_import_parser_matches_python(built_html, tmp_path):
     assert result.returncode == 0, f"node run failed:\n{result.stderr}"
     js_sections = json.loads(result.stdout)
 
-    # JS should recover the same body text Python does for every flat slug.
-    for slug, body in flat.items():
+    for slug, body in expected.items():
         assert slug in js_sections, f"JS parser missed slug {slug!r}"
         assert js_sections[slug] == body, (
             f"body mismatch for {slug!r}\n"
             f"--- python ---\n{body}\n"
             f"--- js     ---\n{js_sections[slug]}"
         )
+
+
+def test_js_dataFromBootstrap_extracts_family_work_kv(built_html, tmp_path):
+    """dataFromBootstrap should pull flat fields out of user-family and user-work
+    even when their bodies also contain row-format lines (Child N:, Prior
+    employer N:, Military service:). The stripper removes the row lines so the
+    continuation-line behavior of parseKvLines can't contaminate adjacent
+    fields."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+
+    from app import build_memories, build_bootstrap
+
+    py_boot = build_bootstrap(build_memories(SAMPLE))
+
+    m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
+    js_src = m.group(1)
+    parser_chunk = re.search(
+        r"const BOOTSTRAP_TOPIC_TAGS = \{.*?function dataFromBootstrap[^\n]*\{.*?\n\}\n",
+        js_src, re.DOTALL,
+    )
+    assert parser_chunk, "import parser chunk not found"
+
+    runner_js = (
+        parser_chunk.group(0)
+        + "\nconst BOOT = " + json.dumps(py_boot) + ";\n"
+        + "const out = dataFromBootstrap(BOOT);\n"
+        + "console.log(JSON.stringify(out));\n"
+    )
+    js_file = tmp_path / "dfb_runner.js"
+    js_file.write_text(runner_js, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    out = json.loads(result.stdout)
+
+    # Family: flat kv survives the strip; partner_birthday is NOT contaminated
+    # by the trailing Child N: rows.
+    fam = out["data"]["family"]
+    assert fam["relationship_status"] == "Married"
+    assert fam["partner_name"] == "Alex"
+    assert fam["partner_birthday"] == "1987-09-02"
+    assert fam["siblings"] == "Sister Ava (29)"
+    assert fam["parents"] == "Mom in Dallas"
+
+    # Work: flat kv plus Work notes survive; prior_employer rows don't pollute
+    # adjacent fields.
+    work = out["data"]["work"]
+    assert work["title"] == "PM"
+    assert work["company"] == "Acme"
+    assert work["years_exp"] == "8"
+    assert work["work_style"] == "Hybrid"
+    assert work["notes"] == "Side project"
+
+    # Family is restored, Pets is skipped.
+    assert "Family" in out["restored"]
+    assert "Work" in out["restored"]
+    assert "Pets" in out["skipped"]
+
+
+def test_js_tech_migration_shim_moves_pre_tech_chips(built_html, tmp_path):
+    """Pre-Tech-tab bootstraps stored gaming platforms in hobbies.interests.
+    After import, those values should move to tech.gaming so they land in the
+    right tab on hydration."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+
+    fake_boot = (
+        "1. Hobbies: Interests & hobbies: Running, PC gaming, "
+        "Hiking, Console gaming, Photography, VR gaming\n\n"
+        "2. Tech: Computer OS: macOS\n"
+    )
+
+    m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
+    js_src = m.group(1)
+    parser_chunk = re.search(
+        r"const BOOTSTRAP_TOPIC_TAGS = \{.*?function dataFromBootstrap[^\n]*\{.*?\n\}\n",
+        js_src, re.DOTALL,
+    )
+    assert parser_chunk, "import parser chunk not found"
+
+    runner_js = (
+        parser_chunk.group(0)
+        + "\nconst BOOT = " + json.dumps(fake_boot) + ";\n"
+        + "const out = dataFromBootstrap(BOOT);\n"
+        + "console.log(JSON.stringify(out.data));\n"
+    )
+    js_file = tmp_path / "shim_runner.js"
+    js_file.write_text(runner_js, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    data = json.loads(result.stdout)
+
+    hobbies = [s.strip() for s in data["hobbies"]["interests"].split(",") if s.strip()]
+    gaming = [s.strip() for s in (data["tech"].get("gaming") or "").split(",") if s.strip()]
+
+    # Non-gaming hobbies stay put
+    assert "Running" in hobbies
+    assert "Hiking" in hobbies
+    assert "Photography" in hobbies
+    # Pre-Tech gaming entries left Hobbies entirely (case-insensitive match
+    # on the source side, so lowercase variants migrate too)
+    for src in ("PC gaming", "Console gaming", "VR gaming"):
+        assert src not in hobbies, f"{src} should have left hobbies.interests"
+    # And landed in tech.gaming, with "VR gaming" relabeled to the canonical
+    # current chip name "VR / Headset gaming".
+    assert "PC gaming" in gaming
+    assert "Console gaming" in gaming
+    assert "VR / Headset gaming" in gaming
+    assert "VR gaming" not in gaming, "should be relabeled, not left as VR gaming"
+    # Existing tech.os value isn't disturbed
+    assert data["tech"]["os"] == "macOS"
 
 
 def test_zip_encoder_roundtrips(built_html, tmp_path):
