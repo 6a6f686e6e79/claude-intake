@@ -37,12 +37,14 @@ By default, files are written to `~/.claude/memory/`. Use the ⚙ Settings panel
 
 ## Standalone (no install)
 
-For non-technical users who just want to seed claude.ai memory without setting up Python, [`standalone.html`](standalone.html) is a single self-contained file that runs entirely in the browser. Two ways to use it:
+For non-technical users who want to seed claude.ai memory without setting up Python, [`standalone.html`](standalone.html) is a single self-contained file that runs entirely in the browser. Two ways to use it:
 
-- **From this repo via GitHub Pages** (no download needed once Pages is enabled on the repo): visit the Pages URL for this project and the form opens directly. `index.html` is a redirect so the bare repo Pages URL lands on `standalone.html`.
-- **Offline**: download `standalone.html`, double-click to open. Same form, works without internet.
+- **Hosted via GitHub Pages (recommended):** [https://6a6f686e6e79.github.io/claude-intake/](https://6a6f686e6e79.github.io/claude-intake/) — opens directly to the form. The bare URL lands on `standalone.html` via an `index.html` redirect at the repo root.
+- **Offline:** download `standalone.html`, double-click to open in any browser. Same form, works without internet.
 
-Fill in the tabs, click **Generate** — a memory bootstrap is copied to your clipboard, ready to paste into a claude.ai conversation.
+Fill in the tabs, click **Generate** — a memory bootstrap is copied to your clipboard, ready to paste into a claude.ai conversation. Form data auto-saves to your browser's local storage as you type, so reloading the tab or closing it and coming back later doesn't lose your progress. For durable backups, use the **Backup / Restore** panel to download a JSON file you can keep wherever you keep important files.
+
+**Why the Pages URL is preferred over `file://`**: browsers treat each `file://` path as its own origin, which makes `localStorage` behavior unreliable across sessions (and the clipboard API doesn't always work). The `https://` Pages origin gives you stable, predictable per-browser persistence and full clipboard support.
 
 The standalone is generated from the same template as the Flask version, so the fields stay in sync. To regenerate after editing the template or CSS:
 
@@ -51,6 +53,17 @@ python3 tools/build_standalone.py
 ```
 
 The Claude Code path is also supported as a secondary mode: pick the "Claude Code" target and **Generate** downloads a ZIP of `.md` files to extract into `~/.claude/memory/`.
+
+### Enabling GitHub Pages (repo owner only)
+
+To turn on the hosted Pages URL after a fresh clone or fork:
+
+1. Settings → Pages
+2. Source: **Deploy from a branch**
+3. Branch: `master`, folder: `/ (root)`
+4. Save. Pages takes a minute or two to provision.
+
+The repo must be public (or you must have GitHub Pro for private Pages). Both `index.html` and `standalone.html` are committed at the repo root, so no build step is needed on GitHub's side — Pages just serves the files as-is.
 
 ## How Claude Code uses these files
 
