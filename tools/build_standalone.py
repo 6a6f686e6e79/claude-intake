@@ -768,6 +768,7 @@ def rewrite_actions(html: str) -> str:
         '  <div class="actions">\n'
         '    <button class="btn btn-outline" onclick="previewMemories()">Preview</button>\n'
         '    <button class="btn btn-primary" onclick="submitForm()">Generate</button>\n'
+        '    <span id="saved-indicator" class="saved-indicator" aria-live="polite"></span>\n'
         '  </div>\n'
         '  <p style="text-align:right;font-size:12px;color:var(--muted);margin-top:8px">\n'
         '    Click <strong>Generate</strong> to copy a bootstrap block for claude.ai, or download '

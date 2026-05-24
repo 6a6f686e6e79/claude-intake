@@ -1241,10 +1241,19 @@
   <div class="actions">
     <button class="btn btn-outline" onclick="previewMemories()">Preview</button>
     <button class="btn btn-primary" onclick="submitForm()">Save to Memory</button>
+    <span id="saved-indicator" class="saved-indicator" aria-live="polite"></span>
   </div>
   <p style="text-align:right;font-size:12px;color:var(--muted);margin-top:8px">
     Saving adds new fields and updates existing ones. To remove a value entirely, edit the memory file directly.
   </p>
+
+  <details class="storage-panel">
+    <summary>💾 Storage</summary>
+    <p class="storage-info">
+      Form data is auto-saved to your browser's local storage (this device only — nothing is transmitted). The next time you open the standalone in this browser, your form will be pre-filled with what you had.
+    </p>
+    <button type="button" class="btn-sm" onclick="clearLocalStorage()">Clear local data</button>
+  </details>
 
   <!-- Preview section -->
   <div id="preview-section">
@@ -1317,8 +1326,9 @@ function addPriorEmployer() {
       <div class="field"><label>Years</label><input type="text" name="work.prior_employers[${idx}].years" placeholder="2015–2020 or 5 years" /></div>
       <div class="field"><label>Notes <span style="font-weight:400;opacity:0.6">(optional)</span></label><input type="text" name="work.prior_employers[${idx}].notes" placeholder="What you built, why you left…" /></div>
     </div>
-    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+    <button type="button" class="remove-btn" onclick="removeRepeatRow(this)">✕</button>`;
   group.appendChild(row);
+  scheduleSave();
 }
 
 function addChild() {
@@ -1339,8 +1349,9 @@ function addChild() {
       </div>
       <div class="field" id="child-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="family.children[${idx}].date_passed" min="1900-01" max="2099-12" /></div>
     </div>
-    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+    <button type="button" class="remove-btn" onclick="removeRepeatRow(this)">✕</button>`;
   group.appendChild(row);
+  scheduleSave();
 }
 
 function addPet() {
@@ -1391,8 +1402,9 @@ function addPet() {
       </div>
       <div class="field" id="pet-passed-${idx}" style="display:none"><label>Date passed (month/year)</label><input type="month" name="pets[${idx}].date_passed" min="1900-01" max="2099-12" /></div>
     </div>
-    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+    <button type="button" class="remove-btn" onclick="removeRepeatRow(this)">✕</button>`;
   group.appendChild(row);
+  scheduleSave();
 }
 
 const BREED_OPTIONS = {
@@ -1490,6 +1502,7 @@ function syncConditionsValue() {
   const selected = [...document.querySelectorAll('#conditions-grid .chip.selected')]
     .map(c => c.textContent.trim());
   document.getElementById('conditions-value').value = selected.join(', ');
+  scheduleSave();
 }
 
 // ── Hobby chips ─────────────────────────────────────────────────
@@ -1516,6 +1529,7 @@ function syncHobbiesValue() {
   const selected = [...document.querySelectorAll('#hobbies-grid .chip.selected')]
     .map(c => c.textContent.trim());
   document.getElementById('hobbies-value').value = selected.join(', ');
+  scheduleSave();
 }
 
 // ── Collect form data ───────────────────────────────────────────
@@ -1684,6 +1698,7 @@ function toggleChipInGrid(chip) {
   if (hiddenEl) {
     hiddenEl.value = [...grid.querySelectorAll('.chip.selected')].map(c => c.textContent.trim()).join(', ');
   }
+  scheduleSave();
 }
 
 // ── Bootstrap import (JS mirror of app.py parsers) ──────────────
@@ -1991,6 +2006,9 @@ function importBootstrap() {
   if (dataEl) dataEl.textContent = JSON.stringify(parsed.data);
   clearForm();
   if (typeof hydrateFormFromInitial === 'function') hydrateFormFromInitial();
+  // Persist the imported state so the next load doesn't drop back to
+  // whatever was in localStorage before.
+  scheduleSave();
 
   const parts = [];
   if (parsed.restored.length) parts.push(`Loaded: ${parsed.restored.join(', ')}.`);
@@ -2058,6 +2076,81 @@ document.addEventListener('DOMContentLoaded', () => {
   const preview = document.getElementById('export-prompt-preview');
   if (preview) preview.textContent = EXPORT_REQUEST_PROMPT.trim();
 });
+
+// ── localStorage persistence ────────────────────────────────────
+// Auto-saves the form state to the browser as the user types. On the
+// next page load, the saved state wins over the server-supplied
+// #initial-data so the user's in-progress work survives reloads.
+// Harmless in the Flask version: Flask hydrates from disk on the
+// server side and ships it via #initial-data, but localStorage will
+// still override with the user's latest unsaved edits — which is
+// usually what the user expects.
+const STORAGE_KEY = 'claude-intake:v1:formData';
+const SAVE_DEBOUNCE_MS = 300;
+let _saveTimer = null;
+
+function scheduleSave() {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    _saveTimer = null;
+    try {
+      const data = collectData();
+      // Drop session-only fields that shouldn't restore on next load.
+      delete data.target;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      flashSavedIndicator();
+    } catch (e) {
+      // Quota exceeded, disabled, private mode — fail silently. The
+      // form still works; persistence just won't be available.
+      console.warn('claude-intake: localStorage write failed', e);
+    }
+  }, SAVE_DEBOUNCE_MS);
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object') ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearLocalStorage() {
+  if (!confirm('Clear all locally saved form data? This wipes everything in your browser. Cannot be undone.')) return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  clearForm();
+  flashSavedIndicator('✓ Local data cleared');
+}
+
+function flashSavedIndicator(text) {
+  const el = document.getElementById('saved-indicator');
+  if (!el) return;
+  el.textContent = text || '✓ Saved locally';
+  el.classList.add('visible');
+  clearTimeout(el._fadeTimer);
+  el._fadeTimer = setTimeout(() => el.classList.remove('visible'), 1500);
+}
+
+function attachAutoSave() {
+  const form = document.getElementById('intake-form');
+  if (!form) return;
+  // The 'input' event fires on user keystrokes in text/textarea fields;
+  // 'change' fires on selects + checkboxes. Programmatic mutations from
+  // chip handlers, add-row helpers, and importBootstrap call
+  // scheduleSave() directly because those don't dispatch DOM events.
+  form.addEventListener('input', scheduleSave);
+  form.addEventListener('change', scheduleSave);
+}
+
+// Wrapper for the repeatable-row remove buttons so removal also persists.
+function removeRepeatRow(btn) {
+  const row = btn && btn.parentElement;
+  if (row) row.remove();
+  scheduleSave();
+}
 
 // ── Hydration: populate form from initial_data on page load ─────
 function hydrateFormFromInitial() {
@@ -2203,7 +2296,18 @@ function hydrateFormFromInitial() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', hydrateFormFromInitial);
+document.addEventListener('DOMContentLoaded', () => {
+  // localStorage wins over the server-supplied #initial-data when both
+  // are present — the user's most recent in-browser edits are the
+  // freshest source of truth.
+  const local = loadFromLocalStorage();
+  if (local) {
+    const dataEl = document.getElementById('initial-data');
+    if (dataEl) dataEl.textContent = JSON.stringify(local);
+  }
+  hydrateFormFromInitial();
+  attachAutoSave();
+});
 
 function addCustomChipToGrid(inputId, gridId, valueId) {
   const input = document.getElementById(inputId);
@@ -2220,6 +2324,7 @@ function addCustomChipToGrid(inputId, gridId, valueId) {
   if (hiddenEl) {
     hiddenEl.value = [...grid.querySelectorAll('.chip.selected')].map(c => c.textContent.trim()).join(', ');
   }
+  scheduleSave();
 }
 </script>
 </body>
