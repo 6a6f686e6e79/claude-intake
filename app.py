@@ -14,6 +14,12 @@ def fmt_month(value):
     except ValueError:
         return value
 
+# Bump when the form's data shape changes in a way that would break
+# old backup files (tab added/renamed, field renamed, etc.). Mirrored
+# in templates/index.html as SCHEMA_VERSION; the JS-port parity test
+# enforces they stay equal.
+SCHEMA_VERSION = "1"
+
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB
 

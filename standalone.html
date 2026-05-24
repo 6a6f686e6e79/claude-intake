@@ -491,6 +491,25 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
   <h1>Your Claude Memory Intake</h1>
   <p class="subtitle">Fill in as much or as little as you like, then click <strong>Generate</strong> to copy a memory bootstrap into claude.ai (or download <code>.md</code> files for Claude Code). Everything runs in your browser — nothing is uploaded.</p>
 
+  <!-- Backup / Restore -->
+  <details class="import-panel">
+    <summary>💾 Backup / Restore <span style="font-weight:400;color:var(--muted);font-size:13px">(download or load a JSON file with all your form data)</span></summary>
+    <p style="font-size:13px;color:var(--text);margin:12px 0">
+      The local-storage save in your browser is convenient but tied to this one browser on this one device. A downloaded backup is the durable copy — keep it in your usual place (Dropbox / iCloud Drive / Google Drive / wherever).
+    </p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button type="button" class="btn-sm" onclick="downloadBackup()">⬇ Download backup (JSON)</button>
+      <label class="btn-sm" style="display:inline-block;cursor:pointer">
+        ⬆ Restore from backup…
+        <input type="file" accept="application/json,.json" onchange="restoreBackup(event)" style="display:none" />
+      </label>
+      <span id="backup-status" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">
+      The backup file is plain JSON you can read and edit. It includes a <code>schemaVersion</code> so future versions of this tool can migrate older backups forward.
+    </p>
+  </details>
+
   <!-- Import existing bootstrap -->
   <details class="import-panel">
     <summary>📥 Import existing memory <span style="font-weight:400;color:var(--muted);font-size:13px">(pre-fill the form from your current claude.ai memory or a saved bootstrap)</span></summary>
@@ -2539,6 +2558,94 @@ document.addEventListener('DOMContentLoaded', () => {
   const preview = document.getElementById('export-prompt-preview');
   if (preview) preview.textContent = EXPORT_REQUEST_PROMPT.trim();
 });
+
+// ── Schema version ──────────────────────────────────────────────
+// Bump when the form's data shape changes in a way that would break
+// old backup files. Mirrored in app.py as SCHEMA_VERSION; the
+// JS-port parity test (test_schema_version_parity) enforces equality.
+const SCHEMA_VERSION = '1';
+
+// Migration registry. Keys are 'fromVersion-to-toVersion'; values are
+// pure (data) → data transforms. Empty in v1; the pattern exists so
+// future schema changes plug in without touching restoreBackup.
+const MIGRATIONS = {};
+
+function migrateBackup(data, fromVersion, toVersion) {
+  if (fromVersion === toVersion) return data;
+  const key = `${fromVersion}-to-${toVersion}`;
+  const transform = MIGRATIONS[key];
+  if (!transform) {
+    throw new Error(`No migration registered from ${fromVersion} to ${toVersion}`);
+  }
+  return transform(data);
+}
+
+// ── JSON backup / restore ───────────────────────────────────────
+function downloadBackup() {
+  const status = document.getElementById('backup-status');
+  try {
+    const data = collectData();
+    delete data.target;
+    const payload = {
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      data: data,
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const today = new Date().toISOString().slice(0, 10);
+    a.download = `claude-intake-backup-${today}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    if (status) status.textContent = `✓ Downloaded ${a.download}`;
+  } catch (e) {
+    if (status) status.textContent = `Download failed: ${e.message}`;
+  }
+}
+
+async function restoreBackup(event) {
+  const status = document.getElementById('backup-status');
+  const file = event.target && event.target.files && event.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    let payload;
+    try { payload = JSON.parse(text); }
+    catch (e) {
+      if (status) status.textContent = `Invalid JSON in ${file.name}`;
+      return;
+    }
+    if (!payload || typeof payload !== 'object' || !payload.schemaVersion) {
+      if (status) status.textContent = `${file.name} doesn't look like a Claude Intake backup (no schemaVersion field)`;
+      return;
+    }
+    let data = payload.data;
+    if (!data || typeof data !== 'object') {
+      if (status) status.textContent = `${file.name} is missing the data field`;
+      return;
+    }
+    try {
+      data = migrateBackup(data, payload.schemaVersion, SCHEMA_VERSION);
+    } catch (e) {
+      if (status) status.textContent = `Can't load this backup: ${e.message}`;
+      return;
+    }
+    const dataEl = document.getElementById('initial-data');
+    if (dataEl) dataEl.textContent = JSON.stringify(data);
+    clearForm();
+    hydrateFormFromInitial();
+    scheduleSave();
+    if (status) status.textContent = `✓ Restored from ${file.name}`;
+  } finally {
+    // Reset the picker so picking the same file again still fires onchange.
+    if (event.target) event.target.value = '';
+  }
+}
 
 // ── localStorage persistence ────────────────────────────────────
 // Auto-saves the form state to the browser as the user types. On the

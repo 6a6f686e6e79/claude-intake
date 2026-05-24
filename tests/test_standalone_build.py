@@ -112,6 +112,20 @@ SAMPLE = {
 }
 
 
+def test_schema_version_parity(built_html):
+    """Python SCHEMA_VERSION (app.py) and JS SCHEMA_VERSION (template)
+    must stay equal — they're the contract for backup-file compatibility.
+    If you bump one, you must bump the other in the same commit."""
+    from app import SCHEMA_VERSION as PY_VERSION
+    m = re.search(r"const SCHEMA_VERSION = '([^']+)';", built_html)
+    assert m, "SCHEMA_VERSION constant not found in built standalone JS"
+    js_version = m.group(1)
+    assert js_version == PY_VERSION, (
+        f"SCHEMA_VERSION drift: app.py={PY_VERSION!r}, JS={js_version!r}. "
+        "Bump both in the same commit."
+    )
+
+
 def test_js_port_matches_python(built_html, tmp_path):
     """Run buildMemories/buildBootstrap in node, compare to app.py output."""
     node = shutil.which("node")
