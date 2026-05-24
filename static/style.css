@@ -105,6 +105,41 @@ header {
 h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
 .subtitle { color: var(--muted); margin-bottom: 28px; }
 
+/* Coverage banner shown after a recovery-from-claude.ai import */
+.coverage-banner {
+  position: relative;
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 36px 12px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.55;
+}
+.coverage-banner .coverage-summary-headline {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.coverage-banner ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+.coverage-banner li { margin: 2px 0; }
+.coverage-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0 6px;
+  line-height: 1;
+}
+.coverage-dismiss:hover { color: var(--text); }
+
 /* "Saved locally" indicator next to the action buttons */
 .saved-indicator {
   display: inline-block;

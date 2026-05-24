@@ -112,6 +112,41 @@ header {
 h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
 .subtitle { color: var(--muted); margin-bottom: 28px; }
 
+/* Coverage banner shown after a recovery-from-claude.ai import */
+.coverage-banner {
+  position: relative;
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 36px 12px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.55;
+}
+.coverage-banner .coverage-summary-headline {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.coverage-banner ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+.coverage-banner li { margin: 2px 0; }
+.coverage-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0 6px;
+  line-height: 1;
+}
+.coverage-dismiss:hover { color: var(--text); }
+
 /* "Saved locally" indicator next to the action buttons */
 .saved-indicator {
   display: inline-block;
@@ -546,6 +581,14 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
       <strong>Notes:</strong> Pets aren't yet auto-restored — re-fill manually if your bootstrap has them. Family children and prior employers also stay manual; their flat fields (relationship status, job title, etc.) do hydrate. Chip values are matched tolerantly (case, parentheticals, hyphens) so close variations land on the right chip instead of becoming custom.
     </p>
   </details>
+
+  <!-- Coverage banner: shown after Recover-from-claude.ai import to flag
+       which expected fields didn't come through. Prevents silent loss
+       on the next re-export. -->
+  <div id="coverage-banner" class="coverage-banner" hidden>
+    <button type="button" class="coverage-dismiss" onclick="dismissCoverage()" aria-label="Dismiss">×</button>
+    <div id="coverage-summary"></div>
+  </div>
 
   <!-- Tabs -->
   <div class="tabs">
@@ -2468,6 +2511,77 @@ function clearForm() {
   });
 }
 
+// Topic display names paired with the data-section keys, used by the
+// coverage indicator to show familiar labels to users.
+const SECTION_DISPLAY = {
+  personal: 'Personal', family: 'Family', work: 'Work',
+  health: 'Health', hobbies: 'Hobbies', tech: 'Tech',
+  identity: 'Identity', goals: 'Goals', comms: 'Communication',
+};
+
+function computeImportCoverage(parsedData) {
+  // Returns { totalFilled, tabsTouched, emptyBySection: {tabName: [labels]} }.
+  // Only enumerates "empty" labels within sections that had at least one
+  // populated field — if a whole section is absent, we assume the user just
+  // doesn't have that data in claude.ai and don't dump the full schema at them.
+  let totalFilled = 0;
+  let tabsTouched = 0;
+  const emptyBySection = {};
+  for (const [slug, labelMap] of Object.entries(LABEL_TO_KEY)) {
+    const section = SLUG_TO_SECTION[slug];
+    if (!section || !parsedData[section]) continue;
+    const sectionData = parsedData[section];
+    const filledKeys = Object.keys(sectionData).filter(k => {
+      const v = sectionData[k];
+      return v !== undefined && v !== null && String(v).trim() !== '';
+    });
+    if (!filledKeys.length) continue;
+    tabsTouched += 1;
+    totalFilled += filledKeys.length;
+    const expectedKeys = Object.values(labelMap);
+    const emptyKeys = expectedKeys.filter(k => !filledKeys.includes(k));
+    if (emptyKeys.length) {
+      const keyToLabel = {};
+      for (const [label, key] of Object.entries(labelMap)) keyToLabel[key] = label;
+      emptyBySection[SECTION_DISPLAY[section] || section] = emptyKeys.map(k => keyToLabel[k]);
+    }
+  }
+  return { totalFilled, tabsTouched, emptyBySection };
+}
+
+function renderCoverageBanner(parsedData) {
+  const banner = document.getElementById('coverage-banner');
+  const body = document.getElementById('coverage-summary');
+  if (!banner || !body) return;
+  const cov = computeImportCoverage(parsedData);
+  if (!cov.tabsTouched) {
+    banner.hidden = true;
+    return;
+  }
+  const tabWord = cov.tabsTouched === 1 ? 'tab' : 'tabs';
+  const fieldWord = cov.totalFilled === 1 ? 'field' : 'fields';
+  let html = `<div class="coverage-summary-headline">Imported ${cov.totalFilled} ${fieldWord} across ${cov.tabsTouched} ${tabWord}.</div>`;
+  const emptySections = Object.keys(cov.emptyBySection);
+  if (emptySections.length) {
+    html += `<div>These fields came in empty — fill them in before re-exporting or you'll lose them:</div>`;
+    html += '<ul>';
+    for (const tabName of emptySections) {
+      const labels = cov.emptyBySection[tabName];
+      html += `<li><strong>${tabName}:</strong> ${labels.join(', ')}</li>`;
+    }
+    html += '</ul>';
+  } else {
+    html += `<div>All expected fields in the touched tabs came through.</div>`;
+  }
+  body.innerHTML = html;
+  banner.hidden = false;
+}
+
+function dismissCoverage() {
+  const banner = document.getElementById('coverage-banner');
+  if (banner) banner.hidden = true;
+}
+
 function importBootstrap() {
   const ta = document.getElementById('import-textarea');
   const status = document.getElementById('import-status');
@@ -2495,6 +2609,9 @@ function importBootstrap() {
   // Persist the imported state so the next load doesn't drop back to
   // whatever was in localStorage before.
   scheduleSave();
+  // Surface coverage so the user can see what's missing before they
+  // edit and re-export — guards against silent loss on the next round-trip.
+  renderCoverageBanner(parsed.data);
 
   const parts = [];
   if (parsed.restored.length) parts.push(`Loaded: ${parsed.restored.join(', ')}.`);
