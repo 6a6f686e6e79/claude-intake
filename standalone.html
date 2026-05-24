@@ -2585,12 +2585,13 @@ function computeImportCoverage(parsedData) {
   return { totalFilled, tabsTouched, emptyBySection };
 }
 
-function renderCoverageBanner(parsedData) {
+function renderCoverageBanner(parsedData, unmatchedSelects) {
   const banner = document.getElementById('coverage-banner');
   const body = document.getElementById('coverage-summary');
   if (!banner || !body) return;
   const cov = computeImportCoverage(parsedData);
-  if (!cov.tabsTouched) {
+  const unmatched = unmatchedSelects || [];
+  if (!cov.tabsTouched && !unmatched.length) {
     banner.hidden = true;
     return;
   }
@@ -2606,8 +2607,16 @@ function renderCoverageBanner(parsedData) {
       html += `<li><strong>${tabName}:</strong> ${labels.join(', ')}</li>`;
     }
     html += '</ul>';
-  } else {
+  } else if (cov.tabsTouched) {
     html += `<div>All expected fields in the touched tabs came through.</div>`;
+  }
+  if (unmatched.length) {
+    html += '<div style="margin-top:8px">These dropdown values didn\'t match any option — pick one manually before re-exporting:</div>';
+    html += '<ul>';
+    for (const { field, value } of unmatched) {
+      html += `<li><code>${escapeHtml(field)}</code> = ${escapeHtml(String(value))}</li>`;
+    }
+    html += '</ul>';
   }
   body.innerHTML = html;
   banner.hidden = false;
@@ -2647,7 +2656,12 @@ function importBootstrap() {
   scheduleSave();
   // Surface coverage so the user can see what's missing before they
   // edit and re-export — guards against silent loss on the next round-trip.
-  renderCoverageBanner(parsed.data);
+  // _unmatchedSelects was just populated by hydrateFormFromInitial via
+  // setVal; capture and clear so a later non-import hydration doesn't
+  // leak stale entries.
+  const unmatched = _unmatchedSelects.slice();
+  _unmatchedSelects.length = 0;
+  renderCoverageBanner(parsed.data, unmatched);
 
   const parts = [];
   if (parsed.restored.length) parts.push(`Loaded: ${parsed.restored.join(', ')}.`);
@@ -2883,8 +2897,16 @@ function removeRepeatRow(btn) {
   scheduleSave();
 }
 
+// Module-level state for the coverage indicator: select fields whose
+// incoming value didn't match any option, populated by setVal during
+// hydration and consumed by importBootstrap → renderCoverageBanner.
+// Reset at the top of every hydrateFormFromInitial call so page-load
+// hydration doesn't leak into import-flow reporting.
+let _unmatchedSelects = [];
+
 // ── Hydration: populate form from initial_data on page load ─────
 function hydrateFormFromInitial() {
+  _unmatchedSelects = [];
   const dataEl = document.getElementById('initial-data');
   if (!dataEl) return;
   let data;
@@ -2906,6 +2928,23 @@ function hydrateFormFromInitial() {
     if (el.type === 'number' && !/^-?\d+(?:\.\d+)?$/.test(String(v).trim())) {
       const m = String(v).match(/-?\d+(?:\.\d+)?/);
       if (m) v = m[0]; else return;
+    }
+    // For <select>: try value-attribute match first, then textContent
+    // fallback. Tolerant fuzzy matching is deferred (see "fix #5" in the
+    // spec). Anything that doesn't match either is left empty and recorded
+    // so renderCoverageBanner can surface it to the user — silent dropdown
+    // misses are the worst failure mode for a re-export workflow.
+    if (el.tagName === 'SELECT') {
+      const opts = Array.from(el.options);
+      const target = String(v).trim();
+      let matched = opts.find(o => o.value === target);
+      if (!matched) matched = opts.find(o => o.textContent.trim() === target);
+      if (matched) {
+        el.value = matched.value;
+      } else {
+        _unmatchedSelects.push({ field: name, value: v });
+      }
+      return;
     }
     el.value = v;
   };
