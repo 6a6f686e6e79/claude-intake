@@ -2099,7 +2099,7 @@ function importBootstrap() {
     return;
   }
   if (!parsed.restored.length && !parsed.skipped.length) {
-    if (status) status.textContent = 'No claude-intake entries found in that text.';
+    if (status) status.textContent = 'No fields recovered from that paste. Check that the response includes a fenced `claude-intake-export` block (or numbered "Topic: Label: value" lines) and try again.';
     return;
   }
 
