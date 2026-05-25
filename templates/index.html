@@ -1850,7 +1850,7 @@ const TECH_GAMING_MIGRATIONS_MAP = {
 function applyTechMigrationShim(data) {
   const raw = (data.hobbies && data.hobbies.interests) || '';
   if (!raw) return;
-  const items = raw.split(',').map(s => s.trim()).filter(Boolean);
+  const items = splitCsvRespectingParens(raw);
   const stays = [], moves = [];
   for (const item of items) {
     const mapped = TECH_GAMING_MIGRATIONS_MAP[item.toLowerCase()];
@@ -1859,7 +1859,7 @@ function applyTechMigrationShim(data) {
   if (!moves.length) return;
   data.hobbies.interests = stays.join(', ');
   if (!data.tech) data.tech = {};
-  const existing = (data.tech.gaming || '').split(',').map(s => s.trim()).filter(Boolean);
+  const existing = splitCsvRespectingParens(data.tech.gaming || '');
   // De-dupe while preserving order: existing first, then new moves.
   const seen = new Set();
   const merged = [];
@@ -1880,6 +1880,29 @@ function normalizeChipLabel(s) {
     .replace(/[-_]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// Like csv.split(',') but respects balanced parens/brackets, so a chip
+// value like "Catholic (converted 2007, formerly involved with Opus Dei)"
+// stays as one entry instead of splitting on the inner comma.
+function splitCsvRespectingParens(csv) {
+  const result = [];
+  let current = '';
+  let depth = 0;
+  for (const ch of String(csv)) {
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    if (ch === ',' && depth === 0) {
+      const t = current.trim();
+      if (t) result.push(t);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  const tail = current.trim();
+  if (tail) result.push(tail);
+  return result;
 }
 
 function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -2415,16 +2438,34 @@ function hydrateFormFromInitial() {
       const m = String(v).match(/-?\d+(?:\.\d+)?/);
       if (m) v = m[0]; else return;
     }
-    // For <select>: try value-attribute match first, then textContent
-    // fallback. Tolerant fuzzy matching is deferred (see "fix #5" in the
-    // spec). Anything that doesn't match either is left empty and recorded
-    // so renderCoverageBanner can surface it to the user — silent dropdown
-    // misses are the worst failure mode for a re-export workflow.
+    // For <select>: layered matching, exact wins.
+    //   1. exact value-attribute match
+    //   2. exact textContent match
+    //   3. normalized match (case-fold, strip parens, hyphens-to-space) —
+    //      "Central" matches option "Central (CT)"
+    //   4. first comma-chunk of input vs each option (claude.ai loves to
+    //      concatenate: "Direct but warm, diplomatic but honest" → first
+    //      chunk "Direct but warm" matches an option exactly)
+    // Anything still unmatched is recorded for renderCoverageBanner so the
+    // user sees the silent misses before re-exporting.
     if (el.tagName === 'SELECT') {
-      const opts = Array.from(el.options);
+      const opts = Array.from(el.options).filter(o => o.value);
       const target = String(v).trim();
-      let matched = opts.find(o => o.value === target);
-      if (!matched) matched = opts.find(o => o.textContent.trim() === target);
+      const tryMatch = (needle) => {
+        if (!needle) return null;
+        let m = opts.find(o => o.value === needle);
+        if (m) return m;
+        m = opts.find(o => o.textContent.trim() === needle);
+        if (m) return m;
+        const norm = normalizeChipLabel(needle);
+        if (!norm) return null;
+        return opts.find(o => normalizeChipLabel(o.textContent) === norm) || null;
+      };
+      let matched = tryMatch(target);
+      if (!matched) {
+        const firstChunk = target.split(',')[0].trim();
+        if (firstChunk && firstChunk !== target) matched = tryMatch(firstChunk);
+      }
       if (matched) {
         el.value = matched.value;
       } else {
@@ -2470,19 +2511,27 @@ function hydrateFormFromInitial() {
     const [section, key] = hiddenName.split('.');
     const csv = data[section] && data[section][key];
     if (!csv) continue;
-    const wanted = csv.split(',').map(s => s.trim()).filter(Boolean);
+    const wanted = splitCsvRespectingParens(csv);
     const grid = document.getElementById(gridId);
     if (!grid) continue;
 
     // Build two lookup maps so we can prefer exact matches but fall back to
     // tolerant ones (case-insensitive, parentheticals stripped, hyphens
-    // normalized — see normalizeChipLabel).
+    // normalized — see normalizeChipLabel). Slash-separated chip labels
+    // ("Autism / ASD", "VR / Headset gaming", "HomeKit / Apple Home") also
+    // get indexed by each side so "Autism" → "Autism / ASD" works.
     const chipByText = new Map();
     const chipByNormalized = new Map();
     grid.querySelectorAll('.chip').forEach(chip => {
       const text = chip.textContent.trim();
       chipByText.set(text, chip);
       chipByNormalized.set(normalizeChipLabel(text), chip);
+      if (text.includes('/')) {
+        for (const part of text.split('/').map(s => s.trim()).filter(Boolean)) {
+          const key = normalizeChipLabel(part);
+          if (key && !chipByNormalized.has(key)) chipByNormalized.set(key, chip);
+        }
+      }
     });
 
     const unmatched = [];
