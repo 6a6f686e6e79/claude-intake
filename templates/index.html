@@ -92,6 +92,19 @@
     <div id="coverage-summary"></div>
   </div>
 
+  <!-- Import log: per-field decision trace for the most recent import.
+       Hidden until an import populates it. Useful for debugging which
+       match path each value took (exact, normalized, slash-segment,
+       first-chunk, unmatched, custom-chip). -->
+  <details id="import-log-panel" class="import-log-panel" hidden>
+    <summary>🔍 Import log <span style="font-weight:400;color:var(--muted);font-size:13px">(per-field decision trace from the last import)</span></summary>
+    <div style="display:flex;gap:10px;margin:10px 0;align-items:center;flex-wrap:wrap">
+      <button type="button" class="btn-sm" onclick="downloadImportLog()">⬇ Download log (JSON)</button>
+      <span id="import-log-count" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+    <div id="import-log-body"></div>
+  </details>
+
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('personal', this)">Personal</button>
@@ -2136,6 +2149,65 @@ function dismissCoverage() {
   if (banner) banner.hidden = true;
 }
 
+function renderImportLog(log) {
+  const panel = document.getElementById('import-log-panel');
+  const body = document.getElementById('import-log-body');
+  const count = document.getElementById('import-log-count');
+  if (!panel || !body) return;
+  if (!log || !log.length) {
+    panel.hidden = true;
+    return;
+  }
+  // Counts by match outcome — useful at-a-glance summary
+  const tally = {};
+  for (const e of log) tally[e.match] = (tally[e.match] || 0) + 1;
+  const tallyParts = Object.entries(tally)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => `${k}: ${n}`);
+  if (count) count.textContent = `${log.length} entries  •  ${tallyParts.join(', ')}`;
+
+  let html = '<div style="max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:6px">';
+  html += '<table class="import-log-table"><thead><tr>';
+  html += '<th>kind</th><th>target</th><th>input</th><th>output</th><th>match</th>';
+  html += '</tr></thead><tbody>';
+  for (const e of log) {
+    const target = e.field || e.grid || '';
+    const matchClass = 'import-log-match-' + String(e.match).replace(/[^a-z0-9-]/gi, '-');
+    html += '<tr>';
+    html += `<td>${escapeHtml(e.kind || '')}</td>`;
+    html += `<td>${escapeHtml(target)}</td>`;
+    html += `<td>${escapeHtml(String(e.input ?? ''))}</td>`;
+    html += `<td>${escapeHtml(String(e.output ?? ''))}</td>`;
+    html += `<td class="${matchClass}">${escapeHtml(String(e.match || ''))}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  body.innerHTML = html;
+  panel.hidden = false;
+}
+
+let _lastImportLog = [];
+
+function downloadImportLog() {
+  if (!_lastImportLog.length) return;
+  const payload = {
+    schemaVersion: SCHEMA_VERSION,
+    capturedAt: new Date().toISOString(),
+    log: _lastImportLog,
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const today = new Date().toISOString().slice(0, 10);
+  a.download = `claude-intake-import-log-${today}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 function importBootstrap() {
   const ta = document.getElementById('import-textarea');
   const status = document.getElementById('import-status');
@@ -2167,10 +2239,16 @@ function importBootstrap() {
   // edit and re-export — guards against silent loss on the next round-trip.
   // _unmatchedSelects was just populated by hydrateFormFromInitial via
   // setVal; capture and clear so a later non-import hydration doesn't
-  // leak stale entries.
+  // leak stale entries. Same for _importLog: capture it, render the
+  // per-field trace panel, also expose on window so headless drivers
+  // and console-debugging users can inspect it.
   const unmatched = _unmatchedSelects.slice();
   _unmatchedSelects.length = 0;
+  _lastImportLog = _importLog.slice();
+  _importLog.length = 0;
+  if (typeof window !== 'undefined') window._importLog = _lastImportLog;
   renderCoverageBanner(parsed.data, unmatched);
+  renderImportLog(_lastImportLog);
 
   const parts = [];
   if (parsed.restored.length) parts.push(`Loaded: ${parsed.restored.join(', ')}.`);
@@ -2413,9 +2491,21 @@ function removeRepeatRow(btn) {
 // hydration doesn't leak into import-flow reporting.
 let _unmatchedSelects = [];
 
+// Module-level import-decision trace. Each hydration call resets it,
+// then setVal and the chip loop push entries describing what landed and
+// via which match path. importBootstrap captures it after hydration and
+// hands it to renderImportLog for the user-visible panel. Also exposed
+// on window._importLog for headless debugging.
+let _importLog = [];
+
+function logImport(entry) {
+  _importLog.push(entry);
+}
+
 // ── Hydration: populate form from initial_data on page load ─────
 function hydrateFormFromInitial() {
   _unmatchedSelects = [];
+  _importLog = [];
   const dataEl = document.getElementById('initial-data');
   if (!dataEl) return;
   let data;
@@ -2425,18 +2515,27 @@ function hydrateFormFromInitial() {
   const setVal = (name, value) => {
     if (value === undefined || value === null || value === '') return;
     const el = document.querySelector(`[name="${name}"]`);
-    if (!el) return;
+    if (!el) {
+      logImport({ kind: 'field', field: name, input: value, output: null, match: 'no-element' });
+      return;
+    }
     let v = value;
+    let datePadded = false, numberExtracted = false;
     // Date inputs require YYYY-MM-DD. Tolerate YYYY-MM by defaulting to day 01.
     if (el.type === 'date' && /^\d{4}-\d{2}$/.test(v)) {
       v = v + '-01';
+      datePadded = true;
     }
     // Number inputs silently reject non-numeric values. Extract the leading
     // number so things like "20+" or "around 8" land on the closest integer
     // instead of vanishing.
     if (el.type === 'number' && !/^-?\d+(?:\.\d+)?$/.test(String(v).trim())) {
       const m = String(v).match(/-?\d+(?:\.\d+)?/);
-      if (m) v = m[0]; else return;
+      if (m) { v = m[0]; numberExtracted = true; }
+      else {
+        logImport({ kind: 'number', field: name, input: value, output: null, match: 'unmatched' });
+        return;
+      }
     }
     // For <select>: layered matching, exact wins.
     //   1. exact value-attribute match
@@ -2451,29 +2550,36 @@ function hydrateFormFromInitial() {
     if (el.tagName === 'SELECT') {
       const opts = Array.from(el.options).filter(o => o.value);
       const target = String(v).trim();
-      const tryMatch = (needle) => {
+      let matchPath = null, matched = null;
+      const tryMatch = (needle, prefix) => {
         if (!needle) return null;
         let m = opts.find(o => o.value === needle);
-        if (m) return m;
+        if (m) { matchPath = prefix + 'exact-value'; return m; }
         m = opts.find(o => o.textContent.trim() === needle);
-        if (m) return m;
+        if (m) { matchPath = prefix + 'exact-text'; return m; }
         const norm = normalizeChipLabel(needle);
         if (!norm) return null;
-        return opts.find(o => normalizeChipLabel(o.textContent) === norm) || null;
+        m = opts.find(o => normalizeChipLabel(o.textContent) === norm) || null;
+        if (m) matchPath = prefix + 'normalized';
+        return m;
       };
-      let matched = tryMatch(target);
+      matched = tryMatch(target, '');
       if (!matched) {
         const firstChunk = target.split(',')[0].trim();
-        if (firstChunk && firstChunk !== target) matched = tryMatch(firstChunk);
+        if (firstChunk && firstChunk !== target) matched = tryMatch(firstChunk, 'first-chunk/');
       }
       if (matched) {
         el.value = matched.value;
+        logImport({ kind: 'select', field: name, input: value, output: matched.value, match: matchPath });
       } else {
         _unmatchedSelects.push({ field: name, value: v });
+        logImport({ kind: 'select', field: name, input: value, output: null, match: 'unmatched' });
       }
       return;
     }
     el.value = v;
+    const path = datePadded ? 'date-padded' : numberExtracted ? 'number-extracted' : 'set';
+    logImport({ kind: el.tagName === 'TEXTAREA' ? 'textarea' : 'field', field: name, input: value, output: v, match: path });
   };
 
   // Plain field sections
@@ -2537,9 +2643,19 @@ function hydrateFormFromInitial() {
     const unmatched = [];
     for (const want of wanted) {
       let chip = chipByText.get(want);
-      if (!chip) chip = chipByNormalized.get(normalizeChipLabel(want));
+      let matchPath = 'exact-text';
+      if (!chip) {
+        chip = chipByNormalized.get(normalizeChipLabel(want));
+        if (chip) {
+          // Tell apart full-text-normalized match from slash-segment match
+          // by checking whether the chip's full text (normalized) equals want's.
+          const fullNorm = normalizeChipLabel(chip.textContent.trim());
+          matchPath = fullNorm === normalizeChipLabel(want) ? 'normalized' : 'slash-segment';
+        }
+      }
       if (chip) {
         chip.classList.add('selected');
+        logImport({ kind: 'chip', grid: gridId, input: want, output: chip.textContent.trim(), match: matchPath });
       } else {
         unmatched.push(want);
       }
@@ -2551,6 +2667,7 @@ function hydrateFormFromInitial() {
       chip.textContent = custom;
       chip.onclick = () => toggleChipInGrid(chip);
       grid.appendChild(chip);
+      logImport({ kind: 'chip', grid: gridId, input: custom, output: custom, match: 'custom-chip' });
     });
     const hiddenEl = document.getElementById(gridId.replace('-grid', '-value'));
     if (hiddenEl) {

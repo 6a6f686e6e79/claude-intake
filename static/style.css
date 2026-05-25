@@ -118,6 +118,63 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
   line-height: 1.5;
 }
 
+/* Import-decision log: shown after Recover-from-claude.ai populates the form */
+.import-log-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+.import-log-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  list-style: none;
+  user-select: none;
+}
+.import-log-panel summary::-webkit-details-marker { display: none; }
+.import-log-panel summary::before {
+  content: '▸ ';
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+.import-log-panel[open] summary::before { transform: rotate(90deg); }
+.import-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.import-log-table th,
+.import-log-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
+}
+.import-log-table th {
+  background: var(--bg);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+.import-log-table tbody tr:hover { background: var(--accent-light); }
+.import-log-match-exact-text,
+.import-log-match-exact-value,
+.import-log-match-set,
+.import-log-match-date-padded,
+.import-log-match-number-extracted { color: #047857; }
+.import-log-match-normalized,
+.import-log-match-slash-segment,
+.import-log-match-first-chunk\/exact-value,
+.import-log-match-first-chunk\/exact-text,
+.import-log-match-first-chunk\/normalized { color: #b45309; }
+.import-log-match-unmatched,
+.import-log-match-custom-chip,
+.import-log-match-no-element { color: #b91c1c; font-weight: 600; }
+
 /* Coverage banner shown after a recovery-from-claude.ai import */
 .coverage-banner {
   position: relative;
