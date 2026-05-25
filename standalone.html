@@ -112,6 +112,35 @@ header {
 h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
 .subtitle { color: var(--muted); margin-bottom: 28px; }
 
+/* Profile completion meter above the tabs.
+   Donut chart in inline SVG + per-tab text breakdown. Updated on each
+   save and on hydration. Always visible (unlike the import banners). */
+.completion-meter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.completion-meter:empty { display: none; }
+.completion-meter svg { flex-shrink: 0; display: block; }
+.completion-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  line-height: 1.3;
+}
+.completion-detail {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
 /* Privacy reassurance shown at the top of the standalone build only.
    Injected by tools/build_standalone.py; not used in the Flask build. */
 .privacy-banner {
@@ -654,6 +683,11 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
       <strong>Notes:</strong> Pets aren't yet auto-restored — re-fill manually if your bootstrap has them. Family children and prior employers also stay manual; their flat fields (relationship status, job title, etc.) do hydrate. Chip values are matched tolerantly (case, parentheticals, hyphens) so close variations land on the right chip instead of becoming custom.
     </p>
   </details>
+
+  <!-- Profile completion meter: persistent indicator above the tabs.
+       Updated on every save (debounced with localStorage write) and on
+       initial hydration. Donut shows overall %, text breaks down by tab. -->
+  <div id="completion-meter" class="completion-meter"></div>
 
   <!-- Coverage banner: shown after Recover-from-claude.ai import to flag
        which expected fields didn't come through. Prevents silent loss
@@ -2956,6 +2990,7 @@ function importBootstrap() {
   if (typeof window !== 'undefined') window._importLog = _lastImportLog;
   renderCoverageBanner(parsed.data, unmatched);
   renderImportLog(_lastImportLog);
+  try { renderCompletionMeter(); } catch (e) {}
 
   const parts = [];
   if (parsed.restored.length) parts.push(`Loaded: ${parsed.restored.join(', ')}.`);
@@ -3192,6 +3227,114 @@ async function restoreBackup(event) {
   }
 }
 
+// ── Profile completion meter ────────────────────────────────────
+// Per-tab capacity: each flat field counts as 1 slot, each
+// repeatable row-group counts as 1 slot (filled if it has any rows).
+// Pets is its own top-level array; freeform is its own slot. Total
+// capacity is ~63 slots; overall % is filled / capacity.
+const COMPLETION_TABS = [
+  { name: 'Personal', section: 'personal',
+    fields: ['name','preferred_name','birthday','city','state','country','timezone'] },
+  { name: 'Family', section: 'family',
+    fields: ['relationship_status','partner_name','partner_birthday',
+             'former_partner','siblings','parents','other'],
+    rowKey: 'children' },
+  { name: 'Work', section: 'work',
+    fields: ['title','company','industry','years_exp','work_style','notes',
+             'military_highlights'],
+    rowKey: 'prior_employers' },
+  { name: 'Health', section: 'health',
+    fields: ['dietary','allergies','conditions','exercise','notes'] },
+  { name: 'Hobbies', section: 'hobbies',
+    fields: ['interests','other'] },
+  { name: 'Tech', section: 'tech',
+    fields: ['os','os_details','shell','editor','phone','smart_home','gaming','notes'] },
+  { name: 'Identity', section: 'identity',
+    fields: ['ideology','political','leaning','sexuality','gender','religion','causes','notes'] },
+  { name: 'Goals', section: 'goals',
+    fields: ['current_projects','short_term','long_term','learning'] },
+  { name: 'Comms', section: 'comms',
+    fields: ['tone','length','formatting','feedback','humor','personality_vibes',
+             'working_style','when_stuck','never_do','always_do','other'] },
+];
+
+function computeCompletion() {
+  let data;
+  try { data = collectData(); } catch (e) { return null; }
+  const perTab = [];
+  let totalFilled = 0, totalCapacity = 0;
+
+  for (const tab of COMPLETION_TABS) {
+    const sec = data[tab.section] || {};
+    let filled = 0, capacity = 0;
+    for (const f of tab.fields) {
+      capacity++;
+      if (sec[f] && String(sec[f]).trim()) filled++;
+    }
+    if (tab.rowKey) {
+      capacity++;
+      if (Array.isArray(sec[tab.rowKey]) && sec[tab.rowKey].length) filled++;
+    }
+    perTab.push({ name: tab.name, filled, capacity });
+    totalFilled += filled;
+    totalCapacity += capacity;
+  }
+
+  // Pets: top-level array, 1 slot
+  const petsFilled = Array.isArray(data.pets) && data.pets.length ? 1 : 0;
+  perTab.push({ name: 'Pets', filled: petsFilled, capacity: 1 });
+  totalFilled += petsFilled;
+  totalCapacity += 1;
+
+  // Freeform: top-level textarea, 1 slot
+  totalCapacity += 1;
+  if (data.freeform && String(data.freeform).trim()) totalFilled += 1;
+
+  const tabsTouched = perTab.filter(t => t.filled > 0).length;
+  const sparseTabs = perTab.filter(t => t.filled === 0).map(t => t.name);
+  return {
+    totalFilled,
+    totalCapacity,
+    overallPct: totalCapacity ? totalFilled / totalCapacity : 0,
+    perTab,
+    tabsTouched,
+    sparseTabs,
+  };
+}
+
+function renderCompletionMeter() {
+  const meter = document.getElementById('completion-meter');
+  if (!meter) return;
+  const cov = computeCompletion();
+  if (!cov) return;
+  const pct = Math.round(cov.overallPct * 100);
+  const size = 48, stroke = 6;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - cov.overallPct);
+
+  const detail = cov.sparseTabs.length
+    ? `${cov.totalFilled}/${cov.totalCapacity} fields · ${cov.tabsTouched} of ${cov.perTab.length} tabs touched · empty: ${cov.sparseTabs.join(', ')}`
+    : `${cov.totalFilled}/${cov.totalCapacity} fields · all ${cov.perTab.length} tabs touched`;
+
+  meter.innerHTML =
+    `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-label="${pct}% complete">` +
+      `<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" ` +
+              `stroke="var(--border)" stroke-width="${stroke}"/>` +
+      `<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" ` +
+              `stroke="var(--accent)" stroke-width="${stroke}" ` +
+              `stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" ` +
+              `transform="rotate(-90 ${size/2} ${size/2})" ` +
+              `style="transition: stroke-dashoffset 300ms ease"/>` +
+      `<text x="50%" y="50%" text-anchor="middle" dy=".35em" ` +
+            `font-size="12" font-weight="600" fill="var(--text)">${pct}%</text>` +
+    `</svg>` +
+    `<div class="completion-text">` +
+      `<strong>Profile ${pct}% complete</strong>` +
+      `<div class="completion-detail">${escapeHtml(detail)}</div>` +
+    `</div>`;
+}
+
 // ── Timezone autodetect + IANA mapping ─────────────────────────
 // The personal.timezone <select> uses display-name options like
 // "Central (CT)", but the browser's Intl API and claude.ai's prose
@@ -3294,6 +3437,8 @@ function scheduleSave() {
       // form still works; persistence just won't be available.
       console.warn('claude-intake: localStorage write failed', e);
     }
+    // Recompute completion meter on every save tick (debounced 300ms).
+    try { renderCompletionMeter(); } catch (e) {}
   }, SAVE_DEBOUNCE_MS);
 }
 
@@ -3313,6 +3458,7 @@ function clearLocalStorage() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
   clearForm();
   flashSavedIndicator('✓ Local data cleared');
+  try { renderCompletionMeter(); } catch (e) {}
 }
 
 function flashSavedIndicator(text) {
@@ -3611,6 +3757,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // values always win — this only fires on a truly blank field.
   maybeAutoFillTimezone();
   attachAutoSave();
+  // Initial render of the completion meter so it reflects what got
+  // hydrated. Subsequent updates piggyback on scheduleSave's debounce.
+  renderCompletionMeter();
 });
 
 function addCustomChipToGrid(inputId, gridId, valueId) {
