@@ -324,6 +324,69 @@ def test_js_dataFromBootstrap_routes_notes_to_freeform(built_html, tmp_path):
     assert "Notes" in out["restored"]
 
 
+def test_js_dataFromBootstrap_accepts_json_input(built_html, tmp_path):
+    """dataFromBootstrap should parse a JSON payload as well as the text
+    bootstrap format. JSON is what claude.ai produces under the new prompt
+    and what the standalone's own Backup file uses, so both round-trips
+    flow through the same parser entry point."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+
+    fenced = (
+        "```claude-intake-export\n"
+        "{\n"
+        '  "schemaVersion": "1",\n'
+        '  "data": {\n'
+        '    "personal": {"name": "Riley Quinn", "city": "Boulder"},\n'
+        '    "tech": {"os": ["macOS", "Linux"], "shell": ["zsh"], '
+        '"editor": ["VS Code", "Neovim"]},\n'
+        '    "identity": {"religion": '
+        '["Catholic (converted 2007, formerly involved with Opus Dei)"]},\n'
+        '    "freeform": "Some overflow content."\n'
+        "  }\n"
+        "}\n"
+        "```"
+    )
+
+    m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
+    js_src = m.group(1)
+    parser_chunk = re.search(
+        r"const BOOTSTRAP_TOPIC_TAGS = \{.*?function dataFromJsonPayload[^\n]*\{.*?\n\}\n",
+        js_src, re.DOTALL,
+    )
+    assert parser_chunk, "JSON-aware parser chunk not found"
+
+    runner_js = (
+        parser_chunk.group(0)
+        + "\nconst BOOT = " + json.dumps(fenced) + ";\n"
+        + "const out = dataFromBootstrap(BOOT);\n"
+        + "console.log(JSON.stringify(out));\n"
+    )
+    js_file = tmp_path / "json_runner.js"
+    js_file.write_text(runner_js, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    out = json.loads(result.stdout)
+
+    # Personal text fields: string → set verbatim
+    assert out["data"]["personal"]["name"] == "Riley Quinn"
+    assert out["data"]["personal"]["city"] == "Boulder"
+    # Multi-value arrays: joined as ", " CSV for chip-grid hydration
+    assert out["data"]["tech"]["os"] == "macOS, Linux"
+    assert out["data"]["tech"]["shell"] == "zsh"
+    assert out["data"]["tech"]["editor"] == "VS Code, Neovim"
+    # Crucial: the comma inside the religion parenthetical does NOT split
+    # because JSON is structured. This was the bug the text parser needed
+    # a parens-aware splitter to work around.
+    assert (out["data"]["identity"]["religion"]
+            == "Catholic (converted 2007, formerly involved with Opus Dei)")
+    # Top-level freeform string lands in data.freeform
+    assert out["data"]["freeform"] == "Some overflow content."
+    # restored list uses the display names
+    assert set(out["restored"]) >= {"Personal", "Tech", "Identity", "Notes"}
+
+
 def test_js_parser_strips_sentinel_lines(built_html, tmp_path):
     """JS parseBootstrapFile should produce the same parsed sections from
     sentinel-wrapped input as it does from bare input. Locks in the JS
