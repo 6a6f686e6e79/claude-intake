@@ -100,6 +100,7 @@
     <summary>🔍 Import log <span style="font-weight:400;color:var(--muted);font-size:13px">(per-field decision trace from the last import)</span></summary>
     <div style="display:flex;gap:10px;margin:10px 0;align-items:center;flex-wrap:wrap">
       <button type="button" class="btn-sm" onclick="downloadImportLog()">⬇ Download log (JSON)</button>
+      <button type="button" class="btn-sm" onclick="copyImportLog()">📋 Copy log to clipboard</button>
       <span id="import-log-count" style="font-size:13px;color:var(--muted)"></span>
     </div>
     <div id="import-log-body"></div>
@@ -2268,14 +2269,17 @@ function renderImportLog(log) {
 
 let _lastImportLog = [];
 
-function downloadImportLog() {
-  if (!_lastImportLog.length) return;
-  const payload = {
+function _buildImportLogPayload() {
+  return {
     schemaVersion: SCHEMA_VERSION,
     capturedAt: new Date().toISOString(),
     log: _lastImportLog,
   };
-  const json = JSON.stringify(payload, null, 2);
+}
+
+function downloadImportLog() {
+  if (!_lastImportLog.length) return;
+  const json = JSON.stringify(_buildImportLogPayload(), null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2286,6 +2290,21 @@ function downloadImportLog() {
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+async function copyImportLog() {
+  const countEl = document.getElementById('import-log-count');
+  if (!_lastImportLog.length) {
+    if (countEl) countEl.textContent = 'No log to copy yet — run an import first.';
+    return;
+  }
+  const json = JSON.stringify(_buildImportLogPayload(), null, 2);
+  try {
+    await navigator.clipboard.writeText(json);
+    if (countEl) countEl.textContent = `✓ Log copied to clipboard (${_lastImportLog.length} entries, ${json.length.toLocaleString()} chars)`;
+  } catch (e) {
+    if (countEl) countEl.textContent = `Copy failed (${e.message}). Use Download instead.`;
+  }
 }
 
 function importBootstrap() {
