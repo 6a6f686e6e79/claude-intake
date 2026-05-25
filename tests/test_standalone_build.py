@@ -324,6 +324,92 @@ def test_js_dataFromBootstrap_routes_notes_to_freeform(built_html, tmp_path):
     assert "Notes" in out["restored"]
 
 
+def test_js_dataFromJsonPayload_preserves_row_arrays(built_html, tmp_path):
+    """JSON imports of family.children / work.prior_employers / pets get
+    passed through to the data shape so hydrateFormFromInitial can call
+    addChild() / addPet() / addPriorEmployer() per entry. Locks in the
+    cheap path that became available once we switched to JSON output —
+    no row-format text parser needed."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+
+    fenced = (
+        "```claude-intake-export\n"
+        "{\n"
+        '  "schemaVersion": "1",\n'
+        '  "data": {\n'
+        '    "family": {\n'
+        '      "relationship_status": "Married",\n'
+        '      "children": [\n'
+        '        {"name": "Sienna", "birthday": "2017-05", "status": "Living"},\n'
+        '        {"name": "Wren", "birthday": "2020-11", "status": "Living"}\n'
+        "      ]\n"
+        "    },\n"
+        '    "work": {\n'
+        '      "title": "Engineer",\n'
+        '      "prior_employers": [\n'
+        '        {"company": "Acme", "title": "Eng", "years": "2015-2020"}\n'
+        "      ]\n"
+        "    },\n"
+        '    "pets": [\n'
+        '      {"name": "Maple", "species": "Dog", "breed": "Aussie",\n'
+        '       "birthday": "2021-04", "status": "Still with us"},\n'
+        '      {"name": "Pickle", "species": "Cat", "breed": "DSH",\n'
+        '       "birthday": "2019-09", "status": "Still with us"}\n'
+        "    ]\n"
+        "  }\n"
+        "}\n"
+        "```"
+    )
+
+    m = re.search(r"<script>\n(.*?)</script>", built_html, re.DOTALL)
+    js_src = m.group(1)
+    parser_chunk = re.search(
+        r"const BOOTSTRAP_TOPIC_TAGS = \{.*?function dataFromJsonPayload[^\n]*\{.*?\n\}\n",
+        js_src, re.DOTALL,
+    )
+    assert parser_chunk, "JSON parser chunk not found"
+
+    runner_js = (
+        parser_chunk.group(0)
+        + "\nconst BOOT = " + json.dumps(fenced) + ";\n"
+        + "const out = dataFromBootstrap(BOOT);\n"
+        + "console.log(JSON.stringify(out));\n"
+    )
+    js_file = tmp_path / "row_arrays_runner.js"
+    js_file.write_text(runner_js, encoding="utf-8")
+    result = subprocess.run([node, str(js_file)], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    out = json.loads(result.stdout)
+
+    # Family children pass through as an array on data.family.children
+    children = out["data"]["family"]["children"]
+    assert len(children) == 2
+    assert children[0]["name"] == "Sienna"
+    assert children[0]["birthday"] == "2017-05"
+    assert children[0]["status"] == "Living"
+    assert children[1]["name"] == "Wren"
+
+    # Work prior_employers pass through similarly
+    employers = out["data"]["work"]["prior_employers"]
+    assert len(employers) == 1
+    assert employers[0]["company"] == "Acme"
+    assert employers[0]["years"] == "2015-2020"
+
+    # Pets is a top-level array, not nested under data.family
+    pets = out["data"]["pets"]
+    assert len(pets) == 2
+    assert pets[0]["name"] == "Maple"
+    assert pets[0]["species"] == "Dog"
+    assert pets[1]["name"] == "Pickle"
+
+    # All three sections show up in the restored list
+    assert "Family" in out["restored"]
+    assert "Work" in out["restored"]
+    assert "Pets" in out["restored"]
+
+
 def test_js_dataFromBootstrap_accepts_json_input(built_html, tmp_path):
     """dataFromBootstrap should parse a JSON payload as well as the text
     bootstrap format. JSON is what claude.ai produces under the new prompt

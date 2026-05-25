@@ -2651,6 +2651,33 @@ function dataFromBootstrap(text) {
   return { data, restored, skipped };
 }
 
+// Sub-array keys that hold an array of row objects (family.children,
+// work.prior_employers). Each item is {name, birthday, status} or
+// {company, title, years, notes}. hydrateFormFromInitial knows how to
+// turn these into addChild()/addPriorEmployer() row instances.
+const _ROW_ARRAY_KEYS = {
+  family: 'children',
+  work: 'prior_employers',
+};
+
+function _sanitizeRowArray(arr) {
+  // Keep only object entries with at least one non-empty string field.
+  if (!Array.isArray(arr)) return [];
+  return arr.filter(item => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+    return Object.values(item).some(v =>
+      v !== null && v !== undefined && String(v).trim() !== ''
+    );
+  }).map(item => {
+    const out = {};
+    for (const [k, v] of Object.entries(item)) {
+      if (v === null || v === undefined) continue;
+      out[k] = String(v);
+    }
+    return out;
+  });
+}
+
 function dataFromJsonPayload(payload) {
   const data = emptyFormData();
   const restored = [];
@@ -2665,9 +2692,14 @@ function dataFromJsonPayload(payload) {
       }
       continue;
     }
-    // Pets stays out of import (no flat fields). Surface presence via skipped.
+    // Pets is a top-level array of row objects (no flat fields). Pass it
+    // through; hydrateFormFromInitial calls addPet() per entry.
     if (section === 'pets') {
-      if (Array.isArray(sectionData) && sectionData.length) skipped.push('Pets');
+      const pets = _sanitizeRowArray(sectionData);
+      if (pets.length) {
+        data.pets = pets;
+        restored.push('Pets');
+      }
       continue;
     }
     if (!Object.prototype.hasOwnProperty.call(data, section)) continue;
@@ -2676,10 +2708,15 @@ function dataFromJsonPayload(payload) {
     let populated = false;
     for (const [key, val] of Object.entries(sectionData)) {
       if (val === null || val === undefined) continue;
-      // Sub-arrays of objects (family.children, work.prior_employers) need
-      // the row-format handling that isn't ported to JS yet. Skip silently.
-      if ((section === 'family' && key === 'children') ||
-          (section === 'work' && key === 'prior_employers')) {
+      // Sub-array of objects (family.children, work.prior_employers):
+      // pass through to data[section][key]; hydrateFormFromInitial
+      // creates rows via addChild() / addPriorEmployer().
+      if (_ROW_ARRAY_KEYS[section] === key) {
+        const rows = _sanitizeRowArray(val);
+        if (rows.length) {
+          data[section][key] = rows;
+          populated = true;
+        }
         continue;
       }
       let stringVal;
@@ -2943,10 +2980,17 @@ const EXPORT_REQUEST_PROMPT = (
   "                      \"timezone\": <ENUM, pick one verbatim>},\n" +
   "        \"family\":    {\"relationship_status\": <ENUM, pick one verbatim>,\n" +
   "                      \"partner_name\": \"...\", \"partner_birthday\": \"...\",\n" +
-  "                      \"siblings\": \"...\", \"parents\": \"...\"},\n" +
+  "                      \"siblings\": \"...\", \"parents\": \"...\",\n" +
+  "                      \"children\": [{\"name\": \"...\", \"birthday\": \"YYYY-MM\",\n" +
+  "                                    \"status\": \"Living\" | \"Passed away\"}]},\n" +
   "        \"work\":      {\"title\": \"...\", \"company\": \"...\", \"industry\": \"...\",\n" +
   "                      \"years_exp\": \"...\",\n" +
-  "                      \"work_style\": <ENUM, pick one verbatim>},\n" +
+  "                      \"work_style\": <ENUM, pick one verbatim>,\n" +
+  "                      \"prior_employers\": [{\"company\": \"...\", \"title\": \"...\",\n" +
+  "                                            \"years\": \"...\", \"notes\": \"...\"}]},\n" +
+  "        \"pets\":      [{\"name\": \"...\", \"species\": \"Dog\" | \"Cat\" | \"...\",\n" +
+  "                       \"breed\": \"...\", \"birthday\": \"YYYY-MM\",\n" +
+  "                       \"status\": \"Still with us\" | \"Passed away\"}],\n" +
   "        \"health\":    {\"dietary\": \"...\", \"allergies\": \"...\",\n" +
   "                      \"conditions\": \"...\", \"exercise\": \"...\",\n" +
   "                      \"notes\": \"...\"},\n" +
@@ -3339,6 +3383,12 @@ function hydrateFormFromInitial() {
     if (el.type === 'date' && /^\d{4}-\d{2}$/.test(v)) {
       v = v + '-01';
       datePadded = true;
+    }
+    // <input type="month"> requires YYYY-MM. Tolerate YYYY-MM-DD by trimming
+    // the day — claude.ai often sends full dates for child/pet birthdays
+    // even when the form only stores month precision.
+    if (el.type === 'month' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      v = v.slice(0, 7);
     }
     // Number inputs silently reject non-numeric values. Extract the leading
     // number so things like "20+" or "around 8" land on the closest integer
