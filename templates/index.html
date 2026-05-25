@@ -2577,6 +2577,81 @@ async function restoreBackup(event) {
   }
 }
 
+// ── Timezone autodetect + IANA mapping ─────────────────────────
+// The personal.timezone <select> uses display-name options like
+// "Central (CT)", but the browser's Intl API and claude.ai's prose
+// both tend to return IANA names like "America/Chicago". This map
+// covers the common cases used by both. Anything not in the map
+// returns null — caller decides whether to leave empty or fall back.
+const IANA_TO_TIMEZONE_OPTION = {
+  'America/Chicago': 'Central (CT)',
+  'America/Indianapolis': 'Eastern (ET)',
+  'America/Indiana/Indianapolis': 'Eastern (ET)',
+  'America/New_York': 'Eastern (ET)',
+  'America/Detroit': 'Eastern (ET)',
+  'America/Toronto': 'Eastern (ET)',
+  'America/Denver': 'Mountain (MT)',
+  'America/Phoenix': 'Mountain (MT)',
+  'America/Boise': 'Mountain (MT)',
+  'America/Los_Angeles': 'Pacific (PT)',
+  'America/Vancouver': 'Pacific (PT)',
+  'America/Tijuana': 'Pacific (PT)',
+  'America/Anchorage': 'Alaska (AKT)',
+  'America/Juneau': 'Alaska (AKT)',
+  'America/Nome': 'Alaska (AKT)',
+  'Pacific/Honolulu': 'Hawaii (HST)',
+  'UTC': 'GMT / UTC', 'Etc/UTC': 'GMT / UTC',
+  'GMT': 'GMT / UTC', 'Etc/GMT': 'GMT / UTC',
+  'Europe/London': 'GMT / UTC',
+  'Europe/Berlin': 'CET (Central European)',
+  'Europe/Paris': 'CET (Central European)',
+  'Europe/Madrid': 'CET (Central European)',
+  'Europe/Rome': 'CET (Central European)',
+  'Europe/Amsterdam': 'CET (Central European)',
+  'Europe/Brussels': 'CET (Central European)',
+  'Europe/Vienna': 'CET (Central European)',
+  'Europe/Zurich': 'CET (Central European)',
+  'Europe/Stockholm': 'CET (Central European)',
+  'Asia/Tokyo': 'JST (Japan)',
+  'Asia/Kolkata': 'IST (India)',
+  'Asia/Calcutta': 'IST (India)',
+  'Australia/Sydney': 'AEST (Australia East)',
+  'Australia/Melbourne': 'AEST (Australia East)',
+  'Australia/Brisbane': 'AEST (Australia East)',
+};
+
+function mapTimezoneValue(v) {
+  // If v matches an IANA name we know, return the display-name option.
+  // Otherwise return v unchanged — let the regular select-matching
+  // layers (exact/normalized/first-chunk) take a shot.
+  if (typeof v !== 'string') return v;
+  return IANA_TO_TIMEZONE_OPTION[v.trim()] || v;
+}
+
+function autoDetectTimezone() {
+  try {
+    const iana = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return IANA_TO_TIMEZONE_OPTION[iana] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function maybeAutoFillTimezone() {
+  // Run after hydration. Only fills if the timezone select is empty
+  // (no value from localStorage, no value from #initial-data, no value
+  // from a recent import). User's explicit choice always wins.
+  const el = document.querySelector('[name="personal.timezone"]');
+  if (!el || el.value) return;
+  const detected = autoDetectTimezone();
+  if (!detected) return;
+  const opt = Array.from(el.options).find(o => o.value === detected);
+  if (opt) {
+    el.value = opt.value;
+    scheduleSave();
+  }
+}
+
 // ── localStorage persistence ────────────────────────────────────
 // Auto-saves the form state to the browser as the user types. On the
 // next page load, the saved state wins over the server-supplied
@@ -2717,6 +2792,10 @@ function hydrateFormFromInitial() {
     // user sees the silent misses before re-exporting.
     if (el.tagName === 'SELECT') {
       const opts = Array.from(el.options).filter(o => o.value);
+      // Translate IANA timezone names to the form's display-name options
+      // before matching, so claude.ai's "America/Chicago" lands as
+      // "Central (CT)" via exact-value rather than needing a fallback.
+      if (name === 'personal.timezone') v = mapTimezoneValue(v);
       const target = String(v).trim();
       let matchPath = null, matched = null;
       const tryMatch = (needle, prefix) => {
@@ -2906,6 +2985,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dataEl) dataEl.textContent = JSON.stringify(local);
   }
   hydrateFormFromInitial();
+  // After all hydration has settled, fill timezone from the browser's
+  // OS setting if it's still empty. Explicit user / import / localStorage
+  // values always win — this only fires on a truly blank field.
+  maybeAutoFillTimezone();
   attachAutoSave();
 });
 
