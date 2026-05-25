@@ -199,7 +199,7 @@ If you have `memory_user_edits`, use it for each entry:
 
 If you don't have the tool, walk through each entry and restate the key facts in your own words. Don't compress the list into a bulleted summary — engage with each entry's content as if these are things you're being told about the user. On claude.ai, the conversation itself is the input to the automatic memory generator, so rich engagement produces richer memories.
 
-**Priority note:** Entries are ordered by importance — communication preferences and core identity first, details last. If you are approaching the memory limit, skip from the bottom of the list, not the top.
+**Memory cap awareness:** Most memory surfaces (claude.ai included) cap stored memories around 30 entries. This bootstrap contains **{total_count} entries**{core_note}. If you're approaching the cap, skip from the bottom (extended) before the top (core) — never drop core entries.
 
 **Step 3 — When all entries are processed:**
 
@@ -210,6 +210,15 @@ If you didn't, let the user know you've read through everything and that claude.
 ---
 
 """
+
+# Sections marked CORE generate entries the receiver should never drop:
+# who the user is, how they want to be talked to, and what they value.
+# Everything else is EXTENDED and may be skipped under memory pressure.
+CORE_SLUGS = frozenset({
+    "user-communication",
+    "user-personal",
+    "user-identity",
+})
 
 
 def _topic_for(slug):
@@ -374,19 +383,40 @@ def build_bootstrap(memories):
     ordered.extend(mem_by_slug.values())
 
     entries = []
+    core_count = 0
     for mem in ordered:
+        is_core = mem["slug"] in CORE_SLUGS
         for entry in _memory_to_entries(mem):
             if len(entries) >= BOOTSTRAP_MAX_ENTRIES:
                 break
             entries.append(entry)
+            if is_core:
+                core_count += 1
         if len(entries) >= BOOTSTRAP_MAX_ENTRIES:
             break
     if not entries:
         return ""
+    total_count = len(entries)
+    if 0 < core_count < total_count:
+        core_note = f" — entries 1-{core_count} are CORE, {core_count + 1}-{total_count} are EXTENDED"
+    elif core_count == total_count:
+        core_note = " — all entries are CORE"
+    else:
+        core_note = ""
     header = BOOTSTRAP_HEADER_TEMPLATE.format(
-        timestamp=datetime.now().isoformat(timespec="seconds")
+        timestamp=datetime.now().isoformat(timespec="seconds"),
+        total_count=total_count,
+        core_note=core_note,
     )
-    numbered = "\n\n".join(f"{i + 1}. {e}" for i, e in enumerate(entries))
+    # Insert a visible divider between the last CORE entry and the first
+    # EXTENDED entry so a receiver scanning under cap pressure can see
+    # exactly where the safe cut line is.
+    numbered_lines = []
+    for i, entry in enumerate(entries):
+        numbered_lines.append(f"{i + 1}. {entry}")
+        if 0 < core_count < total_count and i + 1 == core_count:
+            numbered_lines.append("--- ↑ CORE (keep) · ↓ EXTENDED (skip from bottom if needed) ---")
+    numbered = "\n\n".join(numbered_lines)
     return header + numbered + "\n"
 
 

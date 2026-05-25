@@ -202,6 +202,10 @@ function memoryToEntries(memory) {
   return chunks.map((c, i) => `${topic} (${i + 1}/${total}): ${c}`);
 }
 
+// Sections marked CORE generate entries the receiver should never drop:
+// who the user is, how they want to be talked to, and what they value.
+const CORE_SLUGS = new Set(['user-communication', 'user-personal', 'user-identity']);
+
 function buildBootstrap(memories) {
   const memBySlug = {};
   for (const m of memories) memBySlug[m.slug] = m;
@@ -215,13 +219,24 @@ function buildBootstrap(memories) {
   for (const m of Object.values(memBySlug)) ordered.push(m);
 
   const entries = [];
+  let coreCount = 0;
   outer: for (const mem of ordered) {
+    const isCore = CORE_SLUGS.has(mem.slug);
     for (const entry of memoryToEntries(mem)) {
       if (entries.length >= BOOTSTRAP_MAX_ENTRIES) break outer;
       entries.push(entry);
+      if (isCore) coreCount++;
     }
   }
   if (!entries.length) return '';
+
+  const totalCount = entries.length;
+  let coreNote = '';
+  if (coreCount > 0 && coreCount < totalCount) {
+    coreNote = ` — entries 1-${coreCount} are CORE, ${coreCount + 1}-${totalCount} are EXTENDED`;
+  } else if (coreCount === totalCount) {
+    coreNote = ' — all entries are CORE';
+  }
 
   const ts = new Date().toISOString().slice(0, 19);
   const header = `# Claude.ai Memory Bootstrap
@@ -242,7 +257,7 @@ If you have \`memory_user_edits\`, use it for each entry:
 
 If you don't have the tool, walk through each entry and restate the key facts in your own words. Don't compress the list into a bulleted summary — engage with each entry's content as if these are things you're being told about the user. On claude.ai, the conversation itself is the input to the automatic memory generator, so rich engagement produces richer memories.
 
-**Priority note:** Entries are ordered by importance — communication preferences and core identity first, details last. If you are approaching the memory limit, skip from the bottom of the list, not the top.
+**Memory cap awareness:** Most memory surfaces (claude.ai included) cap stored memories around 30 entries. This bootstrap contains **${totalCount} entries**${coreNote}. If you're approaching the cap, skip from the bottom (extended) before the top (core) — never drop core entries.
 
 **Step 3 — When all entries are processed:**
 
@@ -253,7 +268,14 @@ If you didn't, let the user know you've read through everything and that claude.
 ---
 
 `;
-  const numbered = entries.map((e, i) => `${i + 1}. ${e}`).join('\n\n');
+  const numberedLines = [];
+  for (let i = 0; i < entries.length; i++) {
+    numberedLines.push(`${i + 1}. ${entries[i]}`);
+    if (coreCount > 0 && coreCount < totalCount && i + 1 === coreCount) {
+      numberedLines.push('--- ↑ CORE (keep) · ↓ EXTENDED (skip from bottom if needed) ---');
+    }
+  }
+  const numbered = numberedLines.join('\n\n');
   return header + numbered + '\n';
 }
 

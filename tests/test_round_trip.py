@@ -423,6 +423,28 @@ class TestBootstrap:
         assert _parse_bootstrap_file(wrapped_varied) == baseline
         assert _parse_bootstrap_file(fenced) == baseline
 
+    def test_bootstrap_surfaces_memory_cap_and_core_boundary(self):
+        """The header should communicate the entry count and CORE/EXTENDED
+        split, and a divider line should sit between the last CORE entry
+        and the first EXTENDED entry. From CAI cold-test recommendation:
+        the receiving Claude needs to know where the safe cut line is."""
+        bt = build_bootstrap(build_memories(SAMPLE))
+        # Header surfaces both pieces of information
+        assert "Memory cap awareness" in bt
+        assert "are CORE" in bt or "all entries are CORE" in bt
+        # If the sample produced any EXTENDED entries, the boundary divider
+        # must appear exactly once.
+        if "are EXTENDED" in bt:
+            divider = "--- ↑ CORE (keep) · ↓ EXTENDED (skip from bottom if needed) ---"
+            assert bt.count(divider) == 1, "CORE/EXTENDED divider must appear exactly once"
+            # The divider must come AFTER an Identity entry (last CORE section)
+            # and BEFORE a Tech entry (first EXTENDED section per BOOTSTRAP_PRIORITY).
+            divider_pos = bt.find(divider)
+            last_identity = bt.rfind("Identity", 0, divider_pos)
+            first_tech_after = bt.find("Tech", divider_pos)
+            assert last_identity != -1, "Identity (CORE) must appear before divider"
+            assert first_tech_after != -1, "Tech (EXTENDED) must appear after divider"
+
     def test_bootstrap_prompt_handles_no_tool_case(self):
         """Step 2 and Step 3 must address sessions without memory_user_edits.
 
