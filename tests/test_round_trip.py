@@ -351,6 +351,56 @@ class TestBootstrap:
         joined = " ".join(chunks)
         assert "(and the paren is balanced)" in joined
 
+    def test_chunker_prefers_sentences_over_internal_semicolons(self):
+        """Bodies with prose like "weakness A; weakness B; weakness C."
+        must not split mid-list at one of the internal semicolons —
+        regression for the cold-test identity.notes break ("...shield" /
+        "certainty sometimes..."). The whole sentence should stay in one
+        chunk when budget allows."""
+        from app import _split_body_into_chunks
+        body = (
+            "INTJ. "
+            "Core strengths: pattern recognition; depth of loyalty; self-awareness. "
+            "Core weaknesses: internal audit never stops; compartmentalization as a shield; certainty overpowering rooms. "
+            "Controls relationships deliberately."
+        )
+        budget = 180
+        chunks = _split_body_into_chunks(body, budget)
+        assert len(chunks) > 1, "test budget should have forced chunking"
+        joined = " ".join(chunks)
+        # Each "weakness/strength list" sentence must live in one chunk —
+        # not split between "...shield" and "certainty...".
+        for sentence in [
+            "Core strengths: pattern recognition; depth of loyalty; self-awareness.",
+            "Core weaknesses: internal audit never stops; compartmentalization as a shield; certainty overpowering rooms.",
+        ]:
+            assert any(sentence in c for c in chunks), (
+                f"sentence got split across chunks: {sentence!r} not whole in any chunk;\n"
+                f"chunks were: {chunks!r}"
+            )
+        assert joined.count(';') == body.count(';'), "semicolons must be preserved"
+
+    def test_chunker_preserves_semicolons_inside_parentheticals(self):
+        """A "; " inside parens is mid-paren prose, not a break point.
+        Regression for goals.long_term: "Memoir (Emily ... it; identified
+        'Angry Johnny Letters' chapter)" — must not split mid-paren."""
+        from app import _split_body_into_chunks
+        body = (
+            "Current projects: building things; shipping fast; iterating often. "
+            "Long-term goals: Memoir (Emily has advocated for it; identified 'Angry Johnny Letters' chapter as something he could actually see). "
+            "Potential side business."
+        )
+        budget = 150
+        chunks = _split_body_into_chunks(body, budget)
+        # The parenthetical must stay intact in some chunk — no chunk
+        # should start with "identified 'Angry Johnny..." (mid-paren break).
+        for chunk in chunks:
+            assert not chunk.lstrip().startswith("identified 'Angry"), (
+                f"chunk split mid-paren: {chunk!r}"
+            )
+        joined = " ".join(chunks)
+        assert "(Emily has advocated for it; identified 'Angry Johnny Letters' chapter as something he could actually see)" in joined
+
     def test_parser_handles_bare_sentinel_and_fenced_input(self):
         """Same payload, three wrappings: bare, sentinel-wrapped, fenced.
         All three should produce identical parsed output. Locks in the

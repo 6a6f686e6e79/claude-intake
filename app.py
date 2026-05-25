@@ -218,63 +218,104 @@ def _topic_for(slug):
     return BOOTSTRAP_TOPIC_TAGS.get(slug, slug.replace("user-", "").replace("-", " ").title())
 
 
+def _split_paren_aware(s, sep):
+    """Split ``s`` on ``sep`` but only when paren-depth is 0.
+
+    Used by the chunker to avoid breaking parenthetical clauses — e.g.
+    ``"Memoir (Emily has advocated for it; identified 'X' chapter)"``
+    must not split at the inner ``; `` even though it's a valid break
+    point at the top level.
+    """
+    result = []
+    current = []
+    depth = 0
+    i = 0
+    n = len(s)
+    sep_len = len(sep)
+    while i < n:
+        ch = s[i]
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth = max(0, depth - 1)
+        if depth == 0 and s[i:i + sep_len] == sep:
+            result.append("".join(current))
+            current = []
+            i += sep_len
+            continue
+        current.append(ch)
+        i += 1
+    result.append("".join(current))
+    return result
+
+
 def _split_body_into_chunks(body, budget):
     """Greedy split of body to fit ``budget`` chars per chunk.
 
     Three layered passes, each finer-grained than the last. Each layer only
     runs on chunks the previous layer left oversized:
 
-    1. ``; `` boundaries — keeps related facts together.
-    2. ``. `` sentence boundaries — keeps mid-sentence content intact
-       (was the chunker's biggest weakness; parentheticals would split
-       mid-clause and lose their closing paren).
-    3. Word boundaries — last-resort split for chunks where neither
-       semicolons nor sentence breaks are dense enough.
+    1. ``. `` sentence boundaries (paren-aware) — keeps clauses intact and
+       avoids the failure mode where ``;``-separated list items inside one
+       thought (e.g. ``"weakness A; weakness B; weakness C."``) got cut
+       mid-list by the older ``;``-first chunker.
+    2. ``; `` boundaries (paren-aware) — second-tier soft boundary, only
+       used when sentence splits alone left chunks over budget. Skips
+       semicolons inside parens (was the goals.long_term cold-test bug
+       where ``"Memoir (Emily ... it; identified ...)"`` split mid-paren).
+    3. Word boundaries — last-resort.
+
+    Known imperfection: abbreviations like ``St. Louis`` or ``U.S. Army``
+    will be mistaken for sentence boundaries and may produce a chunk that
+    starts with ``"Louis HD..."``. Visually awkward but not data-lossy.
 
     Each returned chunk is ≤ ``budget`` chars.
     """
     if len(body) <= budget:
         return [body]
 
-    # Pass 1: split on '; '
+    # Pass 1: '. ' sentence boundaries, paren-aware
+    sentences = _split_paren_aware(body, ". ")
+    pieces = (
+        [p + "." for p in sentences[:-1]] + [sentences[-1]]
+        if len(sentences) > 1
+        else sentences
+    )
     chunks = []
     current, current_len = [], 0
-    for piece in body.split("; "):
-        sep_len = 2 if current else 0
+    for piece in pieces:
+        sep_len = 1 if current else 0
         if current and current_len + sep_len + len(piece) > budget:
-            chunks.append("; ".join(current))
+            chunks.append(" ".join(current))
             current, current_len = [piece], len(piece)
         else:
             current.append(piece)
             current_len += sep_len + len(piece)
     if current:
-        chunks.append("; ".join(current))
+        chunks.append(" ".join(current))
 
-    # Pass 2: any chunk still > budget, split on '. '
-    after_sentences = []
+    # Pass 2: any chunk still > budget → split on '; ' (paren-aware)
+    after_semi = []
     for chunk in chunks:
         if len(chunk) <= budget:
-            after_sentences.append(chunk)
+            after_semi.append(chunk)
             continue
-        parts = chunk.split(". ")
-        # Reattach the period removed by split (except on the final piece
-        # which kept whatever terminal punctuation was present).
-        pieces = [p + "." for p in parts[:-1]] + [parts[-1]] if len(parts) > 1 else parts
+        parts = _split_paren_aware(chunk, "; ")
         sub, sub_len = [], 0
-        for piece in pieces:
-            sep_len = 1 if sub else 0
+        for piece in parts:
+            sep_len = 2 if sub else 0
             if sub and sub_len + sep_len + len(piece) > budget:
-                after_sentences.append(" ".join(sub))
+                after_semi.append("; ".join(sub))
                 sub, sub_len = [piece], len(piece)
             else:
                 sub.append(piece)
                 sub_len += sep_len + len(piece)
         if sub:
-            after_sentences.append(" ".join(sub))
+            after_semi.append("; ".join(sub))
 
-    # Pass 3: any chunk STILL > budget, word-split (last resort)
+    # Pass 3: word-split (last resort)
     final = []
-    for chunk in after_sentences:
+    for chunk in after_semi:
         if len(chunk) <= budget:
             final.append(chunk)
             continue

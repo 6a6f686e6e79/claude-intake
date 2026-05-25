@@ -3060,6 +3060,22 @@ function hydrateFormFromInitial() {
     const grid = document.getElementById(gridId);
     if (!grid) continue;
 
+    // Prose-guard: hobbies.interests (and similar dual-purpose fields) can
+    // carry rich semicolon-separated prose with internal commas — splitting
+    // that into chips produces garbage like "and VR gaming (WoW since...".
+    // If the source string contains "; " or any segment is suspiciously
+    // long, treat it as prose and skip chip population entirely. The text
+    // value has already been set via setVal() in the loop above.
+    const looksLikeProse = String(csv).includes('; ')
+      || wanted.some(w => w.length > 60);
+    if (looksLikeProse) {
+      const preview = String(csv).length > 80
+        ? String(csv).slice(0, 80) + '…'
+        : String(csv);
+      logImport({ kind: 'chip-skipped', grid: gridId, input: preview, output: '(populated text field only)', match: 'prose-detected' });
+      continue;
+    }
+
     // Build two lookup maps so we can prefer exact matches but fall back to
     // tolerant ones (case-insensitive, parentheticals stripped, hyphens
     // normalized — see normalizeChipLabel). Slash-separated chip labels

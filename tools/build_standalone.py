@@ -94,20 +94,50 @@ function topicFor(slug) {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function splitParenAware(s, sep) {
+  // Split s on sep but only when paren-depth is 0. Used by the chunker
+  // to avoid breaking parenthetical clauses (e.g. "(Emily ... it; X)").
+  const result = [];
+  let current = '';
+  let depth = 0;
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    if (depth === 0 && s.substr(i, sep.length) === sep) {
+      result.push(current);
+      current = '';
+      i += sep.length;
+      continue;
+    }
+    current += ch;
+    i++;
+  }
+  result.push(current);
+  return result;
+}
+
 function splitBodyIntoChunks(body, budget) {
   // Three layered passes (mirror of app.py::_split_body_into_chunks):
-  //   1. "; " boundaries (keeps related facts together)
-  //   2. ". " sentence boundaries (keeps mid-sentence content intact)
+  //   1. ". " sentence boundaries, paren-aware (keeps clauses intact)
+  //   2. "; " boundaries, paren-aware (only for chunks still over budget)
   //   3. word boundaries (last-resort)
+  // Known imperfection: abbreviations like "St. Louis" can be misread as
+  // sentence boundaries — visually awkward, not data-lossy.
   if (body.length <= budget) return [body];
 
-  // Pass 1: "; "
+  // Pass 1: ". " sentence boundaries, paren-aware
+  const sentences = splitParenAware(body, '. ');
+  const pieces = sentences.length > 1
+    ? sentences.slice(0, -1).map(p => p + '.').concat([sentences[sentences.length - 1]])
+    : sentences;
   const chunks = [];
   let current = [], currentLen = 0;
-  for (const piece of body.split('; ')) {
-    const sepLen = current.length ? 2 : 0;
+  for (const piece of pieces) {
+    const sepLen = current.length ? 1 : 0;
     if (current.length && currentLen + sepLen + piece.length > budget) {
-      chunks.push(current.join('; '));
+      chunks.push(current.join(' '));
       current = [piece];
       currentLen = piece.length;
     } else {
@@ -115,21 +145,18 @@ function splitBodyIntoChunks(body, budget) {
       currentLen += sepLen + piece.length;
     }
   }
-  if (current.length) chunks.push(current.join('; '));
+  if (current.length) chunks.push(current.join(' '));
 
-  // Pass 2: ". " sentence boundaries
-  const afterSentences = [];
+  // Pass 2: "; " boundaries, paren-aware
+  const afterSemi = [];
   for (const chunk of chunks) {
-    if (chunk.length <= budget) { afterSentences.push(chunk); continue; }
-    const parts = chunk.split('. ');
-    const pieces = parts.length > 1
-      ? parts.slice(0, -1).map(p => p + '.').concat([parts[parts.length - 1]])
-      : parts;
+    if (chunk.length <= budget) { afterSemi.push(chunk); continue; }
+    const parts = splitParenAware(chunk, '; ');
     let sub = [], subLen = 0;
-    for (const piece of pieces) {
-      const sepLen = sub.length ? 1 : 0;
+    for (const piece of parts) {
+      const sepLen = sub.length ? 2 : 0;
       if (sub.length && subLen + sepLen + piece.length > budget) {
-        afterSentences.push(sub.join(' '));
+        afterSemi.push(sub.join('; '));
         sub = [piece];
         subLen = piece.length;
       } else {
@@ -137,12 +164,12 @@ function splitBodyIntoChunks(body, budget) {
         subLen += sepLen + piece.length;
       }
     }
-    if (sub.length) afterSentences.push(sub.join(' '));
+    if (sub.length) afterSemi.push(sub.join('; '));
   }
 
   // Pass 3: word boundaries (last resort)
   const final = [];
-  for (const chunk of afterSentences) {
+  for (const chunk of afterSemi) {
     if (chunk.length <= budget) { final.push(chunk); continue; }
     let sub = [], subLen = 0;
     for (const word of chunk.split(/\s+/)) {

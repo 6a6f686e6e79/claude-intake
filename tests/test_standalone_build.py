@@ -574,6 +574,23 @@ def test_js_tech_migration_shim_moves_pre_tech_chips(built_html, tmp_path):
     assert data["tech"]["os"] == "macOS"
 
 
+def test_chip_population_has_prose_guard(built_html):
+    """Hobbies.interests and similar dual-purpose fields can carry rich
+    prose with internal semicolons and commas. Importing that into chips
+    produces garbage fragments ("and VR gaming (WoW since...", etc.).
+    The chip-grid population loop must detect prose and skip it.
+    Regression for the cold-test hobbies-grid pollution."""
+    # Look for both the structural marker (the heuristic name) and the
+    # logImport call with the prose-detected match path so we know the
+    # skip-and-log behavior is wired.
+    assert 'looksLikeProse' in built_html, \
+        "prose-guard heuristic missing from chip-population code"
+    assert "match: 'prose-detected'" in built_html, \
+        "prose-detected import-log marker missing"
+    assert "kind: 'chip-skipped'" in built_html, \
+        "chip-skipped log kind missing"
+
+
 def test_zip_encoder_roundtrips(built_html, tmp_path):
     """Build a zip in JS, write it to disk, unzip with the system unzip,
     confirm the contents survive."""
