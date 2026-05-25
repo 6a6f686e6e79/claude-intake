@@ -2939,13 +2939,14 @@ const EXPORT_REQUEST_PROMPT = (
   "      \"data\": {\n" +
   "        \"personal\":  {\"name\": \"...\", \"preferred_name\": \"...\",\n" +
   "                      \"birthday\": \"YYYY-MM-DD or YYYY-MM\",\n" +
-  "                      \"city\": \"...\", \"state\": \"...\",\n" +
-  "                      \"country\": \"...\", \"timezone\": \"...\"},\n" +
-  "        \"family\":    {\"relationship_status\": \"...\", \"partner_name\": \"...\",\n" +
-  "                      \"partner_birthday\": \"...\",\n" +
+  "                      \"city\": \"...\", \"state\": \"...\", \"country\": \"...\",\n" +
+  "                      \"timezone\": <ENUM, pick one verbatim>},\n" +
+  "        \"family\":    {\"relationship_status\": <ENUM, pick one verbatim>,\n" +
+  "                      \"partner_name\": \"...\", \"partner_birthday\": \"...\",\n" +
   "                      \"siblings\": \"...\", \"parents\": \"...\"},\n" +
   "        \"work\":      {\"title\": \"...\", \"company\": \"...\", \"industry\": \"...\",\n" +
-  "                      \"years_exp\": \"...\", \"work_style\": \"...\"},\n" +
+  "                      \"years_exp\": \"...\",\n" +
+  "                      \"work_style\": <ENUM, pick one verbatim>},\n" +
   "        \"health\":    {\"dietary\": \"...\", \"allergies\": \"...\",\n" +
   "                      \"conditions\": \"...\", \"exercise\": \"...\",\n" +
   "                      \"notes\": \"...\"},\n" +
@@ -2960,13 +2961,64 @@ const EXPORT_REQUEST_PROMPT = (
   "                      \"causes\": [\"...\"], \"notes\": \"...\"},\n" +
   "        \"goals\":     {\"current_projects\": \"...\", \"short_term\": \"...\",\n" +
   "                      \"long_term\": \"...\", \"learning\": \"...\"},\n" +
-  "        \"comms\":     {\"tone\": \"...\", \"length\": \"...\",\n" +
-  "                      \"formatting\": \"...\", \"feedback\": \"...\",\n" +
-  "                      \"working_style\": \"...\", \"when_stuck\": \"...\",\n" +
-  "                      \"never_do\": \"...\", \"always_do\": \"...\"},\n" +
+  "        \"comms\":     {\"tone\":          <ENUM, pick one verbatim>,\n" +
+  "                      \"length\":        <ENUM, pick one verbatim>,\n" +
+  "                      \"formatting\":    <ENUM, pick one verbatim>,\n" +
+  "                      \"feedback\":      <ENUM, pick one verbatim>,\n" +
+  "                      \"working_style\": <ENUM, pick one verbatim>,\n" +
+  "                      \"when_stuck\":    <ENUM, pick one verbatim>,\n" +
+  "                      \"never_do\":      \"...\",\n" +
+  "                      \"always_do\":     \"...\"},\n" +
   "        \"freeform\":  \"...\"\n" +
   "      }\n" +
   "    }\n" +
+  "\n" +
+  "ENUM values — for any field marked <ENUM, pick one verbatim> above,\n" +
+  "your output must be exactly one of these strings, character-for-character.\n" +
+  "Don't paraphrase, don't combine, don't add qualifiers. If none fit, omit\n" +
+  "the field entirely. (You can always put descriptive context in the\n" +
+  "adjacent free-text field — `never_do`, `always_do`, `freeform`, or the\n" +
+  "section's `notes` — instead of cramming it into the enum.)\n" +
+  "\n" +
+  "    personal.timezone:\n" +
+  "      \"AEST (Australia East)\" | \"Alaska (AKT)\" | \"CET (Central European)\" |\n" +
+  "      \"Central (CT)\" | \"Eastern (ET)\" | \"GMT / UTC\" | \"Hawaii (HST)\" |\n" +
+  "      \"IST (India)\" | \"JST (Japan)\" | \"Mountain (MT)\" | \"Pacific (PT)\" |\n" +
+  "      \"Other\"\n" +
+  "\n" +
+  "    family.relationship_status:\n" +
+  "      \"Divorced\" | \"Domestic partnership\" | \"Engaged\" | \"In a relationship\" |\n" +
+  "      \"It's complicated\" | \"Married\" | \"Separated\" | \"Single\" | \"Widowed\"\n" +
+  "\n" +
+  "    work.work_style:\n" +
+  "      \"Freelance / Self-employed\" | \"Hybrid\" | \"In-office\" | \"Remote\" |\n" +
+  "      \"Retired\" | \"Student\"\n" +
+  "\n" +
+  "    comms.tone:\n" +
+  "      \"Direct and blunt\" | \"Direct but warm\" | \"Conversational and casual\" |\n" +
+  "      \"Formal and professional\" | \"Adapt to context\"\n" +
+  "\n" +
+  "    comms.length:\n" +
+  "      \"As concise as possible\" | \"Short unless depth is needed\" |\n" +
+  "      \"Thorough by default\" | \"Match the complexity of the question\"\n" +
+  "\n" +
+  "    comms.formatting:\n" +
+  "      \"Bullet points and headers\" | \"Minimal formatting, plain text\" |\n" +
+  "      \"No strong preference\" | \"Prose over bullet points\"\n" +
+  "\n" +
+  "    comms.feedback:\n" +
+  "      \"Diplomatic but honest\" | \"Just give me the facts\" |\n" +
+  "      \"Tell me when I'm wrong, directly\" | \"Validate first, then critique\"\n" +
+  "\n" +
+  "    comms.working_style:\n" +
+  "      \"I come in with a clear plan\" | \"I like to explore before deciding\" |\n" +
+  "      \"I prefer async / written over verbal\" |\n" +
+  "      \"I think out loud — help me structure\" |\n" +
+  "      \"I work in short focused bursts\"\n" +
+  "\n" +
+  "    comms.when_stuck:\n" +
+  "      \"Ask what I've already tried\" | \"Give me options and let me choose\" |\n" +
+  "      \"Just solve it\" | \"Walk me through it step by step\"\n" +
   "\n" +
   "Output a single fenced code block labeled `claude-intake-export`\n" +
   "containing only the JSON. No commentary outside the fence.\n" +
@@ -3254,6 +3306,16 @@ function hydrateFormFromInitial() {
       if (!matched) {
         const firstChunk = target.split(',')[0].trim();
         if (firstChunk && firstChunk !== target) matched = tryMatch(firstChunk, 'first-chunk/');
+      }
+      if (!matched) {
+        // Period-split fallback. claude.ai often writes select values as
+        // sentence-separated descriptions ("Direct but warm. Diplomatic
+        // but honest.") — the first period-chunk frequently matches an
+        // option exactly. Same shape as first-chunk but split on `. `.
+        const firstSentence = target.split(/\.\s/)[0].replace(/\.$/, '').trim();
+        if (firstSentence && firstSentence !== target) {
+          matched = tryMatch(firstSentence, 'first-sentence/');
+        }
       }
       if (matched) {
         el.value = matched.value;
