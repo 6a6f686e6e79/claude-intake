@@ -3063,11 +3063,15 @@ function hydrateFormFromInitial() {
     // Prose-guard: hobbies.interests (and similar dual-purpose fields) can
     // carry rich semicolon-separated prose with internal commas — splitting
     // that into chips produces garbage like "and VR gaming (WoW since...".
-    // If the source string contains "; " or any segment is suspiciously
-    // long, treat it as prose and skip chip population entirely. The text
-    // value has already been set via setVal() in the loop above.
-    const looksLikeProse = String(csv).includes('; ')
-      || wanted.some(w => w.length > 60);
+    // Two trip conditions, deliberately conservative:
+    //   (a) multiple comma-segments AND at least one is long → prose
+    //   (b) a single segment over 120 chars → also prose
+    // Single-segment value with an internal "; " inside parens (e.g.
+    // "Far-left (evolved from ...; core values: liberty and equality)") is
+    // ONE chip choice, not prose — must NOT trip. Earlier heuristic tripped
+    // on bare "; " presence and emptied the leaning chip on round-trip.
+    const looksLikeProse = (wanted.length > 1 && wanted.some(w => w.length > 60))
+      || wanted.some(w => w.length > 120);
     if (looksLikeProse) {
       const preview = String(csv).length > 80
         ? String(csv).slice(0, 80) + '…'
