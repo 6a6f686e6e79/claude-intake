@@ -134,7 +134,6 @@
         <h2><span class="icon">👤</span> Personal Info</h2>
         <div class="grid-2">
           <div class="field"><label>Full name</label><input type="text" name="personal.name" placeholder="Jane Doe" /></div>
-          <div class="field"><label>Preferred name / nickname <span style="font-weight:400;opacity:0.6">(what Claude should call you)</span></label><input type="text" name="personal.preferred_name" placeholder="Jane, Alex…" /></div>
           <div class="field"><label>Birthday</label><input type="date" name="personal.birthday" /></div>
           <div class="field"><label>City</label><input type="text" name="personal.city" placeholder="Denver" /></div>
           <div class="field"><label>State / Province</label><input type="text" name="personal.state" placeholder="CO" /></div>
@@ -186,7 +185,6 @@
             </select>
           </div>
           <div class="field"><label>Partner's name</label><input type="text" name="family.partner_name" placeholder="Alex" /></div>
-          <div class="field"><label>Partner's birthday</label><input type="date" name="family.partner_birthday" /></div>
         </div>
         <div class="field" style="margin-top:14px"><label>Former partner / co-parent <span style="font-weight:400;opacity:0.6">(optional — e.g., ex-spouse, co-parent of your kids)</span></label><input type="text" name="family.former_partner" placeholder="Sam (co-parent of our kids)" /></div>
       </div>
@@ -810,19 +808,7 @@
       </div>
 
       <div class="card">
-        <h2><span class="icon">⌨️</span> Shell & Editor <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
-        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Shell <span style="font-weight:400;opacity:0.6">what Claude should target for command suggestions</span></label>
-        <div class="chip-grid" id="tech-shell-grid">
-          <div class="chip" onclick="toggleChipInGrid(this)">zsh</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">bash</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">PowerShell</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">fish</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Nushell</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">cmd</div>
-        </div>
-        <input type="hidden" name="tech.shell" id="tech-shell-value" />
-
-        <label style="display:block;margin:18px 0 8px;font-size:13px;font-weight:500">Code editor / IDE</label>
+        <h2><span class="icon">⌨️</span> Code editor / IDE</h2>
         <div class="chip-grid" id="tech-editor-grid">
           <div class="chip" onclick="toggleChipInGrid(this)">VS Code</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Cursor</div>
@@ -836,16 +822,6 @@
           <div class="chip" onclick="toggleChipInGrid(this)">Notepad++</div>
         </div>
         <input type="hidden" name="tech.editor" id="tech-editor-value" />
-      </div>
-
-      <div class="card">
-        <h2><span class="icon">📱</span> Phone</h2>
-        <div class="chip-grid" id="tech-phone-grid">
-          <div class="chip" onclick="toggleChipInGrid(this)">iOS</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Android</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Other</div>
-        </div>
-        <input type="hidden" name="tech.phone" id="tech-phone-value" />
       </div>
 
       <div class="card">
@@ -895,29 +871,7 @@
       </div>
       <div class="card">
         <h2><span class="icon">🗳️</span> Politics <span style="font-size:13px;font-weight:400;color:var(--muted)">(select all that apply)</span></h2>
-        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Political Identity <span style="font-weight:400;opacity:0.6">how you identify yourself</span></label>
-        <div class="chip-grid" id="ideology-grid">
-          <div class="chip" onclick="toggleChipInGrid(this)">Anarchist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Apolitical</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Centrist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Classical Liberal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Conservative</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Democratic Socialist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Fiscal Conservative</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Liberal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Libertarian</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Nationalist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Neoconservative</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Neoliberal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Populist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Progressive</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Social Democrat</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Socialist</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Socially Liberal</div>
-          <div class="chip" onclick="toggleChipInGrid(this)">Prefer not to say</div>
-        </div>
-        <input type="hidden" name="identity.ideology" id="ideology-value" />
-        <label style="display:block;margin:16px 0 8px;font-size:13px;font-weight:500">Party / Affiliation</label>
+        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:500">Party / Affiliation</label>
         <div class="chip-grid" id="political-grid">
           <div class="chip" onclick="toggleChipInGrid(this)">Constitution Party</div>
           <div class="chip" onclick="toggleChipInGrid(this)">Democrat</div>
@@ -1150,7 +1104,6 @@
           <div class="field"><label>Short-term goals (next 3–6 months)</label><textarea name="goals.short_term" placeholder="Launch MVP, get promoted, learn Spanish…"></textarea></div>
           <div class="field"><label>Long-term goals (1–5 years)</label><textarea name="goals.long_term" placeholder="Start a company, buy a house, travel to Japan…"></textarea></div>
         </div>
-        <div class="field" style="margin-top:14px"><label>Currently learning</label><input type="text" name="goals.learning" placeholder="Python, piano, woodworking…" /></div>
       </div>
     </div>
 
@@ -1176,15 +1129,6 @@
               <option>Short unless depth is needed</option>
               <option>Thorough by default</option>
               <option>Match the complexity of the question</option>
-            </select>
-          </div>
-          <div class="field"><label>Formatting preference</label>
-            <select name="comms.formatting">
-              <option value="">Select…</option>
-              <option>Bullet points and headers</option>
-              <option>Minimal formatting, plain text</option>
-              <option>No strong preference</option>
-              <option>Prose over bullet points</option>
             </select>
           </div>
           <div class="field"><label>Feedback style</label>
@@ -1268,10 +1212,6 @@
               <option>Walk me through it step by step</option>
             </select>
           </div>
-        </div>
-        <div class="field" style="margin-top:14px">
-          <label>Anything else about how you like to collaborate</label>
-          <textarea name="comms.other" placeholder="I get frustrated when… I work best when… The thing that helps me most is…"></textarea>
         </div>
       </div>
     </div>
@@ -1374,7 +1314,7 @@ function addPriorEmployer() {
       <div class="field"><label>Company</label><input type="text" name="work.prior_employers[${idx}].company" placeholder="Acme Inc." /></div>
       <div class="field"><label>Title / role</label><input type="text" name="work.prior_employers[${idx}].title" placeholder="Senior Engineer" /></div>
       <div class="field"><label>Years</label><input type="text" name="work.prior_employers[${idx}].years" placeholder="2015–2020 or 5 years" /></div>
-      <div class="field"><label>Notes <span style="font-weight:400;opacity:0.6">(optional)</span></label><input type="text" name="work.prior_employers[${idx}].notes" placeholder="What you built, why you left…" /></div>
+      <div class="field"><label>Detail <span style="font-weight:400;opacity:0.6">(paragraph OK — the story, not just a sentence)</span></label><textarea name="work.prior_employers[${idx}].detail" placeholder="What you built, why you left, anything notable about your time there…"></textarea></div>
     </div>
     <button type="button" class="remove-btn" onclick="removeRepeatRow(this)">✕</button>`;
   group.appendChild(row);
@@ -1782,12 +1722,12 @@ const SLUG_TO_SECTION = {
 // IMPORT_SKIPPED_SLUGS.
 const LABEL_TO_KEY = {
   'user-personal': {
-    'Name': 'name', 'Preferred name': 'preferred_name', 'Birthday': 'birthday',
+    'Name': 'name', 'Birthday': 'birthday',
     'City': 'city', 'State/Province': 'state', 'Country': 'country', 'Timezone': 'timezone',
   },
   'user-family': {
     'Relationship status': 'relationship_status',
-    'Partner name': 'partner_name', 'Partner birthday': 'partner_birthday',
+    'Partner name': 'partner_name',
     'Former partner / co-parent': 'former_partner',
     'Siblings': 'siblings', 'Parents': 'parents',
     'Other family notes': 'other',
@@ -1807,27 +1747,26 @@ const LABEL_TO_KEY = {
   },
   'user-tech': {
     'Computer OS': 'os', 'Distro / other OS details': 'os_details',
-    'Shell': 'shell', 'Code editor / IDE': 'editor',
-    'Phone OS': 'phone', 'Smart home ecosystem': 'smart_home',
+    'Code editor / IDE': 'editor',
+    'Smart home ecosystem': 'smart_home',
     'Gaming platforms': 'gaming', 'Tech notes': 'notes',
   },
   'user-identity': {
-    'Political identity': 'ideology', 'Party / affiliation': 'political',
+    'Party / affiliation': 'political',
     'Political leaning': 'leaning', 'Sexuality / orientation': 'sexuality',
     'Gender identity': 'gender', 'Religion / spirituality': 'religion',
     'Causes & issues': 'causes', 'Identity notes': 'notes',
   },
   'user-goals': {
     'Current projects': 'current_projects', 'Short-term goals': 'short_term',
-    'Long-term goals': 'long_term', 'Currently learning': 'learning',
+    'Long-term goals': 'long_term',
   },
   'user-communication': {
     'Tone preference': 'tone', 'Response length': 'length',
-    'Formatting preference': 'formatting', 'Feedback style': 'feedback',
+    'Feedback style': 'feedback',
     'Humor style': 'humor', 'Personality vibes': 'personality_vibes',
     'Working style': 'working_style', 'When stuck, wants Claude to': 'when_stuck',
     'Never do': 'never_do', 'Always do': 'always_do',
-    'Collaboration notes': 'other',
   },
 };
 
@@ -2407,14 +2346,14 @@ const EXPORT_REQUEST_PROMPT = (
   "Schema (top-level keys are tabs in a form; sub-keys are field names):\n" +
   "\n" +
   "    {\n" +
-  "      \"schemaVersion\": \"1\",\n" +
+  "      \"schemaVersion\": \"2\",\n" +
   "      \"data\": {\n" +
-  "        \"personal\":  {\"name\": \"...\", \"preferred_name\": \"...\",\n" +
+  "        \"personal\":  {\"name\": \"...\",\n" +
   "                      \"birthday\": \"YYYY-MM-DD or YYYY-MM\",\n" +
   "                      \"city\": \"...\", \"state\": \"...\", \"country\": \"...\",\n" +
   "                      \"timezone\": <ENUM, pick one verbatim>},\n" +
   "        \"family\":    {\"relationship_status\": <ENUM, pick one verbatim>,\n" +
-  "                      \"partner_name\": \"...\", \"partner_birthday\": \"...\",\n" +
+  "                      \"partner_name\": \"...\",\n" +
   "                      \"siblings\": \"...\", \"parents\": \"...\",\n" +
   "                      \"children\": [{\"name\": \"...\", \"birthday\": \"YYYY-MM\",\n" +
   "                                    \"status\": \"Living\" | \"Passed away\"}]},\n" +
@@ -2422,7 +2361,7 @@ const EXPORT_REQUEST_PROMPT = (
   "                      \"years_exp\": \"...\",\n" +
   "                      \"work_style\": <ENUM, pick one verbatim>,\n" +
   "                      \"prior_employers\": [{\"company\": \"...\", \"title\": \"...\",\n" +
-  "                                            \"years\": \"...\", \"notes\": \"...\"}]},\n" +
+  "                                            \"years\": \"...\", \"detail\": \"...\"}]},\n" +
   "        \"pets\":      [{\"name\": \"...\", \"species\": \"Dog\" | \"Cat\" | \"...\",\n" +
   "                       \"breed\": \"...\", \"birthday\": \"YYYY-MM\",\n" +
   "                       \"status\": \"Still with us\" | \"Passed away\"}],\n" +
@@ -2431,18 +2370,16 @@ const EXPORT_REQUEST_PROMPT = (
   "                      \"notes\": \"...\"},\n" +
   "        \"hobbies\":   {\"interests\": \"...\", \"other\": \"...\"},\n" +
   "        \"tech\":      {\"os\": [\"...\"], \"os_details\": \"...\",\n" +
-  "                      \"shell\": [\"...\"], \"editor\": [\"...\"],\n" +
-  "                      \"phone\": [\"...\"], \"smart_home\": [\"...\"],\n" +
+  "                      \"editor\": [\"...\"], \"smart_home\": [\"...\"],\n" +
   "                      \"gaming\": [\"...\"], \"notes\": \"...\"},\n" +
-  "        \"identity\":  {\"ideology\": [\"...\"], \"political\": [\"...\"],\n" +
+  "        \"identity\":  {\"political\": [\"...\"],\n" +
   "                      \"leaning\": \"...\", \"sexuality\": [\"...\"],\n" +
   "                      \"gender\": [\"...\"], \"religion\": [\"...\"],\n" +
   "                      \"causes\": [\"...\"], \"notes\": \"...\"},\n" +
   "        \"goals\":     {\"current_projects\": \"...\", \"short_term\": \"...\",\n" +
-  "                      \"long_term\": \"...\", \"learning\": \"...\"},\n" +
+  "                      \"long_term\": \"...\"},\n" +
   "        \"comms\":     {\"tone\":          <ENUM, pick one verbatim>,\n" +
   "                      \"length\":        <ENUM, pick one verbatim>,\n" +
-  "                      \"formatting\":    <ENUM, pick one verbatim>,\n" +
   "                      \"feedback\":      <ENUM, pick one verbatim>,\n" +
   "                      \"working_style\": <ENUM, pick one verbatim>,\n" +
   "                      \"when_stuck\":    <ENUM, pick one verbatim>,\n" +
@@ -2481,10 +2418,6 @@ const EXPORT_REQUEST_PROMPT = (
   "      \"As concise as possible\" | \"Short unless depth is needed\" |\n" +
   "      \"Thorough by default\" | \"Match the complexity of the question\"\n" +
   "\n" +
-  "    comms.formatting:\n" +
-  "      \"Bullet points and headers\" | \"Minimal formatting, plain text\" |\n" +
-  "      \"No strong preference\" | \"Prose over bullet points\"\n" +
-  "\n" +
   "    comms.feedback:\n" +
   "      \"Diplomatic but honest\" | \"Just give me the facts\" |\n" +
   "      \"Tell me when I'm wrong, directly\" | \"Validate first, then critique\"\n" +
@@ -2516,7 +2449,7 @@ const EXPORT_REQUEST_PROMPT = (
   "If you have no relevant memories, return:\n" +
   "\n" +
   "    ```claude-intake-export\n" +
-  "    {\"schemaVersion\": \"1\", \"data\": {}}\n" +
+  "    {\"schemaVersion\": \"2\", \"data\": {}}\n" +
   "    ```"
 );
 
@@ -2543,12 +2476,56 @@ document.addEventListener('DOMContentLoaded', () => {
 // Bump when the form's data shape changes in a way that would break
 // old backup files. Mirrored in app.py as SCHEMA_VERSION; the
 // JS-port parity test (test_schema_version_parity) enforces equality.
-const SCHEMA_VERSION = '1';
+const SCHEMA_VERSION = '2';
 
 // Migration registry. Keys are 'fromVersion-to-toVersion'; values are
-// pure (data) → data transforms. Empty in v1; the pattern exists so
-// future schema changes plug in without touching restoreBackup.
-const MIGRATIONS = {};
+// pure (data) → data transforms. v2 schema cleanup from cold-test
+// field audit — see app.py::_migrate_1_to_2 for the rationale; this
+// is a byte-for-behavior mirror.
+const MIGRATIONS = {
+  '1-to-2': (data) => {
+    if (!data || typeof data !== 'object') return data;
+    const take = (section, key) => {
+      const s = data[section];
+      if (!s || typeof s !== 'object') return '';
+      const v = s[key];
+      delete s[key];
+      return typeof v === 'string' ? v.trim() : '';
+    };
+    const prepend = (section, key, label, value) => {
+      if (!value) return;
+      if (!data[section] || typeof data[section] !== 'object') data[section] = {};
+      const existing = (data[section][key] || '').trim();
+      const prefix = `${label}: ${value}.`;
+      data[section][key] = existing ? `${prefix} ${existing}` : prefix;
+    };
+
+    const ideology = take('identity', 'ideology');
+    if (ideology) {
+      if (!data.identity || typeof data.identity !== 'object') data.identity = {};
+      const leaning = (data.identity.leaning || '').trim();
+      data.identity.leaning = leaning ? `${leaning} · ${ideology}` : ideology;
+    }
+    prepend('tech', 'notes', 'Shell', take('tech', 'shell'));
+    prepend('tech', 'notes', 'Phone', take('tech', 'phone'));
+    prepend('comms', 'always_do', 'Formatting', take('comms', 'formatting'));
+    prepend('comms', 'always_do', 'Other', take('comms', 'other'));
+    prepend('goals', 'current_projects', 'Currently learning', take('goals', 'learning'));
+    take('personal', 'preferred_name');
+    take('family', 'partner_birthday');
+
+    if (data.work && Array.isArray(data.work.prior_employers)) {
+      for (const emp of data.work.prior_employers) {
+        if (emp && typeof emp === 'object' && 'notes' in emp) {
+          const val = emp.notes;
+          delete emp.notes;
+          if (val && !emp.detail) emp.detail = val;
+        }
+      }
+    }
+    return data;
+  },
+};
 
 function migrateBackup(data, fromVersion, toVersion) {
   if (fromVersion === toVersion) return data;
@@ -2634,9 +2611,9 @@ async function restoreBackup(event) {
 // capacity is ~63 slots; overall % is filled / capacity.
 const COMPLETION_TABS = [
   { name: 'Personal', section: 'personal',
-    fields: ['name','preferred_name','birthday','city','state','country','timezone'] },
+    fields: ['name','birthday','city','state','country','timezone'] },
   { name: 'Family', section: 'family',
-    fields: ['relationship_status','partner_name','partner_birthday',
+    fields: ['relationship_status','partner_name',
              'former_partner','siblings','parents','other'],
     rowKey: 'children' },
   { name: 'Work', section: 'work',
@@ -2648,14 +2625,14 @@ const COMPLETION_TABS = [
   { name: 'Hobbies', section: 'hobbies',
     fields: ['interests','other'] },
   { name: 'Tech', section: 'tech',
-    fields: ['os','os_details','shell','editor','phone','smart_home','gaming','notes'] },
+    fields: ['os','os_details','editor','smart_home','gaming','notes'] },
   { name: 'Identity', section: 'identity',
-    fields: ['ideology','political','leaning','sexuality','gender','religion','causes','notes'] },
+    fields: ['political','leaning','sexuality','gender','religion','causes','notes'] },
   { name: 'Goals', section: 'goals',
-    fields: ['current_projects','short_term','long_term','learning'] },
+    fields: ['current_projects','short_term','long_term'] },
   { name: 'Comms', section: 'comms',
-    fields: ['tone','length','formatting','feedback','humor','personality_vibes',
-             'working_style','when_stuck','never_do','always_do','other'] },
+    fields: ['tone','length','feedback','humor','personality_vibes',
+             'working_style','when_stuck','never_do','always_do'] },
 ];
 
 function computeCompletion() {
@@ -3037,12 +3014,9 @@ function hydrateFormFromInitial() {
     'conditions-grid':     'health.conditions',
     'hobbies-grid':        'hobbies.interests',
     'tech-os-grid':        'tech.os',
-    'tech-shell-grid':     'tech.shell',
     'tech-editor-grid':    'tech.editor',
-    'tech-phone-grid':     'tech.phone',
     'tech-smart-home-grid':'tech.smart_home',
     'tech-gaming-grid':    'tech.gaming',
-    'ideology-grid':       'identity.ideology',
     'political-grid':      'identity.political',
     'leaning-grid':        'identity.leaning',
     'sexuality-grid':      'identity.sexuality',
@@ -3172,7 +3146,7 @@ function hydrateFormFromInitial() {
       setVal(`work.prior_employers[${i}].company`, emp.company);
       setVal(`work.prior_employers[${i}].title`, emp.title);
       setVal(`work.prior_employers[${i}].years`, emp.years);
-      setVal(`work.prior_employers[${i}].notes`, emp.notes);
+      setVal(`work.prior_employers[${i}].detail`, emp.detail || emp.notes);
     });
   }
 }

@@ -287,7 +287,7 @@ function buildMemories(data) {
     const p = data.personal || {};
     const lines = [];
     for (const [label, key] of [
-      ['Name', 'name'], ['Preferred name', 'preferred_name'],
+      ['Name', 'name'],
       ['Birthday', 'birthday'], ['City', 'city'],
       ['State/Province', 'state'], ['Country', 'country'], ['Timezone', 'timezone'],
     ]) {
@@ -309,7 +309,6 @@ function buildMemories(data) {
     for (const [label, key] of [
       ['Relationship status', 'relationship_status'],
       ['Partner name', 'partner_name'],
-      ['Partner birthday', 'partner_birthday'],
     ]) {
       const v = nb(f, key);
       if (v) lines.push(`${label}: ${v}`);
@@ -360,7 +359,7 @@ function buildMemories(data) {
         const v = nb(emp, k);
         if (v) parts.push(v);
       }
-      if (nb(emp, 'notes')) parts.push(nb(emp, 'notes'));
+      if (nb(emp, 'detail')) parts.push(nb(emp, 'detail'));
       if (parts.length) lines.push(`Prior employer ${i + 1}: ${parts.join(', ')}`);
     });
     const milParts = [];
@@ -446,9 +445,7 @@ function buildMemories(data) {
     for (const [label, key] of [
       ['Computer OS', 'os'],
       ['Distro / other OS details', 'os_details'],
-      ['Shell', 'shell'],
       ['Code editor / IDE', 'editor'],
-      ['Phone OS', 'phone'],
       ['Smart home ecosystem', 'smart_home'],
       ['Gaming platforms', 'gaming'],
       ['Tech notes', 'notes'],
@@ -458,7 +455,7 @@ function buildMemories(data) {
     }
     if (lines.length) memories.push({
       slug: 'user-tech',
-      description: "User's tech stack: OS, shell, editor, phone, smart home, gaming platforms",
+      description: "User's tech stack: OS, editor, smart home, gaming platforms",
       type: 'user',
       content: lines.join('\n'),
     });
@@ -469,7 +466,6 @@ function buildMemories(data) {
     const ident = data.identity || {};
     const lines = [];
     for (const [label, key] of [
-      ['Political identity', 'ideology'],
       ['Party / affiliation', 'political'],
       ['Political leaning', 'leaning'],
       ['Sexuality / orientation', 'sexuality'],
@@ -497,14 +493,13 @@ function buildMemories(data) {
       ['Current projects', 'current_projects'],
       ['Short-term goals', 'short_term'],
       ['Long-term goals', 'long_term'],
-      ['Currently learning', 'learning'],
     ]) {
       const v = nb(g, key);
       if (v) lines.push(`${label}: ${v}`);
     }
     if (lines.length) memories.push({
       slug: 'user-goals',
-      description: "User's current goals, projects, and things they're learning",
+      description: "User's current goals, projects, and direction",
       type: 'user',
       content: lines.join('\n'),
     });
@@ -516,7 +511,7 @@ function buildMemories(data) {
     const lines = [];
     for (const [label, key] of [
       ['Tone preference', 'tone'], ['Response length', 'length'],
-      ['Formatting preference', 'formatting'], ['Feedback style', 'feedback'],
+      ['Feedback style', 'feedback'],
       ['Humor style', 'humor'], ['Personality vibes', 'personality_vibes'],
       ['Working style', 'working_style'], ['When stuck, wants Claude to', 'when_stuck'],
     ]) {
@@ -526,7 +521,6 @@ function buildMemories(data) {
     for (const [label, key] of [
       ['Never do', 'never_do'],
       ['Always do', 'always_do'],
-      ['Collaboration notes', 'other'],
     ]) {
       const v = nb(c, key);
       if (v) lines.push(`${label}: ${v}`);

@@ -9,17 +9,18 @@ from app import (
     build_memories, write_memory_file, load_memories,
     merge_content, build_bootstrap, _parse_bootstrap_file,
     fmt_month, _chunk_body, LABEL_PATTERN, LABEL_TO_KEY,
+    migrate_backup, SCHEMA_VERSION,
 )
 
 SAMPLE = {
     "personal": {
-        "name": "Riley Quinn", "preferred_name": "Riley",
+        "name": "Riley Quinn",
         "birthday": "1989-07-14", "city": "Boulder",
         "state": "CO", "country": "USA", "timezone": "America/Denver",
     },
     "family": {
         "relationship_status": "Married",
-        "partner_name": "Morgan Hale", "partner_birthday": "1990-03-22",
+        "partner_name": "Morgan Hale",
         "former_partner": "", "siblings": "Felix (36), Nora (31)",
         "parents": "Ellen and Roger in Madison WI", "other": "",
         "children": [
@@ -32,7 +33,7 @@ SAMPLE = {
         "industry": "Supply chain / SaaS", "years_exp": "11",
         "work_style": "Remote", "notes": "Lead the warehouse-events pipeline team",
         "prior_employers": [
-            {"company": "Acme Corp", "title": "Data Engineer", "years": "2015–2019", "notes": ""},
+            {"company": "Acme Corp", "title": "Data Engineer", "years": "2015–2019", "detail": ""},
         ],
         "military_branch": "", "military_country": "", "military_years": "",
         "military_field": "", "military_rank": "", "military_highlights": "",
@@ -55,15 +56,13 @@ SAMPLE = {
     "tech": {
         "os": "macOS, Linux",
         "os_details": "Arch on the home rig",
-        "shell": "zsh, fish",
         "editor": "VS Code, Neovim",
-        "phone": "iOS",
         "smart_home": "HomeKit / Apple Home, Home Assistant",
         "gaming": "PlayStation, Steam Deck / Handheld",
         "notes": "Daily-driver MBP for work, custom Linux box at home",
     },
     "identity": {
-        "ideology": "Progressive", "political": "Independent",
+        "political": "Independent",
         "leaning": "Center-left", "sexuality": "Straight / Heterosexual",
         "gender": "Woman", "religion": "Spiritual but not religious",
         "causes": "Climate change action, Digital privacy",
@@ -73,11 +72,9 @@ SAMPLE = {
         "current_projects": "Pipeline migration to Go",
         "short_term": "Ship migration to staging by July",
         "long_term": "Buy a mountain cabin",
-        "learning": "Go, Spanish",
     },
     "comms": {
         "tone": "Direct but warm", "length": "Short unless depth is needed",
-        "formatting": "Prose over bullet points",
         "feedback": "Tell me when I'm wrong, directly",
         "humor": "Dry / deadpan, Witty / wordplay",
         "personality_vibes": "Curious, Opinionated",
@@ -85,7 +82,6 @@ SAMPLE = {
         "when_stuck": "Give me options and let me choose",
         "never_do": "Don't start with Great question!",
         "always_do": "Push back when you disagree",
-        "other": "I think best when I can write things out",
     },
     "freeform": "",
 }
@@ -142,7 +138,6 @@ class TestRoundTrip:
             loaded = load_memories(path)
         p = loaded["personal"]
         assert p["name"] == "Riley Quinn"
-        assert p["preferred_name"] == "Riley"
         assert p["city"] == "Boulder"
         assert p["state"] == "CO"
         assert p["timezone"] == "America/Denver"
@@ -192,7 +187,7 @@ class TestRoundTrip:
             _write_all(SAMPLE, path)
             loaded = load_memories(path)
         i = loaded["identity"]
-        assert i["ideology"] == "Progressive"
+        assert i["leaning"] == "Center-left"
         assert i["sexuality"] == "Straight / Heterosexual"
         assert i["causes"] == "Climate change action, Digital privacy"
 
@@ -204,9 +199,7 @@ class TestRoundTrip:
         t = loaded["tech"]
         assert t["os"] == "macOS, Linux"
         assert t["os_details"] == "Arch on the home rig"
-        assert t["shell"] == "zsh, fish"
         assert t["editor"] == "VS Code, Neovim"
-        assert t["phone"] == "iOS"
         assert t["smart_home"] == "HomeKit / Apple Home, Home Assistant"
         assert t["gaming"] == "PlayStation, Steam Deck / Handheld"
         assert t["notes"] == "Daily-driver MBP for work, custom Linux box at home"
@@ -277,7 +270,7 @@ class TestBootstrap:
         """
         sample = dict(SAMPLE)
         sample["comms"] = dict(sample["comms"])
-        sample["comms"]["other"] = "Item one; item two; with nested clauses"
+        sample["comms"]["always_do"] = "Item one; item two; with nested clauses"
         mems = build_memories(sample)
         bt = build_bootstrap(mems)
         parsed = _parse_bootstrap_file(bt)
@@ -518,3 +511,56 @@ class TestChunkBody:
                     assert LABEL_PATTERN.match(line), (
                         f"emitted by {m['slug']!r} but pattern missed it: {line!r}"
                     )
+
+
+class TestSchemaMigration:
+    """v1 → v2 migration: collapse ideology/leaning, rename prior_employers.notes
+    → .detail, fold dead fields into adjacent freeform-ish targets."""
+
+    def test_v1_to_v2_collapses_ideology_into_leaning(self):
+        data = {"identity": {"ideology": "Far-left", "leaning": "Progressive"}}
+        out = migrate_backup(data, "1", "2")
+        assert "ideology" not in out["identity"]
+        # Both preserved with separator
+        assert "Far-left" in out["identity"]["leaning"]
+        assert "Progressive" in out["identity"]["leaning"]
+
+    def test_v1_to_v2_ideology_alone_becomes_leaning(self):
+        data = {"identity": {"ideology": "Libertarian"}}
+        out = migrate_backup(data, "1", "2")
+        assert out["identity"]["leaning"] == "Libertarian"
+        assert "ideology" not in out["identity"]
+
+    def test_v1_to_v2_renames_prior_employer_notes_to_detail(self):
+        data = {"work": {"prior_employers": [
+            {"company": "Old", "title": "Eng", "notes": "Built X, left for Y"},
+        ]}}
+        out = migrate_backup(data, "1", "2")
+        emp = out["work"]["prior_employers"][0]
+        assert "notes" not in emp
+        assert emp["detail"] == "Built X, left for Y"
+
+    def test_v1_to_v2_folds_shell_phone_into_tech_notes(self):
+        data = {"tech": {"shell": "zsh", "phone": "iOS", "notes": "MBP daily driver"}}
+        out = migrate_backup(data, "1", "2")
+        assert "shell" not in out["tech"]
+        assert "phone" not in out["tech"]
+        notes = out["tech"]["notes"]
+        assert "Shell: zsh" in notes
+        assert "Phone: iOS" in notes
+        assert "MBP daily driver" in notes
+
+    def test_v1_to_v2_drops_preferred_name_silently(self):
+        data = {"personal": {"name": "Jane", "preferred_name": "J"}}
+        out = migrate_backup(data, "1", "2")
+        assert out["personal"]["name"] == "Jane"
+        assert "preferred_name" not in out["personal"]
+
+    def test_v1_to_v2_no_op_on_empty_removed_fields(self):
+        """Empty removed fields shouldn't pollute target fields with empty prefixes."""
+        data = {"tech": {"shell": "", "phone": "", "notes": "Real notes"}}
+        out = migrate_backup(data, "1", "2")
+        assert out["tech"]["notes"] == "Real notes"
+
+    def test_schema_version_is_2(self):
+        assert SCHEMA_VERSION == "2", "after Tier 1 cleanup, schema should be v2"

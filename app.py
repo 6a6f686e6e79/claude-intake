@@ -18,13 +18,83 @@ def fmt_month(value):
 # old backup files (tab added/renamed, field renamed, etc.). Mirrored
 # in templates/index.html as SCHEMA_VERSION; the JS-port parity test
 # enforces they stay equal.
-SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "2"
+
+
+def _migrate_1_to_2(data):
+    """v2 schema cleanup based on cold-test field audit:
+      - identity.ideology collapses into identity.leaning (CAI consolidates
+        them on round-trip; one field is enough)
+      - prior_employers[*].notes renames to .detail (signals "paragraph OK"
+        for narrative careers like military service)
+      - dead/never-populated fields drop, with surviving data folded into
+        adjacent freeform-ish targets so we don't silently lose anyone's
+        existing values
+
+    Migrations are conservative: empty fields are dropped silently,
+    non-empty fields fold into a labelled prefix on the target.
+    """
+    if not isinstance(data, dict):
+        return data
+
+    def take(section, key):
+        s = data.get(section)
+        if not isinstance(s, dict):
+            return ""
+        v = s.pop(key, "")
+        return v.strip() if isinstance(v, str) else ""
+
+    def prepend(section, key, label, value):
+        if not value:
+            return
+        s = data.setdefault(section, {})
+        existing = s.get(key, "")
+        existing = existing.strip() if isinstance(existing, str) else ""
+        prefix = f"{label}: {value}."
+        s[key] = f"{prefix} {existing}".strip() if existing else prefix
+
+    # identity.ideology → identity.leaning
+    ideology = take("identity", "ideology")
+    if ideology:
+        ident = data.setdefault("identity", {})
+        leaning = (ident.get("leaning") or "").strip()
+        ident["leaning"] = f"{leaning} · {ideology}".strip(" ·") if leaning else ideology
+
+    # tech.shell + tech.phone → tech.notes
+    prepend("tech", "notes", "Shell", take("tech", "shell"))
+    prepend("tech", "notes", "Phone", take("tech", "phone"))
+
+    # comms.formatting + comms.other → comms.always_do
+    prepend("comms", "always_do", "Formatting", take("comms", "formatting"))
+    prepend("comms", "always_do", "Other", take("comms", "other"))
+
+    # goals.learning → goals.current_projects
+    prepend("goals", "current_projects", "Currently learning", take("goals", "learning"))
+
+    # Drop (no good target)
+    take("personal", "preferred_name")
+    take("family", "partner_birthday")
+
+    # work.prior_employers[*].notes → .detail
+    work = data.get("work")
+    if isinstance(work, dict):
+        emps = work.get("prior_employers")
+        if isinstance(emps, list):
+            for emp in emps:
+                if isinstance(emp, dict) and "notes" in emp:
+                    val = emp.pop("notes", "")
+                    if val and not emp.get("detail"):
+                        emp["detail"] = val
+
+    return data
+
 
 # Migration registry. Keys are "fromVersion-to-toVersion"; values are
-# pure (data) -> data transforms. Empty in v1; the pattern exists so
-# future schema changes plug in without restructuring callers.
-# Kept symmetric with the JS MIGRATIONS in templates/index.html.
-MIGRATIONS = {}
+# pure (data) -> data transforms. Kept symmetric with the JS MIGRATIONS
+# in templates/index.html.
+MIGRATIONS = {
+    "1-to-2": _migrate_1_to_2,
+}
 
 
 def migrate_backup(data, from_version, to_version):
@@ -454,13 +524,13 @@ SLUG_TO_SECTION = {
 
 LABEL_TO_KEY = {
     "user-personal": {
-        "Name": "name", "Preferred name": "preferred_name",
+        "Name": "name",
         "Birthday": "birthday", "City": "city",
         "State/Province": "state", "Country": "country", "Timezone": "timezone",
     },
     "user-family": {
         "Relationship status": "relationship_status",
-        "Partner name": "partner_name", "Partner birthday": "partner_birthday",
+        "Partner name": "partner_name",
         "Former partner / co-parent": "former_partner",
         "Siblings": "siblings", "Parents": "parents",
         "Other family notes": "other",
@@ -480,27 +550,26 @@ LABEL_TO_KEY = {
     },
     "user-tech": {
         "Computer OS": "os", "Distro / other OS details": "os_details",
-        "Shell": "shell", "Code editor / IDE": "editor",
-        "Phone OS": "phone", "Smart home ecosystem": "smart_home",
+        "Code editor / IDE": "editor",
+        "Smart home ecosystem": "smart_home",
         "Gaming platforms": "gaming", "Tech notes": "notes",
     },
     "user-identity": {
-        "Political identity": "ideology", "Party / affiliation": "political",
+        "Party / affiliation": "political",
         "Political leaning": "leaning", "Sexuality / orientation": "sexuality",
         "Gender identity": "gender", "Religion / spirituality": "religion",
         "Causes & issues": "causes", "Identity notes": "notes",
     },
     "user-goals": {
         "Current projects": "current_projects", "Short-term goals": "short_term",
-        "Long-term goals": "long_term", "Currently learning": "learning",
+        "Long-term goals": "long_term",
     },
     "user-communication": {
         "Tone preference": "tone", "Response length": "length",
-        "Formatting preference": "formatting", "Feedback style": "feedback",
+        "Feedback style": "feedback",
         "Humor style": "humor", "Personality vibes": "personality_vibes",
         "Working style": "working_style", "When stuck, wants Claude to": "when_stuck",
         "Never do": "never_do", "Always do": "always_do",
-        "Collaboration notes": "other",
     },
 }
 
@@ -607,7 +676,7 @@ def _parse_pet_line(rest):
 
 def _parse_prior_employer_line(rest):
     parts = [p.strip() for p in rest.split(",")]
-    keys = ["company", "title", "years", "notes"]
+    keys = ["company", "title", "years", "detail"]
     return {keys[i]: p for i, p in enumerate(parts) if i < len(keys) and p}
 
 
@@ -832,7 +901,7 @@ def build_memories(data):
     p = data.get("personal", {})
     lines = []
     for label, key in [
-        ("Name", "name"), ("Preferred name", "preferred_name"),
+        ("Name", "name"),
         ("Birthday", "birthday"), ("City", "city"),
         ("State/Province", "state"), ("Country", "country"), ("Timezone", "timezone"),
     ]:
@@ -853,7 +922,6 @@ def build_memories(data):
     for label, key in [
         ("Relationship status", "relationship_status"),
         ("Partner name", "partner_name"),
-        ("Partner birthday", "partner_birthday"),
     ]:
         v = _nb(f, key)
         if v:
@@ -899,8 +967,8 @@ def build_memories(data):
         lines.append(f"Work notes: {_nb(w, 'notes')}")
     for i, emp in enumerate(w.get("prior_employers", []), 1):
         parts = [x for x in [_nb(emp, "company"), _nb(emp, "title"), _nb(emp, "years")] if x]
-        if _nb(emp, "notes"):
-            parts.append(_nb(emp, "notes"))
+        if _nb(emp, "detail"):
+            parts.append(_nb(emp, "detail"))
         if parts:
             lines.append(f"Prior employer {i}: {', '.join(parts)}")
     mil_parts = []
@@ -986,9 +1054,7 @@ def build_memories(data):
     for label, key in [
         ("Computer OS", "os"),
         ("Distro / other OS details", "os_details"),
-        ("Shell", "shell"),
         ("Code editor / IDE", "editor"),
-        ("Phone OS", "phone"),
         ("Smart home ecosystem", "smart_home"),
         ("Gaming platforms", "gaming"),
         ("Tech notes", "notes"),
@@ -999,7 +1065,7 @@ def build_memories(data):
     if lines:
         memories.append({
             "slug": "user-tech",
-            "description": "User's tech stack: OS, shell, editor, phone, smart home, gaming platforms",
+            "description": "User's tech stack: OS, editor, smart home, gaming platforms",
             "type": "user",
             "content": "\n".join(lines),
         })
@@ -1008,7 +1074,6 @@ def build_memories(data):
     ident = data.get("identity", {})
     lines = []
     for label, key in [
-        ("Political identity", "ideology"),
         ("Party / affiliation", "political"),
         ("Political leaning", "leaning"),
         ("Sexuality / orientation", "sexuality"),
@@ -1035,7 +1100,6 @@ def build_memories(data):
         ("Current projects", "current_projects"),
         ("Short-term goals", "short_term"),
         ("Long-term goals", "long_term"),
-        ("Currently learning", "learning"),
     ]:
         v = _nb(g, key)
         if v:
@@ -1043,7 +1107,7 @@ def build_memories(data):
     if lines:
         memories.append({
             "slug": "user-goals",
-            "description": "User's current goals, projects, and things they're learning",
+            "description": "User's current goals, projects, and direction",
             "type": "user",
             "content": "\n".join(lines),
         })
@@ -1053,7 +1117,7 @@ def build_memories(data):
     lines = []
     for label, key in [
         ("Tone preference", "tone"), ("Response length", "length"),
-        ("Formatting preference", "formatting"), ("Feedback style", "feedback"),
+        ("Feedback style", "feedback"),
         ("Humor style", "humor"), ("Personality vibes", "personality_vibes"),
         ("Working style", "working_style"), ("When stuck, wants Claude to", "when_stuck"),
     ]:
@@ -1065,7 +1129,6 @@ def build_memories(data):
     for label, key in [
         ("Never do", "never_do"),
         ("Always do", "always_do"),
-        ("Collaboration notes", "other"),
     ]:
         v = _nb(c, key)
         if v:

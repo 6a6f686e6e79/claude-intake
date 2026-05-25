@@ -77,13 +77,12 @@ def test_js_syntactically_valid(built_html, tmp_path):
 
 SAMPLE = {
     "personal": {
-        "name": "Riley Quinn", "preferred_name": "Riley",
+        "name": "Riley Quinn",
         "birthday": "1988-04-15", "city": "Denver",
         "state": "CO", "country": "USA", "timezone": "Mountain (MT)",
     },
     "family": {
         "relationship_status": "Married", "partner_name": "Alex",
-        "partner_birthday": "1987-09-02",
         "children": [{"name": "Emma", "birthday": "2018-02", "status": "Living"}],
         "siblings": "Sister Ava (29)", "parents": "Mom in Dallas",
     },
@@ -98,12 +97,12 @@ SAMPLE = {
     "hobbies": {"interests": "Running, Hiking"},
     "tech": {
         "os": "macOS, Linux", "os_details": "Arch on home rig",
-        "shell": "zsh", "editor": "VS Code, Neovim", "phone": "iOS",
+        "editor": "VS Code, Neovim",
         "smart_home": "HomeKit / Apple Home", "gaming": "Steam Deck / Handheld",
         "notes": "Mostly remote, dotfiles in GitHub",
     },
     "identity": {"leaning": "Center-left", "religion": "Agnostic"},
-    "goals": {"current_projects": "Launch MVP", "learning": "Spanish"},
+    "goals": {"current_projects": "Launch MVP"},
     "comms": {
         "tone": "Direct but warm", "length": "Short unless depth is needed",
         "never_do": "Don't placate me", "always_do": "Push back when you disagree",
@@ -263,12 +262,11 @@ def test_js_dataFromBootstrap_extracts_family_work_kv(built_html, tmp_path):
     assert result.returncode == 0, result.stderr
     out = json.loads(result.stdout)
 
-    # Family: flat kv survives the strip; partner_birthday is NOT contaminated
+    # Family: flat kv survives the strip; partner_name is NOT contaminated
     # by the trailing Child N: rows.
     fam = out["data"]["family"]
     assert fam["relationship_status"] == "Married"
     assert fam["partner_name"] == "Alex"
-    assert fam["partner_birthday"] == "1987-09-02"
     assert fam["siblings"] == "Sister Ava (29)"
     assert fam["parents"] == "Mom in Dallas"
 
