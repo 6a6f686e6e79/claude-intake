@@ -95,7 +95,13 @@ function topicFor(slug) {
 }
 
 function splitBodyIntoChunks(body, budget) {
+  // Three layered passes (mirror of app.py::_split_body_into_chunks):
+  //   1. "; " boundaries (keeps related facts together)
+  //   2. ". " sentence boundaries (keeps mid-sentence content intact)
+  //   3. word boundaries (last-resort)
   if (body.length <= budget) return [body];
+
+  // Pass 1: "; "
   const chunks = [];
   let current = [], currentLen = 0;
   for (const piece of body.split('; ')) {
@@ -111,8 +117,32 @@ function splitBodyIntoChunks(body, budget) {
   }
   if (current.length) chunks.push(current.join('; '));
 
-  const final = [];
+  // Pass 2: ". " sentence boundaries
+  const afterSentences = [];
   for (const chunk of chunks) {
+    if (chunk.length <= budget) { afterSentences.push(chunk); continue; }
+    const parts = chunk.split('. ');
+    const pieces = parts.length > 1
+      ? parts.slice(0, -1).map(p => p + '.').concat([parts[parts.length - 1]])
+      : parts;
+    let sub = [], subLen = 0;
+    for (const piece of pieces) {
+      const sepLen = sub.length ? 1 : 0;
+      if (sub.length && subLen + sepLen + piece.length > budget) {
+        afterSentences.push(sub.join(' '));
+        sub = [piece];
+        subLen = piece.length;
+      } else {
+        sub.push(piece);
+        subLen += sepLen + piece.length;
+      }
+    }
+    if (sub.length) afterSentences.push(sub.join(' '));
+  }
+
+  // Pass 3: word boundaries (last resort)
+  const final = [];
+  for (const chunk of afterSentences) {
     if (chunk.length <= budget) { final.push(chunk); continue; }
     let sub = [], subLen = 0;
     for (const word of chunk.split(/\s+/)) {

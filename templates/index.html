@@ -2732,7 +2732,11 @@ function renderCompletionMeter() {
     `<div class="completion-text">` +
       `<strong>Profile ${pct}% complete</strong>` +
       `<div class="completion-detail">${escapeHtml(detail)}</div>` +
-    `</div>`;
+    `</div>` +
+    `<button type="button" class="completion-clear" onclick="clearLocalStorage()" ` +
+            `title="Wipe the form and clear locally saved data. Useful on a shared computer or to start over.">` +
+      `Clear form` +
+    `</button>`;
 }
 
 // ── Timezone autodetect + IANA mapping ─────────────────────────
@@ -2821,11 +2825,22 @@ function maybeAutoFillTimezone() {
 const STORAGE_KEY = 'claude-intake:v1:formData';
 const SAVE_DEBOUNCE_MS = 300;
 let _saveTimer = null;
+// True when the page was loaded with ?fresh=1 (or ?reset=1). In fresh
+// mode we DON'T read localStorage on load (sandbox start) and we DON'T
+// write it either — so the user's pre-existing saved state is preserved
+// untouched while they test/play. Closing the tab loses the fresh session.
+let _freshMode = false;
 
 function scheduleSave() {
   if (_saveTimer) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => {
     _saveTimer = null;
+    // In fresh mode (?fresh=1) we don't write either — preserves the
+    // user's existing localStorage state untouched while they test.
+    if (_freshMode) {
+      try { renderCompletionMeter(); } catch (e) {}
+      return;
+    }
     try {
       const data = collectData();
       // Drop session-only fields that shouldn't restore on next load.
@@ -3143,10 +3158,20 @@ function hydrateFormFromInitial() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ?fresh=1 (or ?reset=1) bypasses localStorage for the current load —
+  // useful for clean-state testing or for users on a shared computer
+  // who want to start blank without clicking anything. Doesn't WIPE the
+  // saved state (next normal load will restore from localStorage); it
+  // just doesn't HYDRATE from it this time.
+  const params = (() => {
+    try { return new URLSearchParams(window.location.search); }
+    catch (e) { return new URLSearchParams(''); }
+  })();
+  _freshMode = params.get('fresh') === '1' || params.get('reset') === '1';
   // localStorage wins over the server-supplied #initial-data when both
   // are present — the user's most recent in-browser edits are the
-  // freshest source of truth.
-  const local = loadFromLocalStorage();
+  // freshest source of truth (unless ?fresh=1 says skip it).
+  const local = _freshMode ? null : loadFromLocalStorage();
   if (local) {
     const dataEl = document.getElementById('initial-data');
     if (dataEl) dataEl.textContent = JSON.stringify(local);

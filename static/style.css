@@ -133,6 +133,23 @@ h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6
   margin-top: 2px;
   line-height: 1.4;
 }
+.completion-text { flex: 1; min-width: 0; }
+.completion-clear {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.completion-clear:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
 
 /* Privacy reassurance shown at the top of the standalone build only.
    Injected by tools/build_standalone.py; not used in the Flask build. */

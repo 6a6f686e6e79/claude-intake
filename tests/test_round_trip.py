@@ -320,6 +320,37 @@ class TestBootstrap:
         _populate_from_body(data, "user-freeform", sections["user-freeform"])
         assert "Some long-form context" in data["freeform"]
 
+    def test_chunker_prefers_sentence_boundaries_over_word_breaks(self):
+        """A body with no '; ' separators but multiple sentences should
+        chunk on sentence boundaries, not mid-sentence. Catches the case
+        that broke entries 13/14/15/16 in the user-reported bootstrap
+        review — parentheticals splitting mid-clause and losing their
+        closing parens."""
+        from app import _split_body_into_chunks
+        body = (
+            "First sentence with some content. "
+            "Second sentence which has a parenthetical (and the paren is balanced) "
+            "in the middle. "
+            "Third sentence also has its own little thought. "
+            "Fourth sentence wraps things up here."
+        )
+        # Pick a budget that forces multiple chunks but is wider than any
+        # single sentence (so word-split is never needed).
+        budget = 120
+        chunks = _split_body_into_chunks(body, budget)
+        assert len(chunks) > 1, "test budget should have forced chunking"
+        for chunk in chunks:
+            assert len(chunk) <= budget, f"chunk over budget: {len(chunk)} > {budget}"
+            # Every chunk should end at a sentence boundary (period at
+            # end, or be the final piece). No mid-sentence breaks.
+            assert chunk.rstrip().endswith('.'), (
+                f"chunk doesn't end on a sentence boundary: {chunk!r}"
+            )
+        # Specifically: the parenthetical phrase must survive intact
+        # (no broken paren) in whatever chunk holds it.
+        joined = " ".join(chunks)
+        assert "(and the paren is balanced)" in joined
+
     def test_parser_handles_bare_sentinel_and_fenced_input(self):
         """Same payload, three wrappings: bare, sentinel-wrapped, fenced.
         All three should produce identical parsed output. Locks in the

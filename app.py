@@ -219,15 +219,24 @@ def _topic_for(slug):
 
 
 def _split_body_into_chunks(body, budget):
-    """Greedy split of body on '; ' boundaries, falling back to word splits.
+    """Greedy split of body to fit ``budget`` chars per chunk.
 
-    Each returned chunk is guaranteed ≤ budget chars. Splits prefer the
-    higher-level semicolon boundary so related facts stay together when they
-    can.
+    Three layered passes, each finer-grained than the last. Each layer only
+    runs on chunks the previous layer left oversized:
+
+    1. ``; `` boundaries — keeps related facts together.
+    2. ``. `` sentence boundaries — keeps mid-sentence content intact
+       (was the chunker's biggest weakness; parentheticals would split
+       mid-clause and lose their closing paren).
+    3. Word boundaries — last-resort split for chunks where neither
+       semicolons nor sentence breaks are dense enough.
+
+    Each returned chunk is ≤ ``budget`` chars.
     """
     if len(body) <= budget:
         return [body]
 
+    # Pass 1: split on '; '
     chunks = []
     current, current_len = [], 0
     for piece in body.split("; "):
@@ -241,8 +250,31 @@ def _split_body_into_chunks(body, budget):
     if current:
         chunks.append("; ".join(current))
 
-    final = []
+    # Pass 2: any chunk still > budget, split on '. '
+    after_sentences = []
     for chunk in chunks:
+        if len(chunk) <= budget:
+            after_sentences.append(chunk)
+            continue
+        parts = chunk.split(". ")
+        # Reattach the period removed by split (except on the final piece
+        # which kept whatever terminal punctuation was present).
+        pieces = [p + "." for p in parts[:-1]] + [parts[-1]] if len(parts) > 1 else parts
+        sub, sub_len = [], 0
+        for piece in pieces:
+            sep_len = 1 if sub else 0
+            if sub and sub_len + sep_len + len(piece) > budget:
+                after_sentences.append(" ".join(sub))
+                sub, sub_len = [piece], len(piece)
+            else:
+                sub.append(piece)
+                sub_len += sep_len + len(piece)
+        if sub:
+            after_sentences.append(" ".join(sub))
+
+    # Pass 3: any chunk STILL > budget, word-split (last resort)
+    final = []
+    for chunk in after_sentences:
         if len(chunk) <= budget:
             final.append(chunk)
             continue
